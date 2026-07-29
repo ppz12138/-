@@ -1,0 +1,3830 @@
+[
+  {
+    "name": "暴怒护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "怨恨": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "暴怒护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "怨恨": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "暴怒护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "怨恨": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "反攻护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "巧击": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "反攻护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "巧击": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "反攻护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "巧击": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "无伤护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "无伤": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "无伤护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "无伤": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "无伤护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "无伤": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "逆袭护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "逆袭": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "逆袭护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "逆袭": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "逆袭护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "逆袭": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "痛击护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "弱点特效": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "痛击护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "弱点特效": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "浑身护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "精神抖擞": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "浑身护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "精神抖擞": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "浑身护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "精神抖擞": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "属变护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "属性异常耐性": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "属变护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "属性异常耐性": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "防御护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "防御": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "防御护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "防御": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "防御护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "防御": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "防御护石Ⅳ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "防御": 4
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "防御护石Ⅴ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "防御": 5
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "加护护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "精灵加护": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "加护护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "精灵加护": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "加护护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "精灵加护": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐火护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "火耐性": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐火护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "火耐性": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐火护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "火耐性": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐水护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "水耐性": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐水护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "水耐性": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐水护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "水耐性": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐雷护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "雷耐性": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐雷护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "雷耐性": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐雷护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "雷耐性": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐冰护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "冰耐性": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐冰护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "冰耐性": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐冰护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "冰耐性": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐龙护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "龙耐性": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐龙护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "龙耐性": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐龙护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "龙耐性": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐毒护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "毒耐性": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐毒护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "毒耐性": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐毒护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "毒耐性": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐麻护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "麻痹耐性": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐麻护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "麻痹耐性": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐麻护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "麻痹耐性": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐眠护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "睡眠耐性": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐眠护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "睡眠耐性": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐眠护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "睡眠耐性": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐防护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "防御力下降耐性": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐防护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "防御力下降耐性": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐防护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "防御力下降耐性": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐属护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "属性异常耐性": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐属护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "属性异常耐性": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐属护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "属性异常耐性": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐绝护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "昏厥耐性": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐绝护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "昏厥耐性": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐绝护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "昏厥耐性": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐裂护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "裂伤耐性": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐裂护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "裂伤耐性": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐裂护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "裂伤耐性": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐缚护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "束缚耐性": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐缚护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "束缚耐性": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐缚护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "束缚耐性": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐爆护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "爆破异常耐性": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐爆护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "爆破异常耐性": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐爆护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "爆破异常耐性": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "治愈护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "体力回复量提升": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "治愈护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "体力回复量提升": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "治愈护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "体力回复量提升": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "早复护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "回复速度": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "早复护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "回复速度": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "早复护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "回复速度": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "环境护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "环境利用知识": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "环境护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "环境利用知识": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "环境护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "环境利用知识": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "体术护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "体术": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "体术护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "体术": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "体术护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "体术": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "体术护石Ⅳ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "体术": 4
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "体术护石Ⅴ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "体术": 5
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "早气护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "耐力急速回复": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "早气护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "耐力急速回复": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "早气护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "耐力急速回复": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "强走护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "跑者": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "强走护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "跑者": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "强走护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "跑者": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "断食护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "饥饿耐性": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "断食护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "饥饿耐性": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "断食护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "饥饿耐性": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "挑战护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "挑战者": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "挑战护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "挑战者": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "挑战护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "挑战者": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "全开护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "力量解放": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "全开护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "力量解放": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "全开护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "力量解放": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "底力护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "火场怪力": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "底力护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "火场怪力": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "底力护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "火场怪力": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "攻势护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "攻势": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "攻势护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "攻势": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "攻势护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "攻势": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "连击护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "连击": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "连击护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "连击": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "连击护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "连击": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "锁刃护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "锁刃刺击": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "锁刃护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "锁刃刺击": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "重击护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "破坏王": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "重击护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "破坏王": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "重击护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "破坏王": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "转福护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "因祸得福": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "转福护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "因祸得福": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "转福护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "因祸得福": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "急袭护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "急袭": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "急袭护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "急袭": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "急袭护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "急袭": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "抗狂护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "无我之境": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "抗狂护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "无我之境": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "抗狂护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "无我之境": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "属吸护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "属性吸收": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "属吸护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "属性吸收": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "回避护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "回避性能": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "回避护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "回避性能": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "回避护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "回避性能": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "回避护石Ⅳ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "回避性能": 4
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "跳跃护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "回避距离提升": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "跳跃护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "回避距离提升": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "跳跃护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "回避距离提升": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耳塞护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "耳塞": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耳塞护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "耳塞": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "纳刀护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "纳刀术": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "纳刀护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "纳刀术": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "纳刀护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "纳刀术": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "防风护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "风压耐性": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "防风护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "风压耐性": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "防风护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "风压耐性": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐震护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "耐震": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐震护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "耐震": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐震护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "耐震": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐冲护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "减轻胆怯": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐冲护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "减轻胆怯": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "耐冲护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "减轻胆怯": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "威吓护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "威吓": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "威吓护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "威吓": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "威吓护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "威吓": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "快吃护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "快吃": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "快吃护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "快吃": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "快吃护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "快吃": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "友爱护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "广域化": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "友爱护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "广域化": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "友爱护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "广域化": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "整备护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "整备": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "整备护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "整备": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "整备护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "整备": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "爆师护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "炸弹客": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "爆师护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "炸弹客": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "爆师护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "炸弹客": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "嗜菇护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "最爱蘑菇": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "嗜菇护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "最爱蘑菇": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "嗜菇护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "最爱蘑菇": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "持续护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "道具使用强化": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "持续护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "道具使用强化": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "持续护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "道具使用强化": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "小胃口护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "满足感": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "小胃口护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "满足感": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "小胃口护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "满足感": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "植学护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "植生学": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "植学护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "植生学": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "植学护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "植生学": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "地学护石Ⅰ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "地质学": 1
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "地学护石Ⅱ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "地质学": 2
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  },
+  {
+    "name": "地学护石Ⅲ",
+    "rarity": 0,
+    "defense": 0,
+    "fire_res": 0,
+    "water_res": 0,
+    "thunder_res": 0,
+    "ice_res": 0,
+    "dragon_res": 0,
+    "slots": [
+      0,
+      0,
+      0
+    ],
+    "skills": {
+      "地质学": 3
+    },
+    "part": "charm",
+    "skill_type": "armor",
+    "weapon_slots": [],
+    "armor_slots": []
+  }
+]

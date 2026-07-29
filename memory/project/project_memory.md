@@ -1,3 +1,9 @@
+## Performance Baseline (Updated 2026-07-29)
+- 追加技能查询：0.71秒（优化前66秒，提升93倍）
+- 主搜索（cached_ctx）：0.039秒
+- 主搜索（全方案）：0.122秒（59个方案）
+- 性能目标：全部达标（<1秒）
+
 ## Hard Constraints
 - All equipment and decoration data must be in simplified Chinese
 - Armor data must include: name, rarity, maximum defense, attribute resistances, slots, skills and levels

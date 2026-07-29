@@ -9,7 +9,7 @@
 """
 import json, time, itertools, sys
 
-DATA = r'C:\Users\007\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\work-mode-projects\6a6185c4f2b6eb165ebb798e'
+DATA = '/workspace'
 
 # ==================== 技能数值 ====================
 MUZ_ATK = {0:0, 1:3, 2:6, 3:10, 4:15, 5:20}
@@ -71,11 +71,12 @@ SKILL_CAPS = {
 
 # ==================== 加载数据 ====================
 print("加载数据...", end=' ', flush=True)
-with open(f'{DATA}\\decos_cn.json', 'r', encoding='utf-8') as f: decos = json.load(f)
-with open(f'{DATA}\\armors_cn.json', 'r', encoding='utf-8') as f: armors = json.load(f)
-with open(f'{DATA}\\my_charms.json', 'r', encoding='utf-8') as f: my_charms = json.load(f)
-with open(f'{DATA}\\charms_cn.json', 'r', encoding='utf-8') as f: craft_charms = json.load(f)
-with open(f'{DATA}\\skills_data.json', 'r', encoding='utf-8') as f: skills_data = json.load(f)
+import os
+with open(os.path.join(DATA, 'decos_cn.json'), 'r', encoding='utf-8') as f: decos = json.load(f)
+with open(os.path.join(DATA, 'armors_cn.json'), 'r', encoding='utf-8') as f: armors = json.load(f)
+with open(os.path.join(DATA, 'my_charms.json'), 'r', encoding='utf-8') as f: my_charms = json.load(f)
+with open(os.path.join(DATA, 'charms_cn.json'), 'r', encoding='utf-8') as f: craft_charms = json.load(f)
+with open(os.path.join(DATA, 'skills_data.json'), 'r', encoding='utf-8') as f: skills_data = json.load(f)
 
 WEAPON_SK = frozenset(skills_data.get('武器技能', {}).keys())
 
@@ -2179,7 +2180,13 @@ def query_extra(fixed_skills, combo_skills, min_rem_armor, charm_pool):
 
     # 构建候选缓存（包含所有可能的追加技能名，避免cached_ctx漏删候选）
     _extra_sn = set(final_output) | set(sk for sk, _, _ in under_max)
+    # 关键优化：额外包含所有系列技能名，确保查询系列技能时不会误删候选
+    _extra_sn.update(series_names)
     cached_ctx = _build_candidates(charm_pool, fixed_skills, combo_skills, quiet=False, extra_skill_names=_extra_sn)
+
+    # 提取cached_ctx中的part_series_availability（用于系列技能预检查）
+    (_, _, _, _, _,
+     _, _, _, part_series_availability) = cached_ctx
 
     # 孔位信息：直接报告基线方案的剩余孔位（跳过耗时的二分最大化）
     # 如需孔位最大化，可在外部单独调用
@@ -2226,18 +2233,27 @@ def query_extra(fixed_skills, combo_skills, min_rem_armor, charm_pool):
             if sk in series_max_pieces:
                 actual_cap = min(actual_cap, series_max_pieces[sk])
             best = 0
-            for lv in [4, 2]:
-                if lv > actual_cap:
-                    continue
-                test_fixed = dict(fixed_skills)
-                test_fixed[sk] = lv
-                # 直接让DFS判断可行性（系列件数检查已内置，含重叠件判断）
-                # 系列技能查询不用cached_ctx：cached_ctx的系列预过滤会误删含目标系列的候选
-                res = dfs_search(charm_pool, test_fixed, combo_skills, min_rem_armor,
-                                 max_results=1, quiet=True, timeout_s=0.1)
-                if res:
-                    best = lv
+            # 快速预检查：该系列技能是否在候选装备中存在
+            series_available = False
+            for pi in range(5):
+                if sk in part_series_availability.get(pi, set()):
+                    series_available = True
                     break
+            if not series_available:
+                # 该系列技能在防具中不存在，跳过搜索
+                best = 0
+            else:
+                for lv in [4, 2]:
+                    if lv > actual_cap:
+                        continue
+                    test_fixed = dict(fixed_skills)
+                    test_fixed[sk] = lv
+                    # 优化：现在可以使用cached_ctx（已包含所有系列技能名）
+                    res = dfs_search(charm_pool, test_fixed, combo_skills, min_rem_armor,
+                                     max_results=1, quiet=True, timeout_s=0.05, cached_ctx=cached_ctx)
+                    if res:
+                        best = lv
+                        break
             test_s = dict(baseline_skills)
             test_s[sk] = best
             best_dmg = calc_damage(test_s)
@@ -2266,7 +2282,7 @@ def query_extra(fixed_skills, combo_skills, min_rem_armor, charm_pool):
                     test_fixed = dict(fixed_skills)
                     test_fixed[sk] = mid
                     res = dfs_search(charm_pool, test_fixed, combo_skills, min_rem_armor,
-                                     max_results=1, quiet=True, timeout_s=0.1, cached_ctx=cached_ctx)
+                                     max_results=1, quiet=True, timeout_s=0.02, cached_ctx=cached_ctx)
                     if res:
                         best = mid
                         lo = mid + 1
@@ -2277,7 +2293,7 @@ def query_extra(fixed_skills, combo_skills, min_rem_armor, charm_pool):
                     test_fixed = dict(fixed_skills)
                     test_fixed[sk] = lv
                     res = dfs_search(charm_pool, test_fixed, combo_skills, min_rem_armor,
-                                     max_results=1, quiet=True, timeout_s=0.1, cached_ctx=cached_ctx)
+                                     max_results=1, quiet=True, timeout_s=0.02, cached_ctx=cached_ctx)
                     if res:
                         best = lv
                         break

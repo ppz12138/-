@@ -238,10 +238,7 @@ def search_for_plan(plan_cfg):
                                     'core_src': f'core#{idx}',
                                     'core_skills': dict(core),
                                 }
-            if best and best['_cfg']['guard_lv'] == 3 and spirit_lv == 3:
-                break
-        if best and best['_cfg']['guard_lv'] == 3:
-            break
+            # 不提前break，遍历所有guard/spirit/core组合找真正最高伤害
 
     return best, total_t, attempts, verified
 

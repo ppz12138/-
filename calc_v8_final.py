@@ -46,7 +46,7 @@ DAMAGE_SKILLS = [
 ]
 
 
-def make_core_for_plan(weapon_sk, is_wide=False):
+def make_core_for_plan(weapon_sk, is_wide=False, extra_fixed=None):
     """按武器技能生成可行的核心配置列表
     
     core配置 = 必须通过装备凑齐的技能(不含武器自带)
@@ -57,54 +57,77 @@ def make_core_for_plan(weapon_sk, is_wide=False):
     - 系列/组合技能必须在core中(只能由防具提供)
     - 武器技能(攻击守势等)需要在core中或由武器孔填充
     - 其他伤害技能(攻击/超心/看破/无我等)由算法自动补全
+    - 如果extra_fixed已包含系列技能，则core不再重复要求
     """
     has = lambda s: s in weapon_sk
     cores = []
     atk_base = {'挑战者':5,'连击':5,'会心击【属性】':3,'龙属性攻击强化':3}
+    
+    # 检查是否已有固定的系列技能
+    fixed_series = set()
+    if extra_fixed:
+        for sk in extra_fixed:
+            if sk in fs.NO_DECO_SK:
+                fixed_series.add(sk)
+    
+    # 如果已固定巨戟4，则不要求其他系列技能（巨戟4需4件防具，无法凑其他系列）
+    has_geki4 = '巨戟龙的默示录' in fixed_series
+    has_bahar3 = '霸主之魂' in fixed_series
 
     # 方案一/二: 武器只有黑蚀1
     if has('黑蚀龙之力') and not has('霸主之魂') and not has('火龙之力'):
-        # 黑蚀2需防具1件, 剩余4件可用
-        # 饱满型: 含多个系列技能
-        cores.append({**atk_base, '黑蚀龙之力':2, '霸主之魂':3, '攻击守势':3})
-        cores.append({**atk_base, '黑蚀龙之力':2, '霸主之魂':3, '无我之境':2, '攻击守势':3})
-        cores.append({**atk_base, '黑蚀龙之力':2, '霸主之魂':3, '无我之境':2, '超会心':3})
-        cores.append({**atk_base, '黑蚀龙之力':2, '火龙之力':2, '巨戟龙的默示录':2, '攻击守势':3})
-        cores.append({**atk_base, '黑蚀龙之力':2, '火龙之力':2, '巨戟龙的默示录':2, '无我之境':2})
-        cores.append({**atk_base, '黑蚀龙之力':2, '巨戟龙的默示录':2, '攻击守势':3, '弱点特效':2})
-        cores.append({**atk_base, '黑蚀龙之力':2, '无我之境':2, '攻击守势':3, '看破':3})
-        cores.append({**atk_base, '黑蚀龙之力':2, '攻击守势':3})
-        cores.append({**atk_base, '黑蚀龙之力':2, '无我之境':2, '攻击守势':3})
-        cores.append({**atk_base, '黑蚀龙之力':2, '无我之境':2, '超会心':3})
-        # 精简型: 少系列技能, 留出空间给珠子
-        cores.append({**atk_base, '黑蚀龙之力':2, '攻击守势':3, '弱点特效':2})
-        cores.append({**atk_base, '黑蚀龙之力':2, '攻击守势':3, '看破':3})
+        if has_geki4:
+            # 已固定巨戟4，只要求攻击技能
+            cores.append({**atk_base, '黑蚀龙之力':2, '攻击守势':3})
+            cores.append({**atk_base, '黑蚀龙之力':2, '无我之境':2, '攻击守势':3})
+            cores.append({**atk_base, '黑蚀龙之力':2, '攻击守势':3, '弱点特效':2})
+        elif has_bahar3:
+            # 已固定霸主3，可再凑黑蚀2（需1件）
+            cores.append({**atk_base, '黑蚀龙之力':2, '攻击守势':3})
+            cores.append({**atk_base, '黑蚀龙之力':2, '无我之境':2, '攻击守势':3})
+            cores.append({**atk_base, '黑蚀龙之力':2, '巨戟龙的默示录':2, '攻击守势':3})
+        else:
+            # 黑蚀2需防具1件, 剩余4件可用
+            cores.append({**atk_base, '黑蚀龙之力':2, '霸主之魂':3, '攻击守势':3})
+            cores.append({**atk_base, '黑蚀龙之力':2, '霸主之魂':3, '无我之境':2, '攻击守势':3})
+            cores.append({**atk_base, '黑蚀龙之力':2, '火龙之力':2, '巨戟龙的默示录':2, '攻击守势':3})
+            cores.append({**atk_base, '黑蚀龙之力':2, '巨戟龙的默示录':2, '攻击守势':3})
+            cores.append({**atk_base, '黑蚀龙之力':2, '无我之境':2, '攻击守势':3})
+            cores.append({**atk_base, '黑蚀龙之力':2, '攻击守势':3})
 
     # 方案三/四: 武器黑蚀1+霸主1
     elif has('黑蚀龙之力') and has('霸主之魂') and not has('火龙之力'):
-        # 黑蚀2需1件 + 霸主3需2件 = 3件, 剩余2件
-        cores.append({**atk_base, '黑蚀龙之力':2, '霸主之魂':3, '火龙之力':2, '攻击守势':3})
-        cores.append({**atk_base, '黑蚀龙之力':2, '霸主之魂':3, '火龙之力':2, '无我之境':2})
-        cores.append({**atk_base, '黑蚀龙之力':2, '霸主之魂':3, '巨戟龙的默示录':2, '攻击守势':3})
-        cores.append({**atk_base, '黑蚀龙之力':2, '霸主之魂':3, '巨戟龙的默示录':2, '无我之境':2})
-        cores.append({**atk_base, '黑蚀龙之力':2, '霸主之魂':3, '无我之境':2, '攻击守势':3})
-        cores.append({**atk_base, '黑蚀龙之力':2, '霸主之魂':3, '攻击守势':3, '弱点特效':2})
-        cores.append({**atk_base, '黑蚀龙之力':2, '霸主之魂':3, '攻击守势':3})
-        cores.append({**atk_base, '黑蚀龙之力':2, '霸主之魂':3, '无我之境':2})
-        cores.append({**atk_base, '黑蚀龙之力':2, '霸主之魂':3, '弱点特效':2})
+        if has_geki4:
+            # 已固定巨戟4，武器有黑蚀1+霸主1
+            cores.append({**atk_base, '黑蚀龙之力':2, '攻击守势':3})
+            cores.append({**atk_base, '无我之境':2, '攻击守势':3})
+        elif has_bahar3:
+            # 已固定霸主3，武器有霸主1，只需再凑霸主2件
+            cores.append({**atk_base, '黑蚀龙之力':2, '攻击守势':3})
+            cores.append({**atk_base, '黑蚀龙之力':2, '巨戟龙的默示录':2, '攻击守势':3})
+            cores.append({**atk_base, '黑蚀龙之力':2, '无我之境':2, '攻击守势':3})
+        else:
+            # 黑蚀2需1件 + 霸主3需2件 = 3件, 剩余2件
+            cores.append({**atk_base, '黑蚀龙之力':2, '霸主之魂':3, '巨戟龙的默示录':2, '攻击守势':3})
+            cores.append({**atk_base, '黑蚀龙之力':2, '霸主之魂':3, '无我之境':2, '攻击守势':3})
+            cores.append({**atk_base, '黑蚀龙之力':2, '霸主之魂':3, '攻击守势':3})
 
     # 方案五/六: 武器火龙1+霸主1
     elif has('火龙之力') and has('霸主之魂') and not has('黑蚀龙之力'):
-        # 火龙2需1件 + 霸主3需2件 = 3件, 剩余2件
-        cores.append({**atk_base, '火龙之力':2, '霸主之魂':3, '巨戟龙的默示录':2, '攻击守势':3})
-        cores.append({**atk_base, '火龙之力':2, '霸主之魂':3, '巨戟龙的默示录':2, '无我之境':2})
-        cores.append({**atk_base, '火龙之力':2, '霸主之魂':3, '攻击守势':3, '弱点特效':2})
-        cores.append({**atk_base, '火龙之力':2, '霸主之魂':3, '攻击守势':3, '看破':3})
-        cores.append({**atk_base, '火龙之力':2, '霸主之魂':3, '无我之境':2, '攻击守势':3})
-        cores.append({**atk_base, '火龙之力':2, '霸主之魂':3, '无我之境':2, '弱点特效':2})
-        cores.append({**atk_base, '火龙之力':2, '霸主之魂':3, '攻击守势':3})
-        cores.append({**atk_base, '火龙之力':2, '霸主之魂':3, '无我之境':2})
-        cores.append({**atk_base, '火龙之力':2, '霸主之魂':3, '弱点特效':2})
+        if has_geki4:
+            # 已固定巨戟4，武器有火龙1+霸主1
+            cores.append({**atk_base, '火龙之力':2, '攻击守势':3})
+            cores.append({**atk_base, '无我之境':2, '攻击守势':3})
+        elif has_bahar3:
+            # 已固定霸主3，武器有霸主1，只需再凑霸主2件+火龙1件
+            cores.append({**atk_base, '火龙之力':2, '巨戟龙的默示录':2, '攻击守势':3})
+            cores.append({**atk_base, '火龙之力':2, '无我之境':2, '攻击守势':3})
+            cores.append({**atk_base, '火龙之力':2, '攻击守势':3})
+        else:
+            # 火龙2需1件 + 霸主3需2件 = 3件, 剩余2件
+            cores.append({**atk_base, '火龙之力':2, '霸主之魂':3, '巨戟龙的默示录':2, '攻击守势':3})
+            cores.append({**atk_base, '火龙之力':2, '霸主之魂':3, '无我之境':2, '攻击守势':3})
+            cores.append({**atk_base, '火龙之力':2, '霸主之魂':3, '攻击守势':3})
 
     # 带广域化的方案(方案二/四/五)需要更精简的core, 因为广域化占用珠位
     if is_wide:
@@ -132,7 +155,7 @@ PLAN_CFGS = [
 ]
 
 
-def verify_series(result, weapon_sk, target_skills=None):
+def verify_series(result, weapon_sk, target_skills=None, extra_fixed=None):
     """验证选出的装备是否满足目标系列/组合技能件数
     
     只验证目标要求的技能件数，忽略防具附赠的其他系列技能。
@@ -147,6 +170,11 @@ def verify_series(result, weapon_sk, target_skills=None):
                 series_actual[sk_name] = series_actual.get(sk_name, 0) + 1
     check_set = set(target_skills) if target_skills else set()
     check_set.update(weapon_sk.keys())
+    # 加入固定技能中的系列技能
+    if extra_fixed:
+        for sk in extra_fixed:
+            if sk in fs.NO_DECO_SK:
+                check_set.add(sk)
     for sk_name in list(check_set):
         if sk_name not in fs.NO_DECO_SK:
             continue
@@ -164,7 +192,7 @@ def verify_series(result, weapon_sk, target_skills=None):
 def search_for_plan(plan_cfg):
     label, weapon_sk, extra_fixed = plan_cfg
     is_wide = '广域化' in extra_fixed
-    cores = make_core_for_plan(weapon_sk, is_wide=is_wide)
+    cores = make_core_for_plan(weapon_sk, is_wide=is_wide, extra_fixed=extra_fixed)
     best = None
     total_t = 0.0
     attempts = 0
@@ -201,7 +229,7 @@ def search_for_plan(plan_cfg):
                         if ck_name in fs.NO_DECO_SK:
                             target_series.add(ck_name)
                     for cand in r:
-                        if cand.get('pract', 0) > 0 and verify_series(cand, weapon_sk, target_series):
+                        if cand.get('pract', 0) > 0 and verify_series(cand, weapon_sk, target_series, extra_fixed):
                             verified += 1
                             if best is None or cand['pract'] > best['pract']:
                                 best = dict(cand)
@@ -400,56 +428,102 @@ def print_detail(best, plan_cfg):
     print(f"    物理={wr:.2f} + 属性={er:.2f} + 固定={fix_dmg} = {total:.1f}  (搜索值 {best['pract']:.1f})")
 
 
-# ========== 主流程 ==========
-print("="*90)
-print("v8最终修复版 (v9 - 按用户反馈修正)")
-print("="*90)
+# ========== 主流程：对比巨戟4 vs 霸主3 ==========
+def run_all_plans(extra_fixed_skill=None):
+    """运行所有方案搜索，可选添加额外固定技能"""
+    results = {}
+    t_all = time.time()
+    for cfg in PLAN_CFGS:
+        label, weapon_sk, extra_fixed = cfg
+        # 合并额外固定技能
+        merged_extra = dict(extra_fixed)
+        if extra_fixed_skill:
+            merged_extra.update(extra_fixed_skill)
+        new_cfg = (label, weapon_sk, merged_extra)
+        
+        t0 = time.time()
+        best, sch_t, att, verc = search_for_plan(new_cfg)
+        t_used = time.time() - t0
+        results[label] = (best, t_used, att, verc, sch_t)
+    return results
 
-results = {}
-t_all = time.time()
-for cfg in PLAN_CFGS:
-    label = cfg[0]
+def print_summary(results, extra_name, base_fixed):
+    """打印汇总表"""
     print(f"\n{'='*90}")
-    print(f"[ {label} ]  武器技能: {cfg[1]}  额外强制: {cfg[2]}")
-    print('='*90)
-    t0 = time.time()
-    best, sch_t, att, verc = search_for_plan(cfg)
-    t_used = time.time() - t0
-    if best:
-        cfg_d = best['_cfg']
-        print(f"  最优: {cfg_d['core_src']}  防性{cfg_d['guard_lv']}  伤害={best['pract']:.1f}")
-        print(f"  (尝试{att}次, 验证通过{verc}个, 搜索{sch_t:.2f}s, 总{t_used:.2f}s)")
-        print_detail(best, cfg)
-    else:
-        print(f"  全部核心组合均无解或验证不通过 (尝试{att}次, 验证通过{verc}个, 耗时{t_used:.2f}s)")
-    results[label] = (best, t_used)
+    print(f"汇总对比表 - {extra_name}")
+    print("="*90)
+    hdr=f"  {'方案':<26} {'防性':>4} {'伤害':>7} {'广域':>4} {'黑蚀':>5} {'霸主':>5} {'火龙':>5} {'巨戟':>5} {'无我':>4} {'核心攻击技能':<28} {'耗时':>7}"
+    print(hdr); print(f"  {'─'*110}")
+    total_dmg = 0
+    for cfg in PLAN_CFGS:
+        label = cfg[0]
+        best, t_used, att, verc, sch_t = results[label]
+        if not best:
+            print(f"  {label:<26} {'无解':>4} {'-':>7}")
+            continue
+        sk = best['skills']; cfg_d = best['_cfg']
+        total_dmg += best['pract']
+        flex_show = ""
+        for fsk in ['超会心','攻击守势','攻击','弱点特效','看破','逆袭','无伤','无我之境']:
+            lv = sk.get(fsk,0)
+            if lv>0:
+                base=0
+                for x in [base_fixed, cfg[1], cfg[2]]:
+                    base = max(base, x.get(fsk,0))
+                if lv>base:
+                    cap=fs.SKILL_CAPS.get(fsk,0)
+                    flex_show += f"{fsk}{lv}/{cap} "
+        flex_show += f"精神{sk.get('精神抖擞',0)}"
+        print(f"  {label:<26} {cfg_d['guard_lv']:>4} {best['pract']:>7.1f} "
+              f"{'5' if sk.get('广域化',0)>=5 else '-':>4} "
+              f"{sk.get('黑蚀龙之力',0):>5} {sk.get('霸主之魂',0):>5} {sk.get('火龙之力',0):>5} "
+              f"{sk.get('巨戟龙的默示录',0):>5} {sk.get('无我之境',0):>4} "
+              f"{flex_show:<28} {t_used:>6.2f}s")
+    return total_dmg
 
-print(f"\n\n{'='*90}")
-print("汇总对比表")
 print("="*90)
-hdr=f"  {'方案':<26} {'防性':>4} {'伤害':>7} {'广域':>4} {'黑蚀':>5} {'霸主':>5} {'火龙':>5} {'巨戟':>5} {'无我':>4} {'核心攻击技能':<28} {'耗时':>7}"
-print(hdr); print(f"  {'─'*110}")
-for cfg in PLAN_CFGS:
-    label = cfg[0]; best, t_used = results[label]
-    if not best:
-        print(f"  {label:<26} {'无解':>4} {'-':>7}")
-        continue
-    sk = best['skills']; cfg_d = best['_cfg']
-    flex_show = ""
-    for fsk in ['超会心','攻击守势','攻击','弱点特效','看破','逆袭','无伤','无我之境']:
-        lv = sk.get(fsk,0)
-        if lv>0:
-            base=0
-            for x in [BASE_FIXED_MIN, cfg[1], cfg[2]]:
-                base = max(base, x.get(fsk,0))
-            if lv>base:
-                cap=fs.SKILL_CAPS.get(fsk,0)
-                flex_show += f"{fsk}{lv}/{cap} "
-    flex_show += f"精神{sk.get('精神抖擞',0)}"
-    print(f"  {label:<26} {cfg_d['guard_lv']:>4} {best['pract']:>7.1f} "
-          f"{'5' if sk.get('广域化',0)>=5 else '-':>4} "
-          f"{sk.get('黑蚀龙之力',0):>5} {sk.get('霸主之魂',0):>5} {sk.get('火龙之力',0):>5} "
-          f"{sk.get('巨戟龙的默示录',0):>5} {sk.get('无我之境',0):>4} "
-          f"{flex_show:<28} {t_used:>6.2f}s")
-t_all_used = time.time() - t_all
-print(f"\n  {len(PLAN_CFGS)}方案总耗时 {t_all_used:.2f}s")
+print("固定技能组对比：巨戟4 vs 霸主3")
+print("="*90)
+
+# 方案A：固定巨戟龙的默示录4
+print("\n" + "="*90)
+print("方案A：固定技能 + 巨戟龙的默示录4")
+print("="*90)
+fixed_geki4 = {'巨戟龙的默示录': 4}
+results_geki4 = run_all_plans(fixed_geki4)
+total_geki4 = print_summary(results_geki4, "固定巨戟4", BASE_FIXED_MIN)
+
+# 方案B：固定霸主之魂3
+print("\n" + "="*90)
+print("方案B：固定技能 + 霸主之魂3")
+print("="*90)
+fixed_bahar3 = {'霸主之魂': 3}
+results_bahar3 = run_all_plans(fixed_bahar3)
+total_bahar3 = print_summary(results_bahar3, "固定霸主3", BASE_FIXED_MIN)
+
+# 对比结论
+print("\n" + "="*90)
+print("对比结论")
+print("="*90)
+print(f"  固定巨戟4：6方案总伤害 {total_geki4:.1f}")
+print(f"  固定霸主3：6方案总伤害 {total_bahar3:.1f}")
+diff = total_geki4 - total_bahar3
+if diff > 0:
+    print(f"  结论：固定巨戟4更优，总伤害高 {diff:.1f}")
+else:
+    print(f"  结论：固定霸主3更优，总伤害高 {-diff:.1f}")
+
+# 详细输出最优方案
+print("\n" + "="*90)
+print("最优方案详细计算（固定巨戟4）")
+print("="*90)
+best_label = max(results_geki4.keys(), key=lambda k: results_geki4[k][0]['pract'] if results_geki4[k][0] else 0)
+best, t_used, att, verc, sch_t = results_geki4[best_label]
+if best:
+    cfg = next(c for c in PLAN_CFGS if c[0] == best_label)
+    merged_cfg = (cfg[0], cfg[1], {**cfg[2], '巨戟龙的默示录': 4})
+    cfg_d = best['_cfg']
+    print(f"  最优方案: {best_label}")
+    print(f"  最优: {cfg_d['core_src']}  防性{cfg_d['guard_lv']}  伤害={best['pract']:.1f}")
+    print(f"  (尝试{att}次, 验证通过{verc}个, 搜索{sch_t:.2f}s, 总{t_used:.2f}s)")
+    print_detail(best, merged_cfg)

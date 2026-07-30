@@ -43,7 +43,33 @@ FIRE_DRAGON_DMG = {0: 0, 1: 0, 2: 40, 3: 40, 4: 80}
 W_ATK = 205 + 24
 W_CRT = 5 - 5
 W_ELE = 280 + 40 + 160
+PERM_ATK = 11  # 护符+6 + 猫饭+5 = 技能加区，不计入面板
 BAHAR_MUL = 1.05
+
+# 孔位填充时优先考虑的伤害技能(10倍权重)
+DAMAGE_PRIORITY_SKILLS = frozenset([
+    '攻击', '超会心', '会心击【属性】', '弱点特效', '看破',
+    '挑战者', '连击', '无伤', '攻击守势', '逆袭',
+    '精神抖擞', '龙属性攻击强化', '因祸得福', '属性吸收',
+    '力量解放', '无我之境', '攻势',
+    '火属性攻击强化', '水属性攻击强化', '冰属性攻击强化', '雷属性攻击强化',
+])
+
+def _deco_priority_score(deco_skills, fs_cur, caps):
+    """计算珠子的优先级得分，伤害技能10倍权重"""
+    score = 0
+    for sk, pts in deco_skills:
+        cap = caps.get(sk, 99)
+        cur = fs_cur.get(sk, 0)
+        remaining = max(0, cap - cur)
+        actual_gain = min(pts, remaining)
+        if actual_gain <= 0:
+            continue
+        if sk in DAMAGE_PRIORITY_SKILLS:
+            score += actual_gain * 10
+        else:
+            score += actual_gain
+    return score
 WSLOTS = [3, 3, 3]
 TMV = 309; TEM = 13.4
 WP = 1.32; WE = 1.15
@@ -169,7 +195,6 @@ def calc_damage(skl):
     ecb=ELEM_CRIT[ecrit]; scb=SUPER_CRIT[super_lv]
     bahar_mul = BAHAR_MUL if bahar >= 3 else 1.0
     atk_mul = ATK_MUL[atk]
-    og = 1.0 + (OFF_GUARD[oguard] - 1.0) * OGUARD_COV if oguard > 0 else 1.0
     d_mul = DRAGON_ELE[dragon][1]
     geki_mul = GEKI_MUL[geki]
     geki_add = GEKI_ADD[geki]
@@ -187,21 +212,23 @@ def calc_damage(skl):
     if kuroshoku >= 2 and migo >= 3:
         states.append(('kuroshoku_migo', 0.60))
     elif kuroshoku >= 2:
-        states.append(('kuroshoku', 0.60))
+        states.append(('kuroshoku', 0.50))
     if rikikai > 0: states.append(('rikikai', URK))
     if weak > 0: states.append(('weak', UW))
     if furue > 0: states.append(('furue', UF))
     if counter > 0: states.append(('counter', UCOU))
+    if oguard > 0: states.append(('oguard', OGUARD_COV))
     if not states: states.append(('none', 1.0))
     wr = er = 0.0
     for combo in itertools.product(*([[True, False]] * len(states))):
         pr = 1.0
-        add_atk = 0.0
+        add_atk = PERM_ATK
         add_crt = 0
         add_ele = 0.0
         bactive = False
         geki_mul_act = 1.0
         geki_add_act = 0
+        og_act = 1.0
         for (nm, up), act in zip(states, combo):
             pr *= up if act else (1 - up)
             if not act: continue
@@ -215,8 +242,6 @@ def calc_damage(skl):
                 add_atk += BURST_ATK[burst]; add_ele += BURST_ELE[burst]; bactive = True
             elif nm == 'mukizu':
                 add_atk += MUZ_ATK[muzu]
-            elif nm == 'kurozumi':
-                add_crt += CRIT_VAL['无我之境'][migo]
             elif nm == 'kuroshoku':
                 add_crt += 15
             elif nm == 'kuroshoku_migo':
@@ -229,13 +254,17 @@ def calc_damage(skl):
                 add_crt += CRIT_VAL['精神抖擞'][furue]
             elif nm == 'counter':
                 add_atk += COUNTER_ATK[counter]
+            elif nm == 'oguard':
+                og_act = OFF_GUARD[oguard]
         if atk > 0:
             add_atk += ATK_VAL[atk]
         if kyozou_atk > 0:
             add_atk += kyozou_atk
         if kanken > 0:
             add_crt += CRIT_VAL['看破'][kanken]
-        ea = W_ATK * atk_mul * og * bahar_mul + add_atk
+        if migo > 0:
+            add_crt += CRIT_VAL['无我之境'][migo]
+        ea = W_ATK * atk_mul * og_act * bahar_mul + add_atk
         ec = min(W_CRT + add_crt, 100)
         be = W_ELE * d_mul * geki_mul_act * coal_expect + d_add + geki_add_act + add_ele + absorb_add
         cr = ec / 100.0
@@ -260,7 +289,7 @@ def calc_weighted_crit(skl):
     if kuroshoku >= 2 and migo >= 3:
         states.append(('kuroshoku_migo', 0.60))
     elif kuroshoku >= 2:
-        states.append(('kuroshoku', 0.60))
+        states.append(('kuroshoku', 0.50))
     if rikikai > 0: states.append(('rikikai', URK))
     if weak > 0: states.append(('weak', UW))
     if furue > 0: states.append(('furue', UF))
@@ -274,13 +303,13 @@ def calc_weighted_crit(skl):
             pr *= up if act else (1 - up)
             if not act: continue
             if nm == 'rage': add_crt += CRIT_VAL['挑战者'][chal]
-            elif nm == 'kurozumi': add_crt += CRIT_VAL['无我之境'][migo]
             elif nm == 'kuroshoku': add_crt += 15
             elif nm == 'kuroshoku_migo': add_crt += 25
             elif nm == 'rikikai': add_crt += CRIT_VAL['力量解放'][rikikai]
             elif nm == 'weak': add_crt += CRIT_VAL['弱点特效'][weak]
             elif nm == 'furue': add_crt += CRIT_VAL['精神抖擞'][furue]
         if kanken > 0: add_crt += CRIT_VAL['看破'][kanken]
+        if migo > 0: add_crt += CRIT_VAL['无我之境'][migo]
         ec = min(W_CRT + add_crt, 100)
         wcr += pr * ec
     return wcr
@@ -488,11 +517,14 @@ def fill_slots(skills, a_slots, w_slots, fixed_skills, min_keep_armor=0):
             return None
     w_rem = sorted([s for s in rem_w if s > 0], reverse=True)
     if not _FEASIBILITY_ONLY:
-        for deco in sorted(_get_deco_pool('weapon'), key=lambda d: -d['slot']):
+        w_pool = _get_deco_pool('weapon')
+        w_pool_sorted = sorted(w_pool, key=lambda d: (-_deco_priority_score(d['skills'], fs, SKILL_CAPS), -d['slot']))
+        for deco in w_pool_sorted:
             for i, s in enumerate(w_rem):
                 if s >= deco['slot']:
+                    p_score = _deco_priority_score(deco['skills'], fs, SKILL_CAPS)
                     g_total = sum(gain(sk, fs.get(sk, 0), pts) for sk, pts in deco['skills'])
-                    if g_total > 0:
+                    if g_total > 0 and p_score > 0:
                         w_rem.pop(i)
                         for sk, pts in deco['skills']:
                             fs[sk] = min(fs.get(sk, 0) + pts, SKILL_CAPS.get(sk, 99))
@@ -506,9 +538,10 @@ def fill_slots(skills, a_slots, w_slots, fixed_skills, min_keep_armor=0):
             for si, s in enumerate(a):
                 for deco in pool_a:
                     if deco['slot'] > s: continue
+                    p_score = _deco_priority_score(deco['skills'], fs, SKILL_CAPS)
                     g_total = sum(gain(sk, fs.get(sk, 0), pts) for sk, pts in deco['skills'])
-                    if g_total > 0 and g_total * 100 > best_s:
-                        best_s = g_total * 100; best_d = deco; best_i = si
+                    if g_total > 0 and (p_score * 100 + g_total) > best_s:
+                        best_s = p_score * 100 + g_total; best_d = deco; best_i = si
             if best_d is None: break
             a.pop(best_i)
             for sk, pts in best_d['skills']:

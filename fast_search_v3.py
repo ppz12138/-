@@ -2348,6 +2348,7 @@ def query_extra(fixed_skills, combo_skills, min_rem_armor, charm_pool):
     lines.append(f"基线加权会心: {baseline_wcr:.1f}%")
     lines.append("")
 
+    upgrade_skills = []
     if under_max:
         lines.append("【固定技能升级空间】（当前等级→可升级到 | 独立伤害 | 增幅 | 加权会心）")
         lines.append("-" * 75)
@@ -2360,10 +2361,15 @@ def query_extra(fixed_skills, combo_skills, min_rem_armor, charm_pool):
         for sk, cur, ml, cap, dmg, delta, wcr in up_items:
             sign = "+" if delta >= 0 else ""
             lines.append(f"  {sk:<14s} | Lv{cur:>2d}→Lv{ml:>2d}/{cap:<2d} | 伤害 {dmg:>7.1f} | {sign}{delta:.1f} | 会心 {wcr:.1f}%")
+            upgrade_skills.append({
+                'skill': sk, 'current_lv': cur, 'max_lv': ml, 'cap': cap,
+                'damage': round(dmg, 1), 'delta': round(delta, 1), 'wcr': round(wcr, 1)
+            })
         lines.append("")
 
     lines.append("【追加技能】（技能名 | 最高等级 | 独立伤害 | 伤害增幅 | 加权会心）")
     lines.append("-" * 75)
+    extra_skills = []
     out_items = []
     for sk in final_output:
         if sk in skill_max:
@@ -2374,6 +2380,10 @@ def query_extra(fixed_skills, combo_skills, min_rem_armor, charm_pool):
     for sk, ml, cap, dmg, delta, wcr in out_items:
         sign = "+" if delta >= 0 else ""
         lines.append(f"  {sk:<14s} | Lv{ml:>2d}/{cap:<2d} | 伤害 {dmg:>7.1f} | {sign}{delta:.1f} | 会心 {wcr:.1f}%")
+        extra_skills.append({
+            'skill': sk, 'max_lv': ml, 'cap': cap,
+            'damage': round(dmg, 1), 'delta': round(delta, 1), 'wcr': round(wcr, 1)
+        })
     lines.append("")
 
     lines.append("【孔位最大化】（将LvN插槽作为技能搜索，向下兼容）")
@@ -2381,4 +2391,13 @@ def query_extra(fixed_skills, combo_skills, min_rem_armor, charm_pool):
     lines.append(f"  Lv2插槽: 基线{slot_info['Lv2']}个 → 最大化{slot_max['Lv2']}个")
     lines.append(f"  Lv3插槽: 基线{slot_info['Lv3']}个 → 最大化{slot_max['Lv3']}个")
 
-    return '\n'.join(lines)
+    result_text = '\n'.join(lines)
+    return {
+        'result_text': result_text,
+        'baseline_dmg': round(baseline_dmg, 1),
+        'baseline_wcr': round(baseline_wcr, 1),
+        'upgrade_skills': upgrade_skills,
+        'extra_skills': extra_skills,
+        'slot_info': slot_info,
+        'slot_max': slot_max,
+    }

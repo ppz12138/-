@@ -22,8 +22,31 @@ from calc_v8_final import (
 
 SERVER_DIR = os.path.dirname(os.path.abspath(__file__))
 INDEX_PATH = os.path.join(SERVER_DIR, 'index.html')
+SKILLS_DATA_PATH = os.path.join(SERVER_DIR, 'skills_data.json')
 
 _lock = threading.Lock()
+
+_SKILLS_DATA = None
+def _load_skills_data():
+    global _SKILLS_DATA
+    if _SKILLS_DATA is None:
+        try:
+            with open(SKILLS_DATA_PATH, 'r', encoding='utf-8') as f:
+                _SKILLS_DATA = json.load(f)
+        except Exception:
+            _SKILLS_DATA = {}
+    return _SKILLS_DATA
+
+# 技能分类
+SKILL_CATEGORIES = {
+    '攻击·会心': ['攻击', '看破', '超会心', '弱点特效', '挑战者', '连击', '无伤', '攻击守势', '巧击', '因祸得福', '精神抖擞', '无我之境', '力量解放', '攻势', '逆袭'],
+    '属性·特殊': ['龙属性攻击强化', '火属性攻击强化', '水属性攻击强化', '冰属性攻击强化', '雷属性攻击强化', '会心击【属性】', '属性吸收', '属性变换', '锁刃刺击'],
+    '锋利度': ['匠', '利刃', '刚刃打磨', '心眼', '钝器能手', '达人艺'],
+    '防御·生存': ['格挡性能', '格挡强化', '防御', '精灵加护', '缓冲', '耳塞', '回避性能', '火场怪力'],
+    '广域·辅助': ['广域化', '满足感', '快吃', '减轻胆怯', '体术', '跑者', '强化持续'],
+    '系列技能': ['巨戟龙的默示录', '火龙之力', '凶爪龙之力', '黑蚀龙之力', '泡狐龙之力', '煌雷龙之力', '海龙的涡雷', '冻峰龙之反叛', '锁刃龙之饥饿', '霸主之魂'],
+    '其他': ['破坏王', '怨恨', '适应环境'],
+}
 
 
 def _plan_result_to_dict(best, plan_cfg, t_used, attempts, verified, sch_t):
@@ -173,6 +196,7 @@ class SearchHandler(BaseHTTPRequestHandler):
             return
 
         if path == '/api/info':
+            skills_data = _load_skills_data()
             info = {
                 'skill_caps': fs.SKILL_CAPS,
                 'plan_cfgs': [{'label': c[0], 'weapon_sk': c[1], 'extra_fixed': c[2]} for c in PLAN_CFGS],
@@ -184,7 +208,9 @@ class SearchHandler(BaseHTTPRequestHandler):
                 ],
                 'group_skills': list(fs.GROUP_SK) if fs.GROUP_SK else [],
                 'weapon_skill_list': sorted(list(fs.WEAPON_SK)),
-                'damage_skills': DAMAGE_SKILLS
+                'damage_skills': DAMAGE_SKILLS,
+                'skills_data': skills_data,
+                'skill_categories': SKILL_CATEGORIES,
             }
             self._send_json(info)
             return
@@ -229,8 +255,18 @@ class SearchHandler(BaseHTTPRequestHandler):
             return self._handle_query_extra(params)
         if path == '/api/custom_search':
             return self._handle_custom_search(params)
+        if path == '/api/detail_calc':
+            return self._handle_detail_calc(params)
 
         self._send_json({'error': 'Not found'}, 404)
+
+    def _apply_weapon_slots(self, params):
+        """Apply custom weapon slots from params, returns original WSLOTS for restoration"""
+        orig_wslots = list(fs.WSLOTS)
+        ws = params.get('weapon_slots')
+        if ws and isinstance(ws, list) and len(ws) == 3:
+            fs.WSLOTS = [max(1, min(3, int(v))) for v in ws]
+        return orig_wslots
 
     def _handle_search_plan(self, params):
         plan_idx = params.get('plan_idx', 0)
@@ -327,11 +363,34 @@ class SearchHandler(BaseHTTPRequestHandler):
         min_rem_armor = int(params.get('min_rem_armor', 0))
         fixed_skills = {k: int(v) for k, v in fixed_skills.items() if int(v) > 0}
         combo_skills = {k: int(v) for k, v in combo_skills.items() if int(v) > 0}
+
+        orig_wslots = self._apply_weapon_slots(params)
         t0 = time.time()
         with _lock:
-            output = fs.query_extra(fixed_skills, combo_skills, min_rem_armor, fs.charm_pool)
+            try:
+                result = fs.query_extra(fixed_skills, combo_skills, min_rem_armor, fs.charm_pool)
+            except Exception as e:
+                fs.WSLOTS = orig_wslots
+                self._send_json({'error': f'查询出错: {e}'}, 500)
+                return
+        fs.WSLOTS = orig_wslots
         dt = round(time.time() - t0, 2)
-        self._send_json({'result_text': output, 'time': dt})
+
+        # query_extra now returns a dict with structured data
+        if isinstance(result, dict):
+            self._send_json({
+                'result_text': result.get('result_text', ''),
+                'baseline_dmg': result.get('baseline_dmg', 0),
+                'baseline_wcr': result.get('baseline_wcr', 0),
+                'upgrade_skills': result.get('upgrade_skills', []),
+                'extra_skills': result.get('extra_skills', []),
+                'slot_info': result.get('slot_info', {}),
+                'slot_max': result.get('slot_max', {}),
+                'time': dt,
+            })
+        else:
+            # Fallback for old string return
+            self._send_json({'result_text': str(result), 'time': dt})
 
     def _handle_custom_search(self, params):
         fixed_skills = params.get('fixed_skills', {})
@@ -347,6 +406,7 @@ class SearchHandler(BaseHTTPRequestHandler):
         for s, lv in combo_skills.items():
             weapon_skills_dict[s] = weapon_skills_dict.get(s, 0) + 1
 
+        orig_wslots = self._apply_weapon_slots(params)
         t0 = time.time()
         with _lock:
             try:
@@ -355,8 +415,10 @@ class SearchHandler(BaseHTTPRequestHandler):
                     max_results=max_results, timeout_s=timeout_s, quiet=False
                 )
             except Exception as e:
+                fs.WSLOTS = orig_wslots
                 self._send_json({'error': f'搜索出错: {e}'}, 500)
                 return
+        fs.WSLOTS = orig_wslots
         t_used = time.time() - t0
 
         results = []
@@ -370,6 +432,80 @@ class SearchHandler(BaseHTTPRequestHandler):
             'fixed_skills': fixed_skills,
             'combo_skills': combo_skills,
             'results': results
+        })
+
+    def _handle_detail_calc(self, params):
+        """Calculate detailed damage breakdown for given skills"""
+        fixed_skills = params.get('fixed_skills', {})
+        combo_skills = params.get('combo_skills', {})
+        fixed_skills = {k: int(v) for k, v in fixed_skills.items() if int(v) > 0}
+        combo_skills = {k: int(v) for k, v in combo_skills.items() if int(v) > 0}
+
+        orig_wslots = self._apply_weapon_slots(params)
+        t0 = time.time()
+        with _lock:
+            try:
+                raw_results = fs.dfs_search(
+                    fs.charm_pool, fixed_skills, combo_skills, 0,
+                    max_results=1, timeout_s=5.0, quiet=True
+                )
+            except Exception as e:
+                fs.WSLOTS = orig_wslots
+                self._send_json({'error': f'计算出错: {e}'}, 500)
+                return
+        fs.WSLOTS = orig_wslots
+        t_used = time.time() - t0
+
+        if not raw_results:
+            self._send_json({'ok': False, 'error': '无可行方案'})
+            return
+
+        best = raw_results[0]
+        weapon_skills_dict = {}
+        for s, lv in combo_skills.items():
+            weapon_skills_dict[s] = weapon_skills_dict.get(s, 0) + 1
+        fake_cfg = ('详情计算', weapon_skills_dict, {})
+        result = _plan_result_to_dict(best, fake_cfg, t_used, 1, 1, t_used)
+
+        # Generate detailed damage breakdown text
+        all_skills = dict(fixed_skills)
+        all_skills.update(combo_skills)
+        if best.get('skills'):
+            for sk, lv in best['skills'].items():
+                if sk not in all_skills:
+                    all_skills[sk] = lv
+
+        baseline_dmg = fs.calc_damage(fixed_skills)
+        final_dmg = best.get('pract', 0)
+        baseline_wcr = fs.calc_weighted_crit(fixed_skills)
+        final_wcr = fs.calc_weighted_crit(best.get('skills', {}))
+
+        detail_lines = []
+        detail_lines.append(f"=== 伤害计算详情 ===")
+        detail_lines.append(f"")
+        detail_lines.append(f"【基线】仅固定技能:")
+        detail_lines.append(f"  期望伤害: {baseline_dmg:.1f}")
+        detail_lines.append(f"  加权会心: {baseline_wcr:.1f}%")
+        detail_lines.append(f"")
+        detail_lines.append(f"【最终方案】")
+        detail_lines.append(f"  期望伤害: {final_dmg:.1f}")
+        detail_lines.append(f"  加权会心: {final_wcr:.1f}%")
+        detail_lines.append(f"  伤害提升: +{final_dmg - baseline_dmg:.1f} ({(final_dmg/max(baseline_dmg,1)-1)*100:.1f}%)")
+        detail_lines.append(f"")
+        detail_lines.append(f"【技能构成】")
+        for sk, lv in sorted(all_skills.items()):
+            if lv > 0:
+                cap = fs.SKILL_CAPS.get(sk, 99)
+                tag = "满级" if lv >= cap else f"未满级"
+                detail_lines.append(f"  {sk}: Lv{lv}/{cap} ({tag})")
+
+        self._send_json({
+            'ok': True,
+            'result': result,
+            'detail_text': '\n'.join(detail_lines),
+            'baseline_dmg': round(baseline_dmg, 1),
+            'final_dmg': round(final_dmg, 1),
+            'time': round(t_used, 2),
         })
 
 

@@ -17,6 +17,11 @@
   --danger: #ef4444;
   --warn: #f59e0b;
   --card: #262b36;
+  --armor-slot: #4682b4;
+  --weapon-slot: #d4a017;
+  --chip-blue: #6c8cff;
+  --chip-gray: #6b7280;
+  --chip-orange: #f59e0b;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -31,41 +36,13 @@ body {
   padding: 20px 32px;
   border-bottom: 1px solid var(--border);
 }
-.header h1 {
-  font-size: 22px;
-  font-weight: 600;
-  color: #fff;
-}
+.header h1 { font-size: 22px; font-weight: 600; color: #fff; }
 .header p { color: var(--muted); font-size: 13px; margin-top: 4px; }
-.tabs {
-  display: flex;
-  gap: 4px;
-  padding: 0 32px;
-  background: var(--bg2);
-  border-bottom: 1px solid var(--border);
-}
-.tab {
-  padding: 12px 20px;
-  cursor: pointer;
-  font-size: 14px;
-  color: var(--muted);
-  border-bottom: 2px solid transparent;
-  transition: all 0.15s;
-  user-select: none;
-}
-.tab:hover { color: var(--text); }
-.tab.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
-  font-weight: 600;
-}
 .content {
   max-width: 1400px;
   margin: 0 auto;
   padding: 24px 32px;
 }
-.tab-panel { display: none; }
-.tab-panel.active { display: block; }
 .card {
   background: var(--card);
   border: 1px solid var(--border);
@@ -80,6 +57,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 .card-title::before {
   content: '';
@@ -88,6 +66,7 @@ body {
   background: var(--accent);
   border-radius: 2px;
 }
+.card-title .sub { font-size: 12px; color: var(--muted); font-weight: 400; margin-left: 8px; }
 .btn {
   display: inline-flex;
   align-items: center;
@@ -100,6 +79,7 @@ body {
   cursor: pointer;
   font-size: 13px;
   transition: all 0.15s;
+  font-family: inherit;
 }
 .btn:hover { border-color: var(--accent); background: #343b4a; }
 .btn:active { transform: translateY(1px); }
@@ -110,20 +90,16 @@ body {
   font-weight: 600;
 }
 .btn-primary:hover { filter: brightness(1.08); }
-.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; filter: none; }
 .btn-success {
   background: linear-gradient(135deg, var(--accent2), #22c55e);
   border-color: transparent;
   color: #003b1f;
   font-weight: 600;
 }
-.grid { display: grid; gap: 16px; }
-.grid-2 { grid-template-columns: repeat(2, 1fr); }
-.grid-3 { grid-template-columns: repeat(3, 1fr); }
-.grid-4 { grid-template-columns: repeat(4, 1fr); }
-@media (max-width: 1000px) {
-  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
-}
+.btn-danger { color: var(--danger); border-color: rgba(239,68,68,0.4); }
+.btn-danger:hover { background: rgba(239,68,68,0.12); border-color: var(--danger); }
+.btn-sm { padding: 5px 10px; font-size: 12px; }
 label {
   font-size: 12px;
   color: var(--muted);
@@ -140,63 +116,475 @@ input[type="text"], input[type="number"], select {
   color: var(--text);
   font-size: 14px;
   transition: border 0.15s;
+  font-family: inherit;
 }
-input:focus, select:focus {
-  outline: none;
-  border-color: var(--accent);
+input:focus, select:focus { outline: none; border-color: var(--accent); }
+
+/* 武器配置 */
+.weapon-config { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+.weapon-slots-wrap { display: flex; gap: 16px; flex-wrap: wrap; }
+.weapon-slot-group { display: flex; flex-direction: column; gap: 6px; }
+.seg-btns { display: flex; gap: 4px; }
+.seg-btn {
+  width: 34px; height: 34px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.15s;
+  font-family: inherit;
 }
-.skill-row {
+.seg-btn:hover { border-color: var(--weapon-slot); color: var(--text); }
+.seg-btn.active {
+  background: var(--weapon-slot);
+  border-color: var(--weapon-slot);
+  color: #1a1d23;
+}
+.weapon-total {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: rgba(212,160,23,0.12);
+  border: 1px solid rgba(212,160,23,0.35);
+  border-radius: 16px;
+  color: var(--weapon-slot);
+  font-size: 13px;
+  font-weight: 600;
+}
+.auto-skills { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.auto-label { font-size: 12px; color: var(--muted); }
+.skill-library {
+  margin-top: 14px;
+  padding: 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.skill-library-title { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+.lib-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.lib-btn {
+  padding: 5px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(108,140,255,0.3);
+  background: rgba(108,140,255,0.08);
+  color: #a6b8ff;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.lib-btn:hover { border-color: var(--accent); }
+.lib-btn.disabled {
+  background: var(--bg3);
+  border-color: var(--border);
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+/* 技能选择 */
+.category-block { margin-bottom: 18px; }
+.category-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
   display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.skill-buttons {
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 8px;
   align-items: center;
 }
-.skill-row select:first-child { flex: 1; }
-.skill-row input { width: 80px; }
-.skill-row .btn { padding: 6px 10px; }
-.plan-list { display: flex; flex-direction: column; gap: 10px; }
-.plan-item {
+.skill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.skill-btn:hover { border-color: var(--accent); color: var(--text); transform: translateY(-1px); }
+.skill-btn.selected {
+  background: rgba(108,140,255,0.15);
+  border-color: var(--accent);
+  color: #a6b8ff;
+  font-weight: 600;
+}
+.fav-star {
+  font-size: 13px;
+  color: #4a4f5d;
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+}
+.fav-star:hover { color: var(--warn); }
+.fav-star.on { color: var(--warn); }
+.level-dots { display: inline-flex; gap: 3px; align-items: center; }
+.dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #3a3f4d;
+  transition: all 0.15s;
+}
+.dot.on { background: var(--accent); box-shadow: 0 0 4px rgba(108,140,255,0.6); }
+
+/* 等级选择框（展开） */
+.level-selector {
+  flex-basis: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  margin: 2px 0 4px;
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  flex-wrap: wrap;
+}
+.ls-label { font-size: 12px; color: var(--muted); margin-right: 4px; }
+.lv-btn {
+  width: 30px; height: 30px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.lv-btn:hover { border-color: var(--accent); }
+.lv-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.lv-btn.cancel {
+  width: auto;
+  padding: 0 12px;
+  color: var(--danger);
+  border-color: rgba(239,68,68,0.3);
+  margin-left: 8px;
+}
+.lv-btn.cancel:hover { background: rgba(239,68,68,0.12); border-color: var(--danger); }
+
+/* Chip 系统 */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 16px;
+  padding: 5px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1px solid transparent;
+  font-family: inherit;
+}
+.chip-selected {
+  background: rgba(108,140,255,0.15);
+  border-color: rgba(108,140,255,0.45);
+  color: #a6b8ff;
+  font-weight: 600;
+}
+.chip-selected:hover { background: rgba(108,140,255,0.25); }
+.chip-unselected {
+  background: var(--bg3);
+  border-color: var(--border);
+  color: var(--muted);
+}
+.chip-unselected:hover { border-color: var(--chip-gray); color: var(--text); }
+.chip-append {
+  background: rgba(245,158,11,0.15);
+  border-color: rgba(245,158,11,0.45);
+  color: #fbbf24;
+  font-weight: 600;
+}
+.chip-append:hover { background: rgba(245,158,11,0.25); }
+.chip-disabled {
+  background: var(--bg3);
+  border-color: var(--border);
+  color: #555a68;
+  text-decoration: line-through;
+  cursor: pointer;
+}
+.chip-disabled:hover { color: var(--muted); }
+.chip-full {
+  border-color: rgba(74,222,128,0.5);
+  color: var(--accent2);
+  background: rgba(74,222,128,0.1);
+}
+.chip .chip-x {
+  font-size: 11px;
+  opacity: 0.7;
+  margin-left: 2px;
+}
+.chip .chip-x:hover { opacity: 1; color: var(--danger); }
+
+/* 已选技能区 */
+.selected-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  min-height: 36px;
+}
+.empty-hint { color: var(--muted); font-size: 13px; }
+
+/* 搜索参数 */
+.search-bar { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; }
+.param-group { display: flex; flex-direction: column; gap: 6px; min-width: 130px; }
+.param-group input { width: 130px; }
+
+/* 结果卡片 */
+.result-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px;
+  margin-bottom: 16px;
+}
+.result-head {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.damage-big {
+  font-size: 34px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #6c8cff, #4ade80);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.1;
+}
+.damage-label { font-size: 12px; color: var(--muted); }
+.result-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.info-row {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin: 4px 0;
+}
+.info-item { font-size: 12px; }
+.info-item .k { color: var(--muted); margin-right: 4px; }
+.info-item .v { color: var(--text); font-weight: 500; }
+.section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  margin: 14px 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.armor-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+  margin: 8px 0;
+}
+@media (max-width: 1100px) { .armor-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 600px) { .armor-grid { grid-template-columns: repeat(2, 1fr); } }
+.armor-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+}
+.armor-card.charm-card { border-color: rgba(212,160,23,0.3); }
+.armor-part {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.armor-name {
+  font-weight: 600;
+  font-size: 13px;
+  margin: 3px 0;
+  word-break: break-all;
+}
+.slots { display: flex; gap: 4px; margin: 6px 0; flex-wrap: wrap; }
+.slot {
+  width: 22px; height: 22px;
+  border-radius: 4px;
+  display: flex;
   align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+}
+.slot.armor { background: var(--armor-slot); }
+.slot.weapon { background: var(--weapon-slot); color: #1a1d23; }
+.slot.empty { background: var(--bg3); color: var(--muted); }
+.skill-list { font-size: 11px; color: var(--muted); line-height: 1.7; }
+.skill-list span { color: #c7ccd6; }
+.deco-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.deco-chip {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 4px 11px;
+  font-size: 12px;
+}
+.ok-badge, .err-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  margin: 2px;
+}
+.ok-badge { background: rgba(74,222,128,0.12); color: var(--accent2); }
+.err-badge { background: rgba(239,68,68,0.12); color: var(--danger); }
+
+/* 追加查询 */
+.mode-toggle { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+.mode-btn {
+  padding: 7px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.mode-btn:hover { color: var(--text); }
+.mode-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.extra-skill-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  transition: border 0.15s;
+}
+.extra-skill-item:hover { border-color: var(--accent); }
+.extra-skill-item.appended { border-color: rgba(245,158,11,0.5); background: rgba(245,158,11,0.06); }
+.es-name { font-weight: 600; font-size: 14px; min-width: 100px; }
+.es-delta { color: var(--accent2); font-weight: 600; font-size: 13px; }
+.es-delta.neg { color: var(--danger); }
+.es-info { font-size: 12px; color: var(--muted); }
+.es-type {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+.es-type.upgrade { background: rgba(108,140,255,0.15); color: #a6b8ff; }
+.es-type.extra { background: rgba(245,158,11,0.15); color: #fbbf24; }
+.es-levels { display: flex; gap: 4px; flex-wrap: wrap; margin-left: auto; }
+.baseline-box {
   padding: 12px 16px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 8px;
-  transition: border 0.15s;
+  margin-bottom: 14px;
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
 }
-.plan-item:hover { border-color: var(--accent); }
-.plan-info .plan-label { font-weight: 600; font-size: 14px; }
-.plan-info .plan-sub {
-  font-size: 12px;
+.baseline-box .bi { font-size: 13px; }
+.baseline-box .bi .k { color: var(--muted); }
+.baseline-box .bi .v { color: var(--accent2); font-weight: 600; font-size: 16px; }
+.append-bar {
+  position: sticky;
+  bottom: 0;
+  background: var(--card);
+  border: 1px solid rgba(245,158,11,0.4);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-top: 14px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Modal */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  z-index: 1000;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 40px 20px;
+  overflow-y: auto;
+}
+.modal-overlay.show { display: flex; }
+.modal-content {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  max-width: 1000px;
+  width: 100%;
+  padding: 24px;
+  position: relative;
+}
+.modal-close {
+  position: absolute;
+  top: 14px; right: 16px;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg3);
   color: var(--muted);
-  margin-top: 2px;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.tag {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 500;
-  margin-right: 4px;
+.modal-close:hover { color: var(--danger); border-color: var(--danger); }
+.detail-text {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  font-family: "SF Mono", Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  max-height: 400px;
+  overflow-y: auto;
+  margin-top: 12px;
 }
-.tag-series { background: rgba(108, 140, 255, 0.15); color: #8fa8ff; }
-.tag-extra { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
-.result-panel {
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border);
-}
-.result-empty {
-  text-align: center;
-  padding: 40px;
-  color: var(--muted);
-  font-size: 14px;
-}
+
+/* 加载 */
 .loading {
   display: inline-block;
-  width: 16px;
-  height: 16px;
+  width: 16px; height: 16px;
   border: 2px solid var(--border);
   border-top-color: var(--accent);
   border-radius: 50%;
@@ -212,165 +600,41 @@ input:focus, select:focus {
   color: var(--muted);
   font-size: 14px;
 }
-.summary-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-.summary-table th, .summary-table td {
-  padding: 10px 12px;
-  text-align: left;
-  border-bottom: 1px solid var(--border);
-}
-.summary-table th {
-  background: var(--bg);
+.result-empty {
+  text-align: center;
+  padding: 40px;
   color: var(--muted);
-  font-weight: 600;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
+  font-size: 14px;
 }
-.summary-table tr:hover td { background: var(--bg3); }
-.dmg-high { color: var(--accent2); font-weight: 600; }
-.dmg-mid { color: var(--warn); }
-.ok-badge {
-  display: inline-flex;
+.saved-plan-item {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border-radius: 10px;
-  background: rgba(74, 222, 128, 0.12);
-  color: var(--accent2);
-  font-size: 11px;
-}
-.err-badge {
-  background: rgba(239, 68, 68, 0.12);
-  color: var(--danger);
-}
-.armor-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
-  margin: 16px 0;
-}
-.armor-card {
+  padding: 12px 16px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 12px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
-.armor-part {
-  font-size: 11px;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-.armor-name {
-  font-weight: 600;
-  font-size: 14px;
-  margin: 4px 0;
-}
-.slots {
-  display: flex;
-  gap: 4px;
-  margin: 6px 0;
-}
-.slot {
-  width: 20px;
-  height: 20px;
+.saved-plan-item .sp-label { font-weight: 600; font-size: 14px; }
+.saved-plan-item .sp-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
   border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
+  margin-right: 4px;
 }
-.slot-1 { background: #3b5998; color: #fff; }
-.slot-2 { background: #68a357; color: #fff; }
-.slot-3 { background: #c44d4d; color: #fff; }
-.slot-0 { background: #3a3f4d; color: var(--muted); }
-.skill-list { font-size: 12px; color: var(--muted); }
-.skill-list span { color: #c7ccd6; }
-.section-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--muted);
-  margin: 16px 0 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-.deco-list { display: flex; flex-wrap: wrap; gap: 6px; }
-.deco-chip {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 4px 12px;
-  font-size: 12px;
-}
-.skill-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.skill-chip {
-  background: rgba(108, 140, 255, 0.1);
-  border: 1px solid rgba(108, 140, 255, 0.35);
-  color: #a6b8ff;
-  border-radius: 6px;
-  padding: 4px 10px;
-  font-size: 12px;
-}
-.skill-chip.full { border-color: rgba(74, 222, 128, 0.4); color: var(--accent2); background: rgba(74, 222, 128, 0.08); }
-.damage-big {
-  font-size: 36px;
-  font-weight: 700;
-  background: linear-gradient(135deg, #6c8cff, #4ade80);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-.info-row {
-  display: flex;
-  gap: 24px;
-  flex-wrap: wrap;
-  margin: 8px 0;
-}
-.info-item { font-size: 13px; }
-.info-item .k { color: var(--muted); margin-right: 6px; }
-.info-item .v { color: var(--text); font-weight: 500; }
-.extra-result {
-  background: var(--bg);
-  border-radius: 6px;
-  padding: 16px;
-  font-family: "SF Mono", Consolas, monospace;
-  font-size: 12.5px;
-  line-height: 1.8;
-  white-space: pre-wrap;
-  max-height: 500px;
-  overflow-y: auto;
-}
-.add-btn {
-  width: 100%;
-  margin-top: 8px;
-  padding: 8px;
-  border: 1px dashed var(--border);
-  background: transparent;
-  color: var(--muted);
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
-}
-.add-btn:hover { border-color: var(--accent); color: var(--accent); }
-.compare-mode {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-.mode-group { display: flex; gap: 6px; }
-input[type="radio"] { margin-right: 4px; }
-hr {
-  border: none;
-  border-top: 1px solid var(--border);
-  margin: 20px 0;
-}
+.tag-series { background: rgba(108,140,255,0.15); color: #8fa8ff; }
+.tag-warn { background: rgba(245,158,11,0.15); color: #fbbf24; }
+.flex-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.muted { color: var(--muted); }
+.mt8 { margin-top: 8px; }
+.mt16 { margin-top: 16px; }
 </style>
 </head>
 <body>
@@ -380,399 +644,859 @@ hr {
   <p>怪物猎人荒野 · 自动配装搜索 · 基于向量化DFS算法</p>
 </div>
 
-<div class="tabs">
-  <div class="tab active" data-tab="plans">预设方案</div>
-  <div class="tab" data-tab="compare">巨戟vs霸主</div>
-  <div class="tab" data-tab="custom">自定义搜索</div>
-  <div class="tab" data-tab="extra">追加技能查询</div>
-</div>
-
 <div class="content">
 
-  <!-- 预设方案面板 -->
-  <div class="tab-panel active" id="panel-plans">
-    <div class="card">
-      <div class="card-title">6种武器技能组合方案</div>
-      <div class="compare-mode">
-        <div>
-          <label>额外固定技能（全局生效）</label>
-          <div id="plan-extra-skills"></div>
-          <button class="btn" onclick="addSkillRow('plan-extra-skills', 'fixed')">+ 添加固定技能</button>
-        </div>
-      </div>
-      <div class="plan-list" id="plan-list"></div>
-    </div>
-    <div id="plan-results"></div>
-  </div>
-
-  <!-- 对比面板 -->
-  <div class="tab-panel" id="panel-compare">
-    <div class="card">
-      <div class="card-title">固定巨戟龙的默示录4 vs 霸主之魂3</div>
-      <div style="display:flex;gap:16px;align-items:center;">
-        <button class="btn-primary btn" id="btn-compare" onclick="runCompare()">🚀 运行对比搜索</button>
-        <span id="compare-status" style="color:var(--muted);font-size:13px;"></span>
-      </div>
-    </div>
-    <div id="compare-results"></div>
-  </div>
-
-  <!-- 自定义搜索面板 -->
-  <div class="tab-panel" id="panel-custom">
-    <div class="card">
-      <div class="card-title">自定义搜索参数</div>
-      <div class="grid grid-2">
-        <div>
-          <label>固定技能（必须达到指定等级）</label>
-          <div id="custom-fixed"></div>
-          <button class="add-btn" onclick="addSkillRow('custom-fixed', 'fixed')">+ 添加固定技能</button>
-        </div>
-        <div>
-          <label>武器组合/系列技能（武器洗练技能）</label>
-          <div id="custom-combo"></div>
-          <button class="add-btn" onclick="addSkillRow('custom-combo', 'combo')">+ 添加武器技能</button>
-        </div>
-      </div>
-      <div class="grid grid-3" style="margin-top:16px;">
-        <div>
-          <label>防具最少预留孔位数</label>
-          <input type="number" id="custom-minarmor" value="0" min="0" max="9">
-        </div>
-        <div>
-          <label>返回结果数量</label>
-          <input type="number" id="custom-maxresults" value="5" min="1" max="50">
-        </div>
-        <div>
-          <label>搜索超时(秒)</label>
-          <input type="number" id="custom-timeout" value="3" min="1" step="0.5">
-        </div>
-      </div>
-      <div style="margin-top:16px;">
-        <button class="btn btn-primary" onclick="runCustomSearch()">🔍 开始搜索</button>
-        <span id="custom-status" style="margin-left:12px;color:var(--muted);font-size:13px;"></span>
-      </div>
-    </div>
-    <div id="custom-results"></div>
-  </div>
-
-  <!-- 追加技能面板 -->
-  <div class="tab-panel" id="panel-extra">
-    <div class="card">
-      <div class="card-title">追加技能查询（每个技能可追加上限）</div>
-      <div class="grid grid-2">
+  <!-- 武器配置区 -->
+  <div class="card">
+    <div class="card-title">武器配置 <span class="sub">配置武器插槽，自动选择最佳武器技能</span></div>
+    <div class="weapon-config">
       <div>
-        <label>固定技能</label>
-        <div id="extra-fixed"></div>
-        <button class="add-btn" onclick="addSkillRow('extra-fixed', 'fixed')">+ 添加固定技能</button>
+        <label>武器插槽（3个，1-3级）</label>
+        <div class="weapon-slots-wrap" id="weapon-slots"></div>
       </div>
       <div>
-        <label>武器组合/系列技能</label>
-        <div id="extra-combo"></div>
-        <button class="add-btn" onclick="addSkillRow('extra-combo', 'combo')">+ 添加武器技能</button>
-      </div>
-      </div>
-      <div style="margin-top:16px;">
-        <button class="btn btn-primary" onclick="runQueryExtra()">📊 查询追加技能空间</button>
-        <span id="extra-status" style="margin-left:12px;color:var(--muted);font-size:13px;"></span>
+        <label>插槽总等级</label>
+        <div class="weapon-total" id="weapon-total">总等级: 9</div>
       </div>
     </div>
-    <div id="extra-results"></div>
+    <div class="auto-skills" id="auto-skills"></div>
+    <div class="mt8">
+      <button class="btn btn-sm" onclick="toggleSkillLibrary()">⚙ 管理技能库</button>
+    </div>
+    <div class="skill-library" id="skill-library" style="display:none;">
+      <div class="skill-library-title">武器技能库（点击启用/禁用，禁用后不会被自动选择）</div>
+      <div class="lib-grid" id="lib-grid"></div>
+    </div>
   </div>
 
+  <!-- 技能选择区 -->
+  <div class="card">
+    <div class="card-title">技能选择 <span class="sub">点击技能展开等级选择，⭐收藏置顶</span></div>
+    <div id="skill-selection"></div>
+  </div>
+
+  <!-- 已选技能区 -->
+  <div class="card">
+    <div class="card-title">
+      已选技能
+      <span class="sub" id="selected-count">0 个</span>
+      <button class="btn btn-sm btn-danger" onclick="clearSelectedSkills()" style="margin-left:auto;">清空</button>
+    </div>
+    <div class="selected-bar" id="selected-skills"></div>
+  </div>
+
+  <!-- 搜索按钮 + 参数 -->
+  <div class="card">
+    <div class="card-title">搜索</div>
+    <div class="search-bar">
+      <div class="param-group">
+        <label>返回结果数量</label>
+        <input type="number" id="max-results" value="5" min="1" max="50">
+      </div>
+      <div class="param-group">
+        <label>搜索超时(秒)</label>
+        <input type="number" id="timeout" value="3" min="1" step="0.5">
+      </div>
+      <button class="btn btn-primary" id="search-btn" onclick="runSearch()">🔍 开始搜索</button>
+      <span id="search-status" class="muted" style="font-size:13px;"></span>
+    </div>
+  </div>
+
+  <!-- 搜索结果区 -->
+  <div id="search-results">
+    <div class="card"><div class="result-empty">尚未搜索，点击上方"开始搜索"按钮</div></div>
+  </div>
+
+  <!-- 追加查询区 -->
+  <div class="card">
+    <div class="card-title">追加技能查询 <span class="sub">查询可升级与可追加技能，选择后追加并重新搜索</span></div>
+    <div class="flex-row">
+      <button class="btn btn-primary" id="extra-btn" onclick="runExtraQuery()">📊 查询追加技能空间</button>
+      <span id="extra-status" class="muted" style="font-size:13px;"></span>
+    </div>
+    <div class="mt16" id="extra-area" style="display:none;">
+      <div class="mode-toggle">
+        <button class="mode-btn active" data-mode="normal" onclick="setExtraMode('normal')">通常模式（全部）</button>
+        <button class="mode-btn" data-mode="favorite" onclick="setExtraMode('favorite')">⭐ 收藏模式</button>
+        <button class="mode-btn" data-mode="disabled" onclick="setExtraMode('disabled')">🚫 排除禁用</button>
+      </div>
+      <div class="baseline-box" id="baseline-box"></div>
+      <div id="extra-skills-list"></div>
+      <div class="append-bar" id="append-bar" style="display:none;">
+        <span class="muted" style="font-size:13px;">待追加:</span>
+        <div class="chips" id="append-skills"></div>
+        <button class="btn btn-success" onclick="appendAndSearch()" style="margin-left:auto;">➕ 追加并重新搜索</button>
+        <button class="btn btn-sm" onclick="clearAppendSkills()">清空追加</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 已保存方案入口 -->
+  <div class="card">
+    <div class="card-title">已保存方案</div>
+    <button class="btn" onclick="showSavedPlansModal()">📋 查看已保存方案 (<span id="saved-count">0</span>)</button>
+  </div>
+
+</div>
+
+<!-- 详情 Modal -->
+<div class="modal-overlay" id="detail-modal" onclick="if(event.target===this)closeDetailModal()">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeDetailModal()">✕</button>
+    <div id="detail-modal-body"></div>
+  </div>
+</div>
+
+<!-- 已保存方案 Modal -->
+<div class="modal-overlay" id="saved-modal" onclick="if(event.target===this)closeSavedPlansModal()">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeSavedPlansModal()">✕</button>
+    <div class="card-title">已保存方案</div>
+    <div id="saved-plans-list"></div>
+  </div>
 </div>
 
 <script>
-let SKILL_OPTIONS = [];
+// ==================== 全局状态 ====================
 let SKILL_CAPS = {};
-let PLAN_CFGS = [];
-let BASE_FIXED = {};
+let SKILL_CATEGORIES = {};
+let WEAPON_SKILL_LIST = [];
+let SKILLS_DATA = {};
+let DAMAGE_SKILLS = [];
+let SERIES_NAMES = [];
 
+let selectedSkills = {};
+let weaponSlotLevels = [3, 3, 3];
+let autoWeaponSkills = [];
+let autoWeaponLevels = {};
+let disabledWeaponSkills = new Set();
+let favSkills = new Set();
+let disabledSkills = new Set();
+let extraMode = 'normal';
+let savedPlans = [];
+let expandedSkill = null;   // { context, skill }
+let appendSkills = {};
+let lastSearchResults = null;
+let lastSearchParams = null;
+let extraQueryResult = null;
+let libOpen = false;
+
+// ==================== API ====================
 const API = (path, body = null) => {
   const opts = { headers: { 'Content-Type': 'application/json' } };
   if (body) { opts.method = 'POST'; opts.body = JSON.stringify(body); }
   return fetch(path, opts).then(r => r.json());
 };
 
-async function init() {
-  const info = await API('/api/info');
-  SKILL_CAPS = info.skill_caps;
-  PLAN_CFGS = info.plan_cfgs;
-  BASE_FIXED = info.base_fixed_min;
-  SKILL_OPTIONS = Object.keys(SKILL_CAPS).sort();
-  renderPlans();
-}
-
-function skillSelectHTML(selected = '') {
-  const opts = SKILL_OPTIONS.map(s => {
-    const v = SKILL_CAPS[s];
-    return `<option value="${s}" ${s===selected?'selected':''}>${s} (上限${v})</option>`;
-  }).join('');
-  return `<select><option value="">-- 选择技能 --</option>${opts}</select>`;
-}
-
-function addSkillRow(containerId, type) {
-  const el = document.getElementById(containerId);
-  const wrap = document.createElement('div');
-  wrap.className = 'skill-row';
-  wrap.innerHTML = `
-    ${skillSelectHTML()}
-    <input type="number" min="0" value="1" placeholder="等级">
-    <button class="btn" onclick="this.parentElement.remove()">✕</button>
-  `;
-  el.appendChild(wrap);
-}
-
-function collectSkills(containerId) {
-  const out = {};
-  document.querySelectorAll(`#${containerId} > .skill-row`).forEach(row => {
-    const sel = row.querySelector('select');
-    const inp = row.querySelector('input');
-    if (sel.value) out[sel.value] = parseInt(inp.value) || 0;
-  });
-  return out;
-}
-
-function renderPlans() {
-  const list = document.getElementById('plan-list');
-  list.innerHTML = PLAN_CFGS.map((cfg, i) => {
-    const weaponTags = Object.entries(cfg.weapon_sk).map(([k,v]) => `<span class="tag tag-series">${k}×${v}</span>`).join('');
-    const extraTags = Object.entries(cfg.extra_fixed).map(([k,v]) => `<span class="tag tag-extra">${k}Lv${v}</span>`).join('');
-    return `<div class="plan-item">
-      <div class="plan-info">
-        <div class="plan-label">${cfg.label}</div>
-        <div class="plan-sub">${weaponTags}${extraTags}</div>
-      </div>
-      <button class="btn btn-primary" onclick="runPlan(${i})">搜索</button>
-    </div>`;
-  }).join('');
-}
-
-function showLoading(target, text = '搜索中...') {
-  target.innerHTML = `<div class="card"><div class="spinner-wrap"><div class="loading"></div><span>${text}</span></div></div>`;
-}
-
-async function runPlan(idx) {
-  const extra = collectSkills('plan-extra-skills');
-  const resultDiv = document.getElementById('plan-results');
-  showLoading(resultDiv);
+// ==================== localStorage ====================
+function loadState() {
   try {
-    const res = await API('/api/search_plan', { plan_idx: idx, extra_fixed: extra });
-    renderPlanResult(resultDiv, res);
-  } catch (e) {
-    resultDiv.innerHTML = `<div class="card"><div class="result-empty">错误: ${e.message}</div></div>`;
-  }
+    favSkills = new Set(JSON.parse(localStorage.getItem('mhw_fav') || '[]'));
+    disabledSkills = new Set(JSON.parse(localStorage.getItem('mhw_dis') || '[]'));
+    disabledWeaponSkills = new Set(JSON.parse(localStorage.getItem('mhw_wdis') || '[]'));
+    savedPlans = JSON.parse(localStorage.getItem('mhw_plans') || '[]');
+  } catch (e) { /* ignore */ }
+}
+function saveState() {
+  try {
+    localStorage.setItem('mhw_fav', JSON.stringify([...favSkills]));
+    localStorage.setItem('mhw_dis', JSON.stringify([...disabledSkills]));
+    localStorage.setItem('mhw_wdis', JSON.stringify([...disabledWeaponSkills]));
+    localStorage.setItem('mhw_plans', JSON.stringify(savedPlans));
+  } catch (e) { /* ignore */ }
 }
 
-function renderPlanResult(container, res) {
-  if (!res.ok) {
-    container.innerHTML = `<div class="card"><div class="result-empty">❌ 无可行方案 (${res.label})</div></div>`;
+// ==================== 初始化 ====================
+async function init() {
+  try {
+    const info = await API('/api/info');
+    SKILL_CAPS = info.skill_caps || {};
+    SKILL_CATEGORIES = info.skill_categories || {};
+    WEAPON_SKILL_LIST = info.weapon_skill_list || [];
+    SKILLS_DATA = info.skills_data || {};
+    DAMAGE_SKILLS = info.damage_skills || [];
+    SERIES_NAMES = info.series_names || [];
+  } catch (e) {
+    document.getElementById('search-results').innerHTML =
+      '<div class="card"><div class="result-empty">无法连接后端 API: ' + e.message + '</div></div>';
     return;
   }
-  container.innerHTML = `<div class="card">${renderResultDetail(res.result, res.label, res)}</div>`;
+  loadState();
+  autoPickWeaponSkills();
+  renderAll();
+  updateSavedCount();
 }
 
-function renderResultDetail(r, label, meta) {
-  const armorsHTML = r.armors.map(a => {
-    const slotHTML = (a.slots || []).map(s => `<div class="slot slot-${s||0}">${s||'·'}</div>`).join('');
-    const skillHTML = Object.entries(a.skills).map(([k,v]) => `<div>${k}<span> Lv${v}</span></div>`).join('');
-    return `<div class="armor-card">
-      <div class="armor-part">${a.part}</div>
-      <div class="armor-name">${a.name}</div>
-      <div class="slots">${slotHTML}</div>
-      <div class="skill-list">${skillHTML}</div>
-    </div>`;
+function isComboSkill(skill) {
+  return WEAPON_SKILL_LIST.includes(skill) || SERIES_NAMES.includes(skill);
+}
+
+// ==================== 武器技能自动选择 ====================
+function autoPickWeaponSkills() {
+  const totalLevels = weaponSlotLevels.reduce((a, b) => a + b, 0);
+  autoWeaponLevels = {};
+  if (totalLevels === 0) { autoWeaponSkills = []; return; }
+  const dmgSkills = ['攻击','看破','超会心','弱点特效','挑战者','连击','无伤','攻击守势','巧击','因祸得福','精神抖擞','无我之境','力量解放','攻势','龙属性攻击强化','火属性攻击强化','水属性攻击强化','冰属性攻击强化','雷属性攻击强化'];
+  const availablePool = WEAPON_SKILL_LIST.filter(s => SKILL_CAPS[s]);
+  const scored = availablePool.map(s => {
+    const cap = SKILL_CAPS[s] || 3;
+    const dmgBonus = dmgSkills.includes(s) ? 100 : 0;
+    return { s, cap, score: dmgBonus * 1000 + cap * 10 };
+  }).sort((a, b) => b.score - a.score);
+  let remaining = totalLevels;
+  const picked = [];
+  const pickedSet = new Set();
+  for (const item of scored) {
+    if (remaining <= 0) break;
+    if (disabledWeaponSkills.has(item.s)) continue;
+    if (pickedSet.has(item.s)) continue;
+    const lv = Math.min(item.cap, remaining);
+    if (lv <= 0) continue;
+    picked.push(item.s);
+    pickedSet.add(item.s);
+    autoWeaponLevels[item.s] = lv;
+    remaining -= lv;
+  }
+  autoWeaponSkills = picked;
+}
+
+function getActiveWeaponSkills() {
+  return autoWeaponSkills.filter(s => !disabledWeaponSkills.has(s));
+}
+
+// ==================== 渲染 ====================
+function renderAll() {
+  renderWeaponConfig();
+  renderSkillSelection();
+  renderSelectedSkills();
+}
+
+function renderWeaponConfig() {
+  const slotsEl = document.getElementById('weapon-slots');
+  slotsEl.innerHTML = weaponSlotLevels.map((lv, i) =>
+    '<div class="weapon-slot-group">' +
+      '<label style="font-size:11px;">武器孔' + (i+1) + '</label>' +
+      '<div class="seg-btns">' +
+        [1,2,3].map(n =>
+          '<button class="seg-btn ' + (lv===n?'active':'') + '" onclick="setWeaponSlot(' + i + ',' + n + ')">' + n + '</button>'
+        ).join('') +
+      '</div>' +
+    '</div>'
+  ).join('');
+  const total = weaponSlotLevels.reduce((a,b)=>a+b,0);
+  document.getElementById('weapon-total').textContent = '总等级: ' + total;
+
+  const autoEl = document.getElementById('auto-skills');
+  const active = getActiveWeaponSkills();
+  const disabled = autoWeaponSkills.filter(s => disabledWeaponSkills.has(s));
+  let html = '<span class="auto-label">自动选择武器技能:</span>';
+  if (active.length === 0 && disabled.length === 0) {
+    html += '<span class="muted" style="font-size:12px;">无可选技能</span>';
+  }
+  active.forEach(s => {
+    const lv = autoWeaponLevels[s] || SKILL_CAPS[s] || 1;
+    html += '<span class="chip chip-selected" onclick="toggleWeaponSkillDisabled(\'' + esc(s) + '\')" title="点击禁用">' +
+      esc(s) + ' Lv' + lv + '</span>';
+  });
+  disabled.forEach(s => {
+    html += '<span class="chip chip-disabled" onclick="toggleWeaponSkillDisabled(\'' + esc(s) + '\')" title="点击启用">' +
+      esc(s) + ' (禁用)</span>';
+  });
+  autoEl.innerHTML = html;
+
+  if (libOpen) renderSkillLibrary();
+}
+
+function renderSkillLibrary() {
+  const el = document.getElementById('lib-grid');
+  el.innerHTML = WEAPON_SKILL_LIST.map(s => {
+    const dis = disabledWeaponSkills.has(s);
+    const cap = SKILL_CAPS[s] || '?';
+    return '<button class="lib-btn ' + (dis?'disabled':'') + '" onclick="toggleWeaponSkillDisabled(\'' + esc(s) + '\')">' +
+      esc(s) + ' (上限' + cap + ')' + (dis?' · 禁用':'') + '</button>';
+  }).join('');
+}
+
+function toggleSkillLibrary() {
+  libOpen = !libOpen;
+  document.getElementById('skill-library').style.display = libOpen ? 'block' : 'none';
+  if (libOpen) renderSkillLibrary();
+}
+
+function setWeaponSlot(idx, lv) {
+  weaponSlotLevels[idx] = lv;
+  autoPickWeaponSkills();
+  renderWeaponConfig();
+}
+
+function toggleWeaponSkillDisabled(skill) {
+  if (disabledWeaponSkills.has(skill)) disabledWeaponSkills.delete(skill);
+  else disabledWeaponSkills.add(skill);
+  autoPickWeaponSkills();
+  saveState();
+  renderWeaponConfig();
+}
+
+// 技能选择区
+function renderSkillSelection() {
+  const el = document.getElementById('skill-selection');
+  let html = '';
+  for (const [cat, skills] of Object.entries(SKILL_CATEGORIES)) {
+    const valid = skills.filter(s => SKILL_CAPS[s] && SKILL_CAPS[s] > 0);
+    if (valid.length === 0) continue;
+    // 收藏置顶
+    const sorted = valid.slice().sort((a, b) => {
+      const fa = favSkills.has(a), fb = favSkills.has(b);
+      if (fa && !fb) return -1;
+      if (!fa && fb) return 1;
+      return 0;
+    });
+    html += '<div class="category-block">';
+    html += '<div class="category-title">' + esc(cat) + ' <span class="muted" style="font-size:11px;font-weight:400;">(' + valid.length + ')</span></div>';
+    html += '<div class="skill-buttons">';
+    sorted.forEach(s => {
+      html += renderSkillButton(s, 'select');
+      if (expandedSkill && expandedSkill.context === 'select' && expandedSkill.skill === s) {
+        html += renderLevelSelector(s, 'select', selectedSkills[s] || 0);
+      }
+    });
+    html += '</div></div>';
+  }
+  el.innerHTML = html;
+}
+
+function renderSkillButton(skill, context) {
+  const cap = SKILL_CAPS[skill] || 1;
+  const selected = context === 'select' ? (selectedSkills[skill] > 0) : false;
+  const fav = favSkills.has(skill);
+  const curLv = selectedSkills[skill] || 0;
+  let dots = '';
+  for (let i = 0; i < cap && i < 7; i++) {
+    dots += '<span class="dot ' + (i < curLv ? 'on' : '') + '"></span>';
+  }
+  return '<button class="skill-btn ' + (selected?'selected':'') + '" onclick="toggleSkillExpand(\'' + context + '\',\'' + esc(skill) + '\')">' +
+    '<span class="fav-star ' + (fav?'on':'') + '" onclick="event.stopPropagation();toggleFav(\'' + esc(skill) + '\')">⭐</span>' +
+    '<span>' + esc(skill) + '</span>' +
+    (selected ? '<span class="level-dots">' + dots + '</span>' : '') +
+    '</button>';
+}
+
+function renderLevelSelector(skill, context, curLv) {
+  const cap = SKILL_CAPS[skill] || 1;
+  let html = '<div class="level-selector"><span class="ls-label">' + esc(skill) + ' 等级:</span>';
+  for (let i = 1; i <= cap; i++) {
+    html += '<button class="lv-btn ' + (i===curLv?'active':'') + '" onclick="setSkillLevel(\'' + esc(skill) + '\',' + i + ',\'' + context + '\')">' + i + '</button>';
+  }
+  html += '<button class="lv-btn cancel" onclick="toggleSkillExpand(\'' + context + '\',null)">取消</button>';
+  html += '</div>';
+  return html;
+}
+
+function toggleSkillExpand(context, skill) {
+  if (!skill || (expandedSkill && expandedSkill.context === context && expandedSkill.skill === skill)) {
+    expandedSkill = null;
+  } else {
+    expandedSkill = { context: context, skill: skill };
+  }
+  if (context === 'select') renderSkillSelection();
+  else if (context === 'selected') renderSelectedSkills();
+  else if (context === 'extra') renderExtraSkills();
+}
+
+function toggleFav(skill) {
+  if (favSkills.has(skill)) favSkills.delete(skill);
+  else favSkills.add(skill);
+  saveState();
+  renderSkillSelection();
+}
+
+function setSkillLevel(skill, lv, context) {
+  selectedSkills[skill] = lv;
+  expandedSkill = null;
+  saveState();
+  if (context === 'select') { renderSkillSelection(); renderSelectedSkills(); }
+  else if (context === 'selected') { renderSelectedSkills(); renderSkillSelection(); }
+}
+
+// 已选技能区
+function renderSelectedSkills() {
+  const el = document.getElementById('selected-skills');
+  const keys = Object.keys(selectedSkills).filter(k => selectedSkills[k] > 0);
+  // 收藏置顶
+  keys.sort((a, b) => {
+    const fa = favSkills.has(a), fb = favSkills.has(b);
+    if (fa && !fb) return -1;
+    if (!fa && fb) return 1;
+    return 0;
+  });
+  document.getElementById('selected-count').textContent = keys.length + ' 个';
+  if (keys.length === 0) {
+    el.innerHTML = '<span class="empty-hint">尚未选择技能，请在上方技能区点击选择</span>';
+    return;
+  }
+  let html = '';
+  keys.forEach(s => {
+    const cap = SKILL_CAPS[s] || 1;
+    const lv = selectedSkills[s];
+    const full = lv >= cap;
+    html += '<span class="chip ' + (full?'chip-full':'chip-selected') + '" onclick="toggleSkillExpand(\'selected\',\'' + esc(s) + '\')" title="点击调整等级">' +
+      esc(s) + ' Lv' + lv + '/' + cap +
+      ' <span class="chip-x" onclick="event.stopPropagation();removeSkill(\'' + esc(s) + '\')">✕</span></span>';
+  });
+  el.innerHTML = html;
+  // 展开等级选择
+  if (expandedSkill && expandedSkill.context === 'selected') {
+    const sel = document.createElement('div');
+    sel.style.flexBasis = '100%';
+    sel.innerHTML = renderLevelSelector(expandedSkill.skill, 'selected', selectedSkills[expandedSkill.skill] || 0);
+    el.appendChild(sel);
+  }
+}
+
+function removeSkill(skill) {
+  delete selectedSkills[skill];
+  if (expandedSkill && expandedSkill.skill === skill) expandedSkill = null;
+  saveState();
+  renderSelectedSkills();
+  renderSkillSelection();
+}
+
+function clearSelectedSkills() {
+  selectedSkills = {};
+  expandedSkill = null;
+  saveState();
+  renderSelectedSkills();
+  renderSkillSelection();
+}
+
+// ==================== 搜索 ====================
+async function runSearch() {
+  const fixed = {};
+  const combo = {};
+  for (const [sk, lv] of Object.entries(selectedSkills)) {
+    if (lv <= 0) continue;
+    if (isComboSkill(sk)) combo[sk] = lv;
+    else fixed[sk] = lv;
+  }
+  // 加入自动武器技能
+  for (const sk of getActiveWeaponSkills()) {
+    if (!(sk in combo)) combo[sk] = autoWeaponLevels[sk] || SKILL_CAPS[sk] || 1;
+  }
+  const maxResults = parseInt(document.getElementById('max-results').value) || 5;
+  const timeout = parseFloat(document.getElementById('timeout').value) || 3;
+  const params = {
+    fixed_skills: fixed, combo_skills: combo,
+    weapon_slots: weaponSlotLevels.slice(),
+    max_results: maxResults, timeout_s: timeout, min_rem_armor: 0
+  };
+  lastSearchParams = params;
+  const btn = document.getElementById('search-btn');
+  btn.disabled = true;
+  document.getElementById('search-status').innerHTML = '<span class="loading"></span> 搜索中...';
+  const div = document.getElementById('search-results');
+  div.innerHTML = '<div class="card"><div class="spinner-wrap"><div class="loading"></div><span>搜索中...</span></div></div>';
+  try {
+    const res = await API('/api/custom_search', params);
+    if (res.error) throw new Error(res.error);
+    lastSearchResults = res;
+    document.getElementById('search-status').innerHTML = '找到 <b>' + res.count + '</b> 个方案 (' + res.total_time + 's)';
+    renderSearchResults(res);
+  } catch (e) {
+    div.innerHTML = '<div class="card"><div class="result-empty">错误: ' + esc(e.message) + '</div></div>';
+    document.getElementById('search-status').textContent = '搜索失败';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderSearchResults(res) {
+  const div = document.getElementById('search-results');
+  if (!res.results || res.results.length === 0) {
+    div.innerHTML = '<div class="card"><div class="result-empty">❌ 无满足条件的方案</div></div>';
+    return;
+  }
+  div.innerHTML = res.results.map((r, i) => renderResultCard(r, i)).join('');
+}
+
+function renderResultCard(r, idx) {
+  const armorsHTML = (r.armors || []).map(a => {
+    const slotHTML = (a.slots || []).map(s => slotHTMLFn(s, 'armor')).join('');
+    const skillHTML = Object.entries(a.skills || {}).map(([k,v]) => '<div>' + esc(k) + ' <span>Lv' + v + '</span></div>').join('');
+    return '<div class="armor-card"><div class="armor-part">' + esc(a.part) + '</div>' +
+      '<div class="armor-name">' + esc(a.name) + '</div>' +
+      '<div class="slots">' + slotHTML + '</div>' +
+      '<div class="skill-list">' + skillHTML + '</div></div>';
   }).join('');
 
   const charmHTML = r.charm ? (() => {
-    const a = r.charm;
-    const as = (a.armor_slots||[]).map(s=>`<div class="slot slot-${s||0}">${s||'·'}</div>`).join('');
-    const ws = (a.weapon_slots||[]).map(s=>`<div class="slot slot-${s||0}">${s||'·'}</div>`).join('');
-    const sk = Object.entries(a.skills).map(([k,v]) => `<div>${k}<span> Lv${v}</span></div>`).join('');
-    return `<div class="armor-card">
-      <div class="armor-part">护石</div>
-      <div class="armor-name">${a.name}</div>
-      <div style="font-size:11px;color:var(--muted);margin:4px 0;">防具孔 / 武器孔</div>
-      <div class="slots">${as} / ${ws}</div>
-      <div class="skill-list">${sk}</div>
-    </div>`;
+    const c = r.charm;
+    const as = (c.armor_slots || []).map(s => slotHTMLFn(s, 'armor')).join('');
+    const ws = (c.weapon_slots || []).map(s => slotHTMLFn(s, 'weapon')).join('');
+    const sk = Object.entries(c.skills || {}).map(([k,v]) => '<div>' + esc(k) + ' <span>Lv' + v + '</span></div>').join('');
+    return '<div class="armor-card charm-card"><div class="armor-part">护石</div>' +
+      '<div class="armor-name" style="font-size:12px;color:var(--muted);">' + esc(c.name) + '</div>' +
+      '<div style="font-size:10px;color:var(--muted);margin:2px 0;">防具孔 / 武器孔</div>' +
+      '<div class="slots">' + as + (ws?'<span style="color:var(--muted);">/</span>':'') + ws + '</div>' +
+      '<div class="skill-list">' + sk + '</div></div>';
   })() : '';
 
-  const decoHTML = Object.entries(r.decorations).map(([k,v]) => `<span class="deco-chip">${k} ×${v}</span>`).join('') || '<span style="color:var(--muted);">无</span>';
+  const decoHTML = Object.entries(r.decorations || {}).map(([k,v]) =>
+    '<span class="deco-chip">' + esc(k) + ' ×' + v + '</span>').join('') ||
+    '<span class="muted">无</span>';
 
-  const coreHTML = Object.entries(r.core_skills).map(([k,v]) => {
+  // 三色chip：已选(蓝)/未选(灰)/满级(绿)
+  const selKeys = Object.keys(selectedSkills);
+  const coreHTML = Object.entries(r.core_skills || {}).map(([k,v]) => {
+    const isSel = selKeys.includes(k) || getActiveWeaponSkills().includes(k);
     const full = v.level >= v.cap;
-    return `<span class="skill-chip ${full?'full':''}">${k} Lv${v.level}/${v.cap}</span>`;
+    let cls = full ? 'chip-full' : (isSel ? 'chip-selected' : 'chip-unselected');
+    return '<span class="chip ' + cls + '">' + esc(k) + ' Lv' + v.level + '/' + v.cap + '</span>';
   }).join('');
 
-  const otherHTML = Object.entries(r.other_skills).map(([k,v]) => {
+  const otherHTML = Object.entries(r.other_skills || {}).map(([k,v]) => {
+    const isSel = selKeys.includes(k);
     const full = v.level >= v.cap;
-    return `<span class="skill-chip ${full?'full':''}">${k} Lv${v.level}/${v.cap}</span>`;
+    let cls = full ? 'chip-full' : (isSel ? 'chip-selected' : 'chip-unselected');
+    return '<span class="chip ' + cls + '">' + esc(k) + ' Lv' + v.level + '/' + v.cap + '</span>';
   }).join('');
 
-  const seriesHTML = r.series_check.map(s => {
+  const seriesHTML = (r.series_check || []).map(s => {
     const cls = s.ok ? 'ok-badge' : 'err-badge';
     const icon = s.ok ? '✓' : '✗';
-    return `<span class="${cls}">${icon} ${s.skill} Lv${s.level}(需${s.need_pieces}件: 武器${s.weapon_provided}+防具${s.armor_pieces}=${s.actual_pieces})</span>`;
+    return '<span class="' + cls + '">' + icon + ' ' + esc(s.skill) + ' Lv' + s.level +
+      '(需' + s.need_pieces + '件: 武器' + s.weapon_provided + '+防具' + s.armor_pieces + '=' + s.actual_pieces + ')</span>';
   }).join(' ');
 
-  const remA = r.remaining_slots.armor.filter(s=>s>0).length;
-  const remW = r.remaining_slots.weapon.filter(s=>s>0).length;
-  const remASum = r.remaining_slots.armor.reduce((a,b)=>a+b,0);
-  const remWsum = r.remaining_slots.weapon.reduce((a,b)=>a+b,0);
+  const remA = (r.remaining_slots && r.remaining_slots.armor) || [];
+  const remW = (r.remaining_slots && r.remaining_slots.weapon) || [];
+  const remASum = remA.reduce((a,b)=>a+b,0);
+  const remWSum = remW.reduce((a,b)=>a+b,0);
+  const t = r.timing || {};
 
-  return `
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;">
-      <div>
-        <div style="font-size:13px;color:var(--muted);">${label || '结果'}</div>
-        <div class="damage-big">${r.damage.toFixed(1)}</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:4px;">期望伤害</div>
-      </div>
-      <div style="text-align:right;">
-        <div class="info-row">
-          <div class="info-item"><span class="k">防性:</span><span class="v">Lv${r.cfg.guard_lv||'-'}</span></div>
-          <div class="info-item"><span class="k">精神:</span><span class="v">Lv${r.cfg.spirit_lv||0}</span></div>
-          <div class="info-item"><span class="k">尝试:</span><span class="v">${r.timing.attempts}</span></div>
-          <div class="info-item"><span class="k">验证通过:</span><span class="v">${r.timing.verified}</span></div>
-        </div>
-        <div class="info-row">
-          <div class="info-item"><span class="k">搜索耗时:</span><span class="v">${r.timing.search_time}s</span></div>
-          <div class="info-item"><span class="k">总耗时:</span><span class="v">${r.timing.total_time}s</span></div>
-          <div class="info-item"><span class="k">剩余孔位(防/武):</span><span class="v">${remA}个(${remASum}级) / ${remW}个(${remWSum}级)</span></div>
-        </div>
-      </div>
-    </div>
-    <div class="section-title">装备组合</div>
-    <div class="armor-grid">${armorsHTML}${charmHTML}</div>
-    ${seriesHTML ? `<div class="section-title">系列技能验证</div><div>${seriesHTML}</div>` : ''}
-    <div class="section-title">装饰品</div>
-    <div class="deco-list">${decoHTML}</div>
-    <div class="section-title">核心伤害技能</div>
-    <div class="skill-chips">${coreHTML}</div>
-    ${otherHTML ? `<div class="section-title">其他技能</div><div class="skill-chips">${otherHTML}</div>` : ''}
-  `;
+  return '<div class="result-card">' +
+    '<div class="result-head">' +
+      '<div><div class="damage-label">方案 #' + (idx+1) + ' · 期望伤害</div>' +
+        '<div class="damage-big">' + (r.damage || 0).toFixed(1) + '</div></div>' +
+      '<div class="result-actions">' +
+        '<button class="btn btn-sm" onclick="showDetailModal(' + idx + ')">📄 详情</button>' +
+        '<button class="btn btn-sm btn-success" onclick="savePlan(' + idx + ')">💾 保存</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="info-row">' +
+      '<div class="info-item"><span class="k">防性:</span><span class="v">Lv' + (r.cfg && r.cfg.guard_lv != null ? r.cfg.guard_lv : '-') + '</span></div>' +
+      '<div class="info-item"><span class="k">精神:</span><span class="v">Lv' + (r.cfg && r.cfg.spirit_lv != null ? r.cfg.spirit_lv : 0) + '</span></div>' +
+      '<div class="info-item"><span class="k">尝试:</span><span class="v">' + (t.attempts || 0) + '</span></div>' +
+      '<div class="info-item"><span class="k">验证:</span><span class="v">' + (t.verified ? '✓' : '✗') + '</span></div>' +
+      '<div class="info-item"><span class="k">搜索耗时:</span><span class="v">' + (t.search_time || 0) + 's</span></div>' +
+      '<div class="info-item"><span class="k">剩余孔(防/武):</span><span class="v">' + remASum + '级 / ' + remWSum + '级</span></div>' +
+    '</div>' +
+    '<div class="section-title">装备组合</div>' +
+    '<div class="armor-grid">' + armorsHTML + charmHTML + '</div>' +
+    (seriesHTML ? '<div class="section-title">系列技能验证</div><div>' + seriesHTML + '</div>' : '') +
+    '<div class="section-title">装饰品</div><div class="deco-list">' + decoHTML + '</div>' +
+    (coreHTML ? '<div class="section-title">核心伤害技能</div><div class="chips">' + coreHTML + '</div>' : '') +
+    (otherHTML ? '<div class="section-title">其他技能</div><div class="chips">' + otherHTML + '</div>' : '') +
+  '</div>';
 }
 
-async function runCompare() {
-  const div = document.getElementById('compare-results');
-  document.getElementById('compare-status').innerHTML = '<span class="loading"></span> 对比搜索中...';
-  showLoading(div, '对比搜索中 (巨戟4 vs 霸主3)...');
-  try {
-    const [resA, resB] = await Promise.all([
-      API('/api/search_all', { extra_fixed_skill: {'巨戟龙的默示录': 4}, extra_name: '固定巨戟4' }),
-      API('/api/search_all', { extra_fixed_skill: {'霸主之魂': 3}, extra_name: '固定霸主3' })
-    ]);
-    document.getElementById('compare-status').innerHTML = `完成！巨戟4总伤${resA.total_damage} vs 霸主3总伤${resB.total_damage}`;
-    div.innerHTML = renderCompareResult(resA, resB);
-  } catch (e) {
-    div.innerHTML = `<div class="card"><div class="result-empty">错误: ${e.message}</div></div>`;
+function slotHTMLFn(s, type) {
+  if (!s || s === 0) return '<div class="slot empty">·</div>';
+  return '<div class="slot ' + type + '">' + s + '</div>';
+}
+
+// ==================== 详情 Modal ====================
+async function showDetailModal(idx) {
+  if (!lastSearchResults || !lastSearchResults.results[idx]) return;
+  const r = lastSearchResults.results[idx];
+  const modal = document.getElementById('detail-modal');
+  const body = document.getElementById('detail-modal-body');
+  modal.classList.add('show');
+  body.innerHTML = '<div class="card-title">方案详情</div><div class="spinner-wrap"><div class="loading"></div><span>计算详细伤害...</span></div>';
+
+  // 构建详情计算参数
+  const fixed = {};
+  const combo = {};
+  for (const [sk, lv] of Object.entries(selectedSkills)) {
+    if (lv <= 0) continue;
+    if (isComboSkill(sk)) combo[sk] = lv;
+    else fixed[sk] = lv;
   }
-}
-
-function renderCompareResult(resA, resB) {
-  const rowA = resA.summary, rowB = resB.summary;
-  const diff = resA.total_damage - resB.total_damage;
-  const winner = diff > 0 ? '巨戟4' : '霸主3';
-  return `
-  <div class="card">
-    <div class="card-title">对比结论</div>
-    <div class="info-row">
-      <div class="info-item"><span class="k">固定巨戟4 6方案总伤害:</span><span class="v damage-big" style="font-size:22px;">${resA.total_damage}</span></div>
-      <div class="info-item"><span class="k">固定霸主3 6方案总伤害:</span><span class="v damage-big" style="font-size:22px;">${resB.total_damage}</span></div>
-    </div>
-    <div style="margin-top:12px;padding:12px;border-radius:8px;background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.25);">
-      🏆 结论: <b>${winner}</b> 更优，${diff > 0 ? '巨戟4高出 ' + diff.toFixed(1) : '霸主3高出 ' + (-diff).toFixed(1)}
-    </div>
-    <div style="margin-top:8px;color:var(--muted);font-size:13px;">
-      方案A耗时 ${resA.total_time}s · 方案B耗时 ${resB.total_time}s
-    </div>
-  </div>
-  <div class="grid grid-2">
-    <div class="card">
-      <div class="card-title">A: 固定巨戟4 (各方案)</div>
-      ${renderCompareSummary(rowA, resA.best_label, resA.best_detail)}
-    </div>
-    <div class="card">
-      <div class="card-title">B: 固定霸主3 (各方案)</div>
-      ${renderCompareSummary(rowB, resB.best_label, resB.best_detail)}
-    </div>
-  </div>
-  `;
-}
-
-function renderCompareSummary(rows, bestLabel, bestDetail) {
-  const header = `<table class="summary-table">
-    <thead><tr>
-      <th>方案</th><th>防性</th><th>伤害</th><th>广域</th><th>黑蚀</th><th>霸主</th><th>火龙</th><th>巨戟</th>
-    </tr></thead><tbody>
-    ${rows.map(r => `<tr>
-      <td>${r.label.replace(/方案[一二三四五六]:/,'')}</td>
-      <td>${r.guard_lv ?? '-'}</td>
-      <td class="${r.damage ? 'dmg-high':''}">${r.damage ?? '无解'}</td>
-      <td>${r.wide ? '✓': '-'}</td>
-      <td>${r.heishi || '-'}</td>
-      <td>${r.bahar || '-'}</td>
-      <td>${r.huolong || '-'}</td>
-      <td>${r.juji || '-'}</td>
-    </tr>`).join('')}
-  </tbody></table>`;
-  const detail = bestDetail ? `
-    <hr>
-    <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">🏆 最优: ${bestLabel}</div>
-    ${renderResultDetail(bestDetail, bestLabel)}
-  ` : '';
-  return header + detail;
-}
-
-async function runCustomSearch() {
-  const fixed = collectSkills('custom-fixed');
-  const combo = collectSkills('custom-combo');
-  const minArmor = parseInt(document.getElementById('custom-minarmor').value) || 0;
-  const maxResults = parseInt(document.getElementById('custom-maxresults').value) || 5;
-  const timeout = parseFloat(document.getElementById('custom-timeout').value) || 3;
-  const div = document.getElementById('custom-results');
-  document.getElementById('custom-status').innerHTML = '<span class="loading"></span> 搜索中...';
-  showLoading(div);
+  for (const sk of getActiveWeaponSkills()) {
+    if (!(sk in combo)) combo[sk] = autoWeaponLevels[sk] || SKILL_CAPS[sk] || 1;
+  }
   try {
-    const res = await API('/api/custom_search', {
-      fixed_skills: fixed, combo_skills: combo,
-      min_rem_armor: minArmor, max_results: maxResults, timeout_s: timeout
+    const detail = await API('/api/detail_calc', {
+      fixed_skills: fixed, combo_skills: combo, weapon_slots: weaponSlotLevels.slice()
     });
-    document.getElementById('custom-status').innerHTML = `找到 ${res.count} 个方案 (${res.total_time}s)`;
-    div.innerHTML = res.results.length ?
-      `<div class="card">${res.results.map((r, i) => `
-        <div style="margin-bottom:${i < res.results.length-1 ? '24px;padding-bottom:24px;border-bottom:1px solid var(--border);' : ''}">
-          ${renderResultDetail(r, `方案 #${i+1}`)}
-        </div>`).join('')}
-      </div>` :
-      `<div class="card"><div class="result-empty">❌ 无满足条件的方案</div></div>`;
+    let html = '<div class="card-title">方案详情</div>';
+    if (detail.ok && detail.result) {
+      html += renderResultCard(detail.result, idx);
+      html += '<div class="section-title">伤害计算详情</div>';
+      html += '<div class="detail-text">' + esc(detail.detail_text || '') + '</div>';
+      html += '<div class="info-row mt8">' +
+        '<div class="info-item"><span class="k">基线伤害:</span><span class="v">' + (detail.baseline_dmg || 0) + '</span></div>' +
+        '<div class="info-item"><span class="k">最终伤害:</span><span class="v" style="color:var(--accent2);">' + (detail.final_dmg || 0) + '</span></div>' +
+        '<div class="info-item"><span class="k">提升:</span><span class="v">+' + (((detail.final_dmg||0)-(detail.baseline_dmg||0)).toFixed(1)) + '</span></div>' +
+        '</div>';
+    } else {
+      html += '<div class="result-empty">' + esc(detail.error || '计算失败') + '</div>';
+      html += renderResultCard(r, idx);
+    }
+    body.innerHTML = html;
   } catch (e) {
-    div.innerHTML = `<div class="card"><div class="result-empty">错误: ${e.message}</div></div>`;
+    body.innerHTML = '<div class="card-title">方案详情</div><div class="result-empty">错误: ' + esc(e.message) + '</div>' + renderResultCard(r, idx);
   }
 }
-
-async function runQueryExtra() {
-  const fixed = collectSkills('extra-fixed');
-  const combo = collectSkills('extra-combo');
-  const div = document.getElementById('extra-results');
-  document.getElementById('extra-status').innerHTML = '<span class="loading"></span> 查询中...';
-  showLoading(div, '追加技能分析中（请稍候...');
-  try {
-    const res = await API('/api/query_extra', { fixed_skills: fixed, combo_skills: combo, min_rem_armor: 0 });
-    document.getElementById('extra-status').innerHTML = `完成 (${res.time}s)`;
-    div.innerHTML = `<div class="card"><div class="extra-result">${res.result_text}</div></div>`;
-  } catch (e) {
-    div.innerHTML = `<div class="card"><div class="result-empty">错误: ${e.message}</div></div>`;
-  }
+function closeDetailModal() {
+  document.getElementById('detail-modal').classList.remove('show');
 }
 
-// 初始化标签切换
-document.querySelectorAll('.tab').forEach(t => {
-  t.onclick = () => {
-    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
-    document.querySelectorAll('.tab-panel').forEach(x => x.classList.remove('active'));
-    t.classList.add('active');
-    document.getElementById('panel-' + t.dataset.tab).classList.add('active');
+// ==================== 保存方案 ====================
+function savePlan(idx) {
+  if (!lastSearchResults || !lastSearchResults.results[idx]) return;
+  const r = lastSearchResults.results[idx];
+  const name = '方案 #' + (savedPlans.length + 1) + ' · 伤害' + (r.damage || 0).toFixed(1);
+  savedPlans.push({
+    name: name,
+    damage: r.damage,
+    result: r,
+    params: lastSearchParams,
+    time: new Date().toLocaleString('zh-CN')
+  });
+  saveState();
+  updateSavedCount();
+  alert('已保存: ' + name);
+}
+function updateSavedCount() {
+  document.getElementById('saved-count').textContent = savedPlans.length;
+}
+function showSavedPlansModal() {
+  const el = document.getElementById('saved-plans-list');
+  if (savedPlans.length === 0) {
+    el.innerHTML = '<div class="result-empty">暂无保存的方案</div>';
+  } else {
+    el.innerHTML = savedPlans.map((p, i) =>
+      '<div class="saved-plan-item">' +
+        '<div><div class="sp-label">' + esc(p.name) + '</div>' +
+        '<div class="sp-sub">伤害 ' + (p.damage||0).toFixed(1) + ' · ' + esc(p.time) + '</div></div>' +
+        '<div class="flex-row">' +
+          '<button class="btn btn-sm" onclick="loadSavedPlan(' + i + ')">查看</button>' +
+          '<button class="btn btn-sm btn-danger" onclick="deleteSavedPlan(' + i + ')">删除</button>' +
+        '</div>' +
+      '</div>'
+    ).join('');
+  }
+  document.getElementById('saved-modal').classList.add('show');
+}
+function closeSavedPlansModal() {
+  document.getElementById('saved-modal').classList.remove('show');
+}
+function loadSavedPlan(idx) {
+  const p = savedPlans[idx];
+  if (!p) return;
+  closeSavedPlansModal();
+  const modal = document.getElementById('detail-modal');
+  const body = document.getElementById('detail-modal-body');
+  modal.classList.add('show');
+  body.innerHTML = '<div class="card-title">' + esc(p.name) + '</div>' +
+    '<div class="sp-sub" style="margin-bottom:12px;">保存于 ' + esc(p.time) + ' · 伤害 ' + (p.damage||0).toFixed(1) + '</div>' +
+    renderResultCard(p.result, 0);
+}
+function deleteSavedPlan(idx) {
+  savedPlans.splice(idx, 1);
+  saveState();
+  updateSavedCount();
+  showSavedPlansModal();
+}
+
+// ==================== 追加查询 ====================
+async function runExtraQuery() {
+  const fixed = {};
+  const combo = {};
+  for (const [sk, lv] of Object.entries(selectedSkills)) {
+    if (lv <= 0) continue;
+    if (isComboSkill(sk)) combo[sk] = lv;
+    else fixed[sk] = lv;
+  }
+  for (const sk of getActiveWeaponSkills()) {
+    if (!(sk in combo)) combo[sk] = autoWeaponLevels[sk] || SKILL_CAPS[sk] || 1;
+  }
+  const params = {
+    fixed_skills: fixed, combo_skills: combo,
+    weapon_slots: weaponSlotLevels.slice(), min_rem_armor: 0
   };
+  const btn = document.getElementById('extra-btn');
+  btn.disabled = true;
+  document.getElementById('extra-status').innerHTML = '<span class="loading"></span> 查询中...';
+  document.getElementById('extra-area').style.display = 'none';
+  try {
+    const res = await API('/api/query_extra', params);
+    if (res.error) throw new Error(res.error);
+    extraQueryResult = res;
+    document.getElementById('extra-status').innerHTML = '完成 (' + (res.time || 0) + 's)';
+    document.getElementById('extra-area').style.display = 'block';
+    renderExtraSection();
+  } catch (e) {
+    document.getElementById('extra-status').textContent = '错误: ' + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function setExtraMode(mode) {
+  extraMode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+  expandedSkill = null;
+  renderExtraSkills();
+}
+
+function renderExtraSection() {
+  if (!extraQueryResult) return;
+  const r = extraQueryResult;
+  document.getElementById('baseline-box').innerHTML =
+    '<div class="bi"><span class="k">基线伤害:</span> <span class="v">' + (r.baseline_dmg || 0) + '</span></div>' +
+    '<div class="bi"><span class="k">基线会心:</span> <span class="v">' + (r.baseline_wcr || 0) + '%</span></div>' +
+    '<div class="bi"><span class="k">孔位 Lv1/Lv2/Lv3:</span> <span class="v">' +
+      (r.slot_info && r.slot_info.Lv1) + '/' + (r.slot_info && r.slot_info.Lv2) + '/' + (r.slot_info && r.slot_info.Lv3) + '</span></div>';
+  renderExtraSkills();
+  renderAppendBar();
+}
+
+function renderExtraSkills() {
+  if (!extraQueryResult) return;
+  const r = extraQueryResult;
+  const upgrades = r.upgrade_skills || [];
+  const extras = r.extra_skills || [];
+  let items = [];
+  upgrades.forEach(u => items.push({ ...u, _type: 'upgrade' }));
+  extras.forEach(e => items.push({ ...e, _type: 'extra' }));
+
+  // 模式过滤
+  if (extraMode === 'favorite') {
+    items = items.filter(it => favSkills.has(it.skill));
+  } else if (extraMode === 'disabled') {
+    items = items.filter(it => !disabledSkills.has(it.skill));
+  }
+
+  const el = document.getElementById('extra-skills-list');
+  if (items.length === 0) {
+    el.innerHTML = '<div class="result-empty">该模式下无可用技能</div>';
+    return;
+  }
+  // 按伤害增幅排序
+  items.sort((a, b) => (b.delta || 0) - (a.delta || 0));
+  let html = '';
+  items.forEach(it => {
+    const appended = appendSkills[it.skill] > 0;
+    const disabled = disabledSkills.has(it.skill);
+    const cls = appended ? 'extra-skill-item appended' : 'extra-skill-item';
+    const deltaCls = (it.delta || 0) >= 0 ? 'es-delta' : 'es-delta neg';
+    const sign = (it.delta || 0) >= 0 ? '+' : '';
+    const cap = it.cap || SKILL_CAPS[it.skill] || 1;
+    let lvInfo = it._type === 'upgrade'
+      ? 'Lv' + it.current_lv + '→Lv' + it.max_lv + '/' + it.cap
+      : 'Lv' + it.max_lv + '/' + it.cap;
+    html += '<div class="' + cls + '">';
+    html += '<span class="es-type ' + it._type + '">' + (it._type==='upgrade'?'升级':'追加') + '</span>';
+    html += '<span class="es-name">' + esc(it.skill) + '</span>';
+    html += '<span class="es-info">' + lvInfo + '</span>';
+    html += '<span class="' + deltaCls + '">' + sign + (it.delta||0).toFixed(1) + ' 伤害</span>';
+    html += '<span class="es-info">会心 ' + (it.wcr||0) + '%</span>';
+    // 收藏/禁用按钮
+    const fav = favSkills.has(it.skill);
+    html += '<span class="fav-star ' + (fav?'on':'') + '" onclick="toggleFav(\'' + esc(it.skill) + '\')" style="cursor:pointer;">⭐</span>';
+    html += '<button class="btn btn-sm ' + (disabled?'':'btn-danger') + '" onclick="toggleDisabledSkill(\'' + esc(it.skill) + '\')">' + (disabled?'启用':'禁用') + '</button>';
+    // 等级选择（展开）
+    html += '<div class="es-levels">';
+    if (expandedSkill && expandedSkill.context === 'extra' && expandedSkill.skill === it.skill) {
+      const maxPick = it._type === 'upgrade' ? it.max_lv : it.cap;
+      for (let i = 1; i <= maxPick; i++) {
+        const act = appendSkills[it.skill] === i;
+        html += '<button class="lv-btn ' + (act?'active':'') + '" onclick="setAppendSkill(\'' + esc(it.skill) + '\',' + i + ')">' + i + '</button>';
+      }
+      html += '<button class="lv-btn cancel" onclick="toggleSkillExpand(\'extra\',null)">取消</button>';
+    } else {
+      const cur = appendSkills[it.skill] || 0;
+      html += '<button class="btn btn-sm" onclick="toggleSkillExpand(\'extra\',\'' + esc(it.skill) + '\')">' +
+        (appended ? '已选 Lv' + cur + ' (改)' : '选择等级') + '</button>';
+      if (appended) {
+        html += '<button class="btn btn-sm btn-danger" onclick="setAppendSkill(\'' + esc(it.skill) + '\',0)">移除</button>';
+      }
+    }
+    html += '</div>';
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function toggleDisabledSkill(skill) {
+  if (disabledSkills.has(skill)) disabledSkills.delete(skill);
+  else disabledSkills.add(skill);
+  saveState();
+  renderExtraSkills();
+}
+
+function setAppendSkill(skill, lv) {
+  if (lv <= 0) delete appendSkills[skill];
+  else appendSkills[skill] = lv;
+  expandedSkill = null;
+  renderExtraSkills();
+  renderAppendBar();
+}
+
+function renderAppendBar() {
+  const bar = document.getElementById('append-bar');
+  const el = document.getElementById('append-skills');
+  const keys = Object.keys(appendSkills).filter(k => appendSkills[k] > 0);
+  if (keys.length === 0) {
+    bar.style.display = 'none';
+    return;
+  }
+  bar.style.display = 'flex';
+  el.innerHTML = keys.map(k =>
+    '<span class="chip chip-append">' + esc(k) + ' Lv' + appendSkills[k] +
+    ' <span class="chip-x" onclick="setAppendSkill(\'' + esc(k) + '\',0)">✕</span></span>'
+  ).join('');
+}
+
+function clearAppendSkills() {
+  appendSkills = {};
+  renderExtraSkills();
+  renderAppendBar();
+}
+
+function appendAndSearch() {
+  const keys = Object.keys(appendSkills).filter(k => appendSkills[k] > 0);
+  if (keys.length === 0) { alert('请先选择要追加的技能'); return; }
+  for (const k of keys) {
+    selectedSkills[k] = Math.max(selectedSkills[k] || 0, appendSkills[k]);
+  }
+  appendSkills = {};
+  saveState();
+  renderSelectedSkills();
+  renderSkillSelection();
+  renderAppendBar();
+  renderExtraSkills();
+  // 滚动到搜索结果
+  document.getElementById('search-results').scrollIntoView({ behavior: 'smooth' });
+  runSearch();
+}
+
+// ==================== 工具 ====================
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// 关闭modal快捷键
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeDetailModal();
+    closeSavedPlansModal();
+  }
 });
 
 init().catch(e => console.error(e));

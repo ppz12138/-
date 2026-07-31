@@ -307,15 +307,14 @@ class SearchHandler(BaseHTTPRequestHandler):
 
         if path == '/api/info':
             skills_data = _load_skills_data()
+            series_list = sorted([k for k in skills_data.get('系列技能', {}) if k != '说明'])
+            combo_list = sorted([k for k in skills_data.get('组合技能', {}) if k != '说明'])
             info = {
                 'skill_caps': fs.SKILL_CAPS,
                 'plan_cfgs': [{'label': c[0], 'weapon_sk': c[1], 'extra_fixed': c[2]} for c in PLAN_CFGS],
                 'base_fixed_min': BASE_FIXED_MIN,
-                'series_names': [
-                    '巨戟龙的默示录', '火龙之力', '凶爪龙之力', '黑蚀龙之力',
-                    '泡狐龙之力', '煌雷龙之力', '海龙的涡雷',
-                    '冻峰龙之反叛', '锁刃龙之饥饿'
-                ],
+                'series_names': series_list,
+                'combo_skill_list': combo_list,
                 'group_skills': list(fs.GROUP_SK) if fs.GROUP_SK else [],
                 'weapon_skill_list': sorted(list(fs.WEAPON_SK)),
                 'damage_skills': DAMAGE_SKILLS,
@@ -507,7 +506,7 @@ class SearchHandler(BaseHTTPRequestHandler):
         combo_skills = params.get('combo_skills', {})
         min_rem_armor = int(params.get('min_rem_armor', 0))
         max_results = int(params.get('max_results', 5))
-        timeout_s = float(params.get('timeout_s', 3.0))
+        timeout_s = float(params.get('timeout_s', 99999.0))
 
         fixed_skills = {k: int(v) for k, v in fixed_skills.items() if int(v) > 0}
         combo_skills = {k: int(v) for k, v in combo_skills.items() if int(v) > 0}

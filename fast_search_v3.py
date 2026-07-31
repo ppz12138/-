@@ -113,11 +113,13 @@ for _cat_key in ['武器技能', '防具技能']:
         _lv = _sinfo.get('max_lv', 0)
         if _lv > 0 and _sname not in SKILL_CAPS:
             SKILL_CAPS[_sname] = _lv
+# 系列技能统一2级，覆盖硬编码值
 for _sname in skills_data.get('系列技能', {}):
-    if _sname != '说明' and _sname not in SKILL_CAPS:
+    if _sname != '说明':
         SKILL_CAPS[_sname] = 2
+# 组合技能统一1级，覆盖硬编码值
 for _sname in skills_data.get('组合技能', {}):
-    if _sname != '说明' and _sname not in SKILL_CAPS:
+    if _sname != '说明':
         SKILL_CAPS[_sname] = 1
 
 WEAPON_SK = frozenset(skills_data.get('武器技能', {}).keys())

@@ -226,14 +226,15 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
   font-weight: 600;
 }
 .fav-star {
-  font-size: 13px;
+  font-size: 14px;
   color: #4a4f5d;
   cursor: pointer;
   transition: all 0.15s;
   user-select: none;
+  font-style: normal;
 }
 .fav-star:hover { color: var(--warn); }
-.fav-star.on { color: var(--warn); }
+.fav-star.on { color: var(--warn); text-shadow: 0 0 6px rgba(245,158,11,0.5); font-weight: bold; }
 .level-dots { display: inline-flex; gap: 3px; align-items: center; }
 .dot {
   width: 7px; height: 7px;
@@ -657,6 +658,93 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 .muted { color: var(--muted); }
 .mt8 { margin-top: 8px; }
 .mt16 { margin-top: 16px; }
+
+/* 武器技能选择盒 */
+.weapon-skills-row { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 14px; }
+.weapon-series-box, .weapon-combo-box {
+  flex: 1;
+  min-width: 260px;
+  padding: 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.weapon-skill-box-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.weapon-skill-select {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.weapon-skill-select:focus { outline: none; border-color: var(--accent); }
+.weapon-skill-selected {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.weapon-skill-empty {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: italic;
+}
+.weapon-skill-clear {
+  padding: 3px 10px;
+  font-size: 11px;
+  border-radius: 12px;
+  border: 1px solid rgba(239,68,68,0.4);
+  background: rgba(239,68,68,0.1);
+  color: var(--danger);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.weapon-skill-clear:hover { background: rgba(239,68,68,0.2); }
+
+/* Tabs */
+.tab-bar { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+.tab-btn { padding: 8px 18px; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px; border-bottom: 2px solid transparent; transition: all 0.15s; }
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* 紧凑结果卡片 */
+.result-card { padding: 12px; margin-bottom: 10px; }
+.result-head { margin-bottom: 8px; }
+.damage-big { font-size: 26px; }
+.armor-grid { grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.armor-card { padding: 6px; }
+.armor-name { font-size: 12px; }
+
+/* 技能模式切换 */
+.skill-mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+.skill-mode-toggle input { accent-color: var(--accent); }
+.result-card .skill-detail { display: none; margin-top: 8px; }
+.result-card.show-skill-detail .skill-detail { display: block; }
 </style>
 </head>
 <body>
@@ -679,6 +767,26 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
       <div>
         <label>插槽总等级</label>
         <div class="weapon-total" id="weapon-total">总等级: 9</div>
+      </div>
+    </div>
+    <div class="weapon-skills-row">
+      <div class="weapon-series-box" id="weapon-series-box">
+        <div class="weapon-skill-box-title">📜 系列技能</div>
+        <select class="weapon-skill-select" id="series-skill-select" onchange="onSeriesSkillChange()">
+          <option value="">-- 自动选择最佳 --</option>
+        </select>
+        <div class="weapon-skill-selected" id="series-skill-selected">
+          <span class="weapon-skill-empty">未选择，将自动选取最佳伤害技能</span>
+        </div>
+      </div>
+      <div class="weapon-combo-box" id="weapon-combo-box">
+        <div class="weapon-skill-box-title">⚡ 组合技能</div>
+        <select class="weapon-skill-select" id="combo-skill-select" onchange="onComboSkillChange()">
+          <option value="">-- 自动选择最佳 --</option>
+        </select>
+        <div class="weapon-skill-selected" id="combo-skill-selected">
+          <span class="weapon-skill-empty">未选择，将自动选取最佳伤害技能</span>
+        </div>
       </div>
     </div>
     <div class="auto-skills" id="auto-skills"></div>
@@ -715,48 +823,57 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
         <label>返回结果数量</label>
         <input type="number" id="max-results" value="5" min="1" max="50">
       </div>
-      <div class="param-group">
-        <label>搜索超时(秒)</label>
-        <input type="number" id="timeout" value="3" min="1" step="0.5">
-      </div>
       <button class="btn btn-primary" id="search-btn" onclick="runSearch()">🔍 开始搜索</button>
       <span id="search-status" class="muted" style="font-size:13px;"></span>
     </div>
   </div>
 
-  <!-- 搜索结果区 -->
-  <div id="search-results">
-    <div class="card"><div class="result-empty">尚未搜索，点击上方"开始搜索"按钮</div></div>
+  <!-- Tab 导航 -->
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="search" onclick="switchTab('search')">🔍 查询方案</button>
+    <button class="tab-btn" data-tab="extra" onclick="switchTab('extra')">📊 查询追加</button>
+    <button class="tab-btn" data-tab="compare" onclick="switchTab('compare')">📋 方案对比</button>
   </div>
 
-  <!-- 追加查询区 -->
-  <div class="card">
-    <div class="card-title">追加技能查询 <span class="sub">查询可升级与可追加技能，选择后追加并重新搜索</span></div>
-    <div class="flex-row">
-      <button class="btn btn-primary" id="extra-btn" onclick="runExtraQuery()">📊 查询追加技能空间</button>
-      <span id="extra-status" class="muted" style="font-size:13px;"></span>
-    </div>
-    <div class="mt16" id="extra-area" style="display:none;">
-      <div class="mode-toggle">
-        <button class="mode-btn active" data-mode="normal" onclick="setExtraMode('normal')">通常模式（全部）</button>
-        <button class="mode-btn" data-mode="favorite" onclick="setExtraMode('favorite')">⭐ 收藏模式</button>
-        <button class="mode-btn" data-mode="disabled" onclick="setExtraMode('disabled')">🚫 排除禁用</button>
-      </div>
-      <div class="baseline-box" id="baseline-box"></div>
-      <div id="extra-skills-list"></div>
-      <div class="append-bar" id="append-bar" style="display:none;">
-        <span class="muted" style="font-size:13px;">待追加:</span>
-        <div class="chips" id="append-skills"></div>
-        <button class="btn btn-success" onclick="appendAndSearch()" style="margin-left:auto;">➕ 追加并重新搜索</button>
-        <button class="btn btn-sm" onclick="clearAppendSkills()">清空追加</button>
-      </div>
+  <!-- Tab: 查询方案 -->
+  <div class="tab-content active" id="tab-search">
+    <div id="search-results">
+      <div class="card"><div class="result-empty">尚未搜索，点击上方"开始搜索"按钮</div></div>
     </div>
   </div>
 
-  <!-- 已保存方案入口 -->
-  <div class="card">
-    <div class="card-title">已保存方案</div>
-    <button class="btn" onclick="showSavedPlansModal()">📋 查看已保存方案 (<span id="saved-count">0</span>)</button>
+  <!-- Tab: 查询追加 -->
+  <div class="tab-content" id="tab-extra">
+    <div class="card">
+      <div class="card-title">追加技能查询 <span class="sub">查询可升级与可追加技能，选择后追加并重新搜索</span></div>
+      <div class="flex-row">
+        <button class="btn btn-primary" id="extra-btn" onclick="runExtraQuery()">📊 查询追加技能空间</button>
+        <span id="extra-status" class="muted" style="font-size:13px;"></span>
+      </div>
+      <div class="mt16" id="extra-area" style="display:none;">
+        <div class="mode-toggle">
+          <button class="mode-btn active" data-mode="normal" onclick="setExtraMode('normal')">通常模式（全部）</button>
+          <button class="mode-btn" data-mode="favorite" onclick="setExtraMode('favorite')">⭐ 收藏模式</button>
+          <button class="mode-btn" data-mode="disabled" onclick="setExtraMode('disabled')">🚫 排除禁用</button>
+        </div>
+        <div class="baseline-box" id="baseline-box"></div>
+        <div id="extra-skills-list"></div>
+        <div class="append-bar" id="append-bar" style="display:none;">
+          <span class="muted" style="font-size:13px;">待追加:</span>
+          <div class="chips" id="append-skills"></div>
+          <button class="btn btn-success" onclick="appendAndSearch()" style="margin-left:auto;">➕ 追加并重新搜索</button>
+          <button class="btn btn-sm" onclick="clearAppendSkills()">清空追加</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab: 方案对比 -->
+  <div class="tab-content" id="tab-compare">
+    <div class="card">
+      <div class="card-title">已保存方案</div>
+      <button class="btn" onclick="showSavedPlansModal()">📋 查看已保存方案 (<span id="saved-count">0</span>)</button>
+    </div>
   </div>
 
 </div>
@@ -802,6 +919,12 @@ let lastSearchResults = null;
 let lastSearchParams = null;
 let extraQueryResult = null;
 let libOpen = false;
+let selectedSeriesSkill = null;
+let selectedSeriesLevel = 0;
+let selectedComboSkill = null;
+let selectedComboLevel = 0;
+let COMBO_SKILLS = [];
+let activeTab = 'search';
 
 // ==================== API ====================
 const API = (path, body = null) => {
@@ -838,6 +961,7 @@ async function init() {
     SKILLS_DATA = info.skills_data || {};
     DAMAGE_SKILLS = info.damage_skills || [];
     SERIES_NAMES = info.series_names || [];
+    COMBO_SKILLS = info.combo_skill_list || [];
   } catch (e) {
     document.getElementById('search-results').innerHTML =
       '<div class="card"><div class="result-empty">无法连接后端 API: ' + e.message + '</div></div>';
@@ -850,19 +974,20 @@ async function init() {
 }
 
 function isComboSkill(skill) {
-  return WEAPON_SKILL_LIST.includes(skill) || SERIES_NAMES.includes(skill);
+  return WEAPON_SKILL_LIST.includes(skill) || SERIES_NAMES.includes(skill) || COMBO_SKILLS.includes(skill);
 }
 
 // ==================== 武器技能自动选择 ====================
+const DAMAGE_SKILLS_LIST = ['攻击','看破','超会心','弱点特效','挑战者','连击','无伤','攻击守势','巧击','因祸得福','精神抖擞','无我之境','力量解放','攻势','龙属性攻击强化','火属性攻击强化','水属性攻击强化','冰属性攻击强化','雷属性攻击强化'];
+
 function autoPickWeaponSkills() {
   const totalLevels = weaponSlotLevels.reduce((a, b) => a + b, 0);
   autoWeaponLevels = {};
   if (totalLevels === 0) { autoWeaponSkills = []; return; }
-  const dmgSkills = ['攻击','看破','超会心','弱点特效','挑战者','连击','无伤','攻击守势','巧击','因祸得福','精神抖擞','无我之境','力量解放','攻势','龙属性攻击强化','火属性攻击强化','水属性攻击强化','冰属性攻击强化','雷属性攻击强化'];
   const availablePool = WEAPON_SKILL_LIST.filter(s => SKILL_CAPS[s]);
   const scored = availablePool.map(s => {
     const cap = SKILL_CAPS[s] || 3;
-    const dmgBonus = dmgSkills.includes(s) ? 100 : 0;
+    const dmgBonus = DAMAGE_SKILLS_LIST.includes(s) ? 100 : 0;
     return { s, cap, score: dmgBonus * 1000 + cap * 10 };
   }).sort((a, b) => b.score - a.score);
   let remaining = totalLevels;
@@ -880,10 +1005,168 @@ function autoPickWeaponSkills() {
     remaining -= lv;
   }
   autoWeaponSkills = picked;
+
+  if (!selectedSeriesSkill || disabledWeaponSkills.has(selectedSeriesSkill)) {
+    selectedSeriesSkill = null;
+    selectedSeriesLevel = 0;
+    pickBestSeriesSkill();
+  }
+  if (!selectedComboSkill || disabledWeaponSkills.has(selectedComboSkill)) {
+    selectedComboSkill = null;
+    selectedComboLevel = 0;
+    pickBestComboSkill();
+  }
+}
+
+function pickBestSeriesSkill() {
+  if (SERIES_NAMES.length === 0) return;
+  const available = SERIES_NAMES.filter(s => SKILL_CAPS[s] && !disabledWeaponSkills.has(s));
+  if (available.length === 0) return;
+  const scored = available.map(s => {
+    const cap = SKILL_CAPS[s] || 2;
+    const dmgBonus = DAMAGE_SKILLS_LIST.includes(s) ? 100 : 0;
+    return { s, cap, score: dmgBonus * 1000 + cap * 10 };
+  }).sort((a, b) => b.score - a.score);
+  const best = scored[0];
+  if (best) {
+    selectedSeriesSkill = best.s;
+    selectedSeriesLevel = best.cap;
+  }
+}
+
+function pickBestComboSkill() {
+  if (COMBO_SKILLS.length === 0) return;
+  const available = COMBO_SKILLS.filter(s => SKILL_CAPS[s] && !disabledWeaponSkills.has(s));
+  if (available.length === 0) return;
+  const scored = available.map(s => {
+    const cap = SKILL_CAPS[s] || 3;
+    const dmgBonus = DAMAGE_SKILLS_LIST.includes(s) ? 100 : 0;
+    return { s, cap, score: dmgBonus * 1000 + cap * 10 };
+  }).sort((a, b) => b.score - a.score);
+  const best = scored[0];
+  if (best) {
+    selectedComboSkill = best.s;
+    selectedComboLevel = best.cap;
+  }
+}
+
+function selectSeriesSkill(name, level) {
+  if (!name) {
+    clearSeriesSkill();
+    return;
+  }
+  selectedSeriesSkill = name;
+  selectedSeriesLevel = level || SKILL_CAPS[name] || 1;
+  renderWeaponSkillBoxes();
+}
+
+function selectComboSkill(name, level) {
+  if (!name) {
+    clearComboSkill();
+    return;
+  }
+  selectedComboSkill = name;
+  selectedComboLevel = level || SKILL_CAPS[name] || 1;
+  renderWeaponSkillBoxes();
+}
+
+function clearSeriesSkill() {
+  selectedSeriesSkill = null;
+  selectedSeriesLevel = 0;
+  pickBestSeriesSkill();
+  renderWeaponSkillBoxes();
+}
+
+function clearComboSkill() {
+  selectedComboSkill = null;
+  selectedComboLevel = 0;
+  pickBestComboSkill();
+  renderWeaponSkillBoxes();
+}
+
+function onSeriesSkillChange() {
+  const sel = document.getElementById('series-skill-select');
+  const name = sel.value;
+  if (name) {
+    const lv = SKILL_CAPS[name] || 1;
+    selectSeriesSkill(name, lv);
+  } else {
+    clearSeriesSkill();
+  }
+}
+
+function onComboSkillChange() {
+  const sel = document.getElementById('combo-skill-select');
+  const name = sel.value;
+  if (name) {
+    const lv = SKILL_CAPS[name] || 1;
+    selectComboSkill(name, lv);
+  } else {
+    clearComboSkill();
+  }
+}
+
+function renderWeaponSkillBoxes() {
+  const seriesSel = document.getElementById('series-skill-select');
+  const comboSel = document.getElementById('combo-skill-select');
+
+  if (seriesSel) {
+    let sHtml = '<option value="">-- 自动选择最佳 --</option>';
+    SERIES_NAMES.forEach(s => {
+      const cap = SKILL_CAPS[s] || 1;
+      const sel = selectedSeriesSkill === s ? ' selected' : '';
+      sHtml += '<option value="' + esc(s) + '"' + sel + '>' + esc(s) + ' (上限 ' + cap + ')</option>';
+    });
+    seriesSel.innerHTML = sHtml;
+  }
+
+  if (comboSel) {
+    let cHtml = '<option value="">-- 自动选择最佳 --</option>';
+    COMBO_SKILLS.forEach(s => {
+      const cap = SKILL_CAPS[s] || 1;
+      const sel = selectedComboSkill === s ? ' selected' : '';
+      cHtml += '<option value="' + esc(s) + '"' + sel + '>' + esc(s) + ' (上限 ' + cap + ')</option>';
+    });
+    comboSel.innerHTML = cHtml;
+  }
+
+  const seriesSelected = document.getElementById('series-skill-selected');
+  if (seriesSelected) {
+    if (selectedSeriesSkill) {
+      const lv = selectedSeriesLevel || SKILL_CAPS[selectedSeriesSkill] || 1;
+      seriesSelected.innerHTML = '<span class="chip chip-selected">' +
+        esc(selectedSeriesSkill) + ' Lv' + lv + '</span>' +
+        '<button class="weapon-skill-clear" onclick="clearSeriesSkill()">✕ 清除</button>';
+    } else {
+      seriesSelected.innerHTML = '<span class="weapon-skill-empty">未选择，将自动选取最佳伤害技能</span>';
+    }
+  }
+
+  const comboSelected = document.getElementById('combo-skill-selected');
+  if (comboSelected) {
+    if (selectedComboSkill) {
+      const lv = selectedComboLevel || SKILL_CAPS[selectedComboSkill] || 1;
+      comboSelected.innerHTML = '<span class="chip chip-selected">' +
+        esc(selectedComboSkill) + ' Lv' + lv + '</span>' +
+        '<button class="weapon-skill-clear" onclick="clearComboSkill()">✕ 清除</button>';
+    } else {
+      comboSelected.innerHTML = '<span class="weapon-skill-empty">未选择，将自动选取最佳伤害技能</span>';
+    }
+  }
 }
 
 function getActiveWeaponSkills() {
-  return autoWeaponSkills.filter(s => !disabledWeaponSkills.has(s));
+  const skills = [];
+  if (selectedSeriesSkill && !disabledWeaponSkills.has(selectedSeriesSkill)) {
+    skills.push(selectedSeriesSkill);
+  }
+  if (selectedComboSkill && !disabledWeaponSkills.has(selectedComboSkill)) {
+    skills.push(selectedComboSkill);
+  }
+  autoWeaponSkills.filter(s => !disabledWeaponSkills.has(s)).forEach(s => {
+    if (!skills.includes(s)) skills.push(s);
+  });
+  return skills;
 }
 
 // ==================== 渲染 ====================
@@ -927,6 +1210,7 @@ function renderWeaponConfig() {
   autoEl.innerHTML = html;
 
   if (libOpen) renderSkillLibrary();
+  renderWeaponSkillBoxes();
 }
 
 function renderSkillLibrary() {
@@ -997,7 +1281,7 @@ function renderSkillButton(skill, context) {
     dots += '<span class="dot ' + (i < curLv ? 'on' : '') + '"></span>';
   }
   return '<button class="skill-btn ' + (selected?'selected':'') + '" onclick="toggleSkillExpand(\'' + context + '\',\'' + esc(skill) + '\')">' +
-    '<span class="fav-star ' + (fav?'on':'') + '" onclick="event.stopPropagation();toggleFav(\'' + esc(skill) + '\')">⭐</span>' +
+    '<span class="fav-star ' + (fav?'on':'') + '" onclick="event.stopPropagation();toggleFav(\'' + esc(skill) + '\')">' + (fav?'★':'☆') + '</span>' +
     '<span>' + esc(skill) + '</span>' +
     (selected ? '<span class="level-dots">' + dots + '</span>' : '') +
     '</button>';
@@ -1100,16 +1384,22 @@ async function runSearch() {
     if (isComboSkill(sk)) combo[sk] = lv;
     else fixed[sk] = lv;
   }
-  // 加入自动武器技能
-  for (const sk of getActiveWeaponSkills()) {
+  if (selectedSeriesSkill) {
+    const lv = selectedSeriesLevel || SKILL_CAPS[selectedSeriesSkill] || 1;
+    combo[selectedSeriesSkill] = lv;
+  }
+  if (selectedComboSkill) {
+    const lv = selectedComboLevel || SKILL_CAPS[selectedComboSkill] || 1;
+    combo[selectedComboSkill] = lv;
+  }
+  for (const sk of autoWeaponSkills) {
     if (!(sk in combo)) combo[sk] = autoWeaponLevels[sk] || SKILL_CAPS[sk] || 1;
   }
   const maxResults = parseInt(document.getElementById('max-results').value) || 5;
-  const timeout = parseFloat(document.getElementById('timeout').value) || 3;
   const params = {
     fixed_skills: fixed, combo_skills: combo,
     weapon_slots: weaponSlotLevels.slice(),
-    max_results: maxResults, timeout_s: timeout, min_rem_armor: 0
+    max_results: maxResults, min_rem_armor: 0
   };
   lastSearchParams = params;
   const btn = document.getElementById('search-btn');
@@ -1123,6 +1413,7 @@ async function runSearch() {
     lastSearchResults = res;
     document.getElementById('search-status').innerHTML = '找到 <b>' + res.count + '</b> 个方案 (' + res.total_time + 's)';
     renderSearchResults(res);
+    switchTab('search');
   } catch (e) {
     div.innerHTML = '<div class="card"><div class="result-empty">错误: ' + esc(e.message) + '</div></div>';
     document.getElementById('search-status').textContent = '搜索失败';
@@ -1230,6 +1521,9 @@ function renderResultCard(r, idx) {
       '<div><div class="damage-label">方案 #' + (idx+1) + ' · 期望伤害</div>' +
         '<div class="damage-big">' + (r.damage || 0).toFixed(1) + '</div></div>' +
       '<div class="result-actions">' +
+        '<label class="skill-mode-toggle">' +
+          '<input type="checkbox" onchange="toggleSkillDetail(' + idx + ')"> 技能模式' +
+        '</label>' +
         '<button class="btn btn-sm" onclick="showDetailModal(' + idx + ')">📄 详情</button>' +
         '<button class="btn btn-sm btn-success" onclick="savePlan(' + idx + ')">💾 保存</button>' +
       '</div>' +
@@ -1245,7 +1539,9 @@ function renderResultCard(r, idx) {
     '<div class="section-title">装备组合</div>' +
     '<div class="armor-grid">' + armorsHTML + charmHTML + '</div>' +
     '<div class="section-title">装饰品</div><div class="deco-list">' + decoHTML + '</div>' +
+    '<div class="skill-detail">' +
     (sortedSkillNames.length > 0 ? '<div class="section-title">方案技能</div><div class="chips">' + skillsHTML + '</div>' : '') +
+    '</div>' +
   '</div>';
 }
 
@@ -1271,7 +1567,15 @@ async function showDetailModal(idx) {
     if (isComboSkill(sk)) combo[sk] = lv;
     else fixed[sk] = lv;
   }
-  for (const sk of getActiveWeaponSkills()) {
+  if (selectedSeriesSkill) {
+    const lv = selectedSeriesLevel || SKILL_CAPS[selectedSeriesSkill] || 1;
+    combo[selectedSeriesSkill] = lv;
+  }
+  if (selectedComboSkill) {
+    const lv = selectedComboLevel || SKILL_CAPS[selectedComboSkill] || 1;
+    combo[selectedComboSkill] = lv;
+  }
+  for (const sk of autoWeaponSkills) {
     if (!(sk in combo)) combo[sk] = autoWeaponLevels[sk] || SKILL_CAPS[sk] || 1;
   }
   try {
@@ -1402,7 +1706,15 @@ async function runExtraQuery() {
     if (isComboSkill(sk)) combo[sk] = lv;
     else fixed[sk] = lv;
   }
-  for (const sk of getActiveWeaponSkills()) {
+  if (selectedSeriesSkill) {
+    const lv = selectedSeriesLevel || SKILL_CAPS[selectedSeriesSkill] || 1;
+    combo[selectedSeriesSkill] = lv;
+  }
+  if (selectedComboSkill) {
+    const lv = selectedComboLevel || SKILL_CAPS[selectedComboSkill] || 1;
+    combo[selectedComboSkill] = lv;
+  }
+  for (const sk of autoWeaponSkills) {
     if (!(sk in combo)) combo[sk] = autoWeaponLevels[sk] || SKILL_CAPS[sk] || 1;
   }
   const params = {
@@ -1457,11 +1769,44 @@ function renderExtraSkills() {
   upgrades.forEach(u => items.push({ ...u, _type: 'upgrade' }));
   extras.forEach(e => items.push({ ...e, _type: 'extra' }));
 
-  // 模式过滤
-  if (extraMode === 'favorite') {
+  // 通常模式下：显示所有 SKILL_CAPS 中的技能
+  if (extraMode === 'normal') {
+    const existingSkills = new Set(items.map(it => it.skill));
+    const catOrder = {};
+    let orderIdx = 0;
+    for (const skills of Object.values(SKILL_CATEGORIES || {})) {
+      for (const s of skills) {
+        if (!(s in catOrder)) { catOrder[s] = orderIdx++; }
+      }
+    }
+    for (const [skill, cap] of Object.entries(SKILL_CAPS)) {
+      if (existingSkills.has(skill)) continue;
+      if (cap <= 0) continue;
+      const isSel = selectedSkills[skill] > 0;
+      const curLv = isSel ? selectedSkills[skill] : 0;
+      const maxLv = Math.min(cap, isSel ? curLv : cap);
+      items.push({
+        skill: skill,
+        delta: 0,
+        wcr: 0,
+        cap: cap,
+        max_lv: maxLv,
+        current_lv: curLv,
+        _type: isSel ? 'existing' : 'available',
+        _catOrder: catOrder[skill] || 9999
+      });
+    }
+    items.sort((a, b) => {
+      const da = Math.abs(a.delta || 0), db = Math.abs(b.delta || 0);
+      if (db !== da) return db - da;
+      return (a._catOrder || 9999) - (b._catOrder || 9999);
+    });
+  } else if (extraMode === 'favorite') {
     items = items.filter(it => favSkills.has(it.skill));
+    items.sort((a, b) => (b.delta || 0) - (a.delta || 0));
   } else if (extraMode === 'disabled') {
     items = items.filter(it => !disabledSkills.has(it.skill));
+    items.sort((a, b) => (b.delta || 0) - (a.delta || 0));
   }
 
   const el = document.getElementById('extra-skills-list');
@@ -1469,8 +1814,6 @@ function renderExtraSkills() {
     el.innerHTML = '<div class="result-empty">该模式下无可用技能</div>';
     return;
   }
-  // 按伤害增幅排序
-  items.sort((a, b) => (b.delta || 0) - (a.delta || 0));
   let html = '';
   items.forEach(it => {
     const appended = appendSkills[it.skill] > 0;
@@ -1479,20 +1822,31 @@ function renderExtraSkills() {
     const deltaCls = (it.delta || 0) >= 0 ? 'es-delta' : 'es-delta neg';
     const sign = (it.delta || 0) >= 0 ? '+' : '';
     const cap = it.cap || SKILL_CAPS[it.skill] || 1;
-    let lvInfo = it._type === 'upgrade'
-      ? 'Lv' + it.current_lv + '→Lv' + it.max_lv + '/' + it.cap
-      : 'Lv' + it.max_lv + '/' + it.cap;
+    let lvInfo;
+    if (it._type === 'upgrade') {
+      lvInfo = 'Lv' + it.current_lv + '→Lv' + it.max_lv + '/' + it.cap;
+    } else if (it._type === 'extra') {
+      lvInfo = 'Lv' + it.max_lv + '/' + it.cap;
+    } else if (it._type === 'existing') {
+      lvInfo = '已选 Lv' + (it.current_lv || 0) + '/' + cap;
+    } else {
+      lvInfo = 'Lv' + cap + '/' + cap;
+    }
+    const typeLabel = it._type === 'upgrade' ? '升级' : it._type === 'extra' ? '追加' : it._type === 'existing' ? '已选' : '可用';
+    const typeCls = it._type === 'upgrade' ? 'upgrade' : it._type === 'extra' ? 'extra' : it._type === 'existing' ? 'upgrade' : 'extra';
     html += '<div class="' + cls + '">';
-    html += '<span class="es-type ' + it._type + '">' + (it._type==='upgrade'?'升级':'追加') + '</span>';
+    html += '<span class="es-type ' + typeCls + '">' + typeLabel + '</span>';
     html += '<span class="es-name">' + esc(it.skill) + '</span>';
     html += '<span class="es-info">' + lvInfo + '</span>';
-    html += '<span class="' + deltaCls + '">' + sign + (it.delta||0).toFixed(1) + ' 伤害</span>';
-    html += '<span class="es-info">会心 ' + (it.wcr||0) + '%</span>';
-    // 收藏/禁用按钮
+    if (it.delta != null && it.delta !== 0) {
+      html += '<span class="' + deltaCls + '">' + sign + (it.delta||0).toFixed(1) + ' 伤害</span>';
+    } else {
+      html += '<span class="es-info">--</span>';
+    }
+    if (it.wcr) html += '<span class="es-info">会心 ' + (it.wcr||0) + '%</span>';
     const fav = favSkills.has(it.skill);
-    html += '<span class="fav-star ' + (fav?'on':'') + '" onclick="toggleFav(\'' + esc(it.skill) + '\')" style="cursor:pointer;">⭐</span>';
+    html += '<span class="fav-star ' + (fav?'on':'') + '" onclick="toggleFav(\'' + esc(it.skill) + '\')" style="cursor:pointer;">' + (fav?'★':'☆') + '</span>';
     html += '<button class="btn btn-sm ' + (disabled?'':'btn-danger') + '" onclick="toggleDisabledSkill(\'' + esc(it.skill) + '\')">' + (disabled?'启用':'禁用') + '</button>';
-    // 等级选择（展开）
     html += '<div class="es-levels">';
     if (expandedSkill && expandedSkill.context === 'extra' && expandedSkill.skill === it.skill) {
       const maxPick = it._type === 'upgrade' ? it.max_lv : it.cap;
@@ -1582,6 +1936,29 @@ document.addEventListener('keydown', e => {
     closeSavedPlansModal();
   }
 });
+
+// ==================== Tab 切换 ====================
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === tab);
+  });
+  document.querySelectorAll('.tab-content').forEach(c => {
+    c.classList.toggle('active', c.id === 'tab-' + tab);
+  });
+}
+
+function toggleSkillDetail(idx) {
+  const cards = document.querySelectorAll('.result-card');
+  const card = cards[idx];
+  if (!card) return;
+  const checkbox = card.querySelector('.skill-mode-toggle input');
+  const willShow = !card.classList.contains('show-skill-detail');
+  card.classList.toggle('show-skill-detail', willShow);
+  if (checkbox && checkbox.checked !== willShow) {
+    checkbox.checked = willShow;
+  }
+}
 
 init().catch(e => console.error(e));
 </script>

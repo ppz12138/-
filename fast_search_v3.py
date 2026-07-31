@@ -7,9 +7,9 @@
 3. 精确赤字向量，逐技能检查可行性
 4. 分数上限剪枝+技能可行性剪枝
 """
-import json, time, itertools, sys
+import json, time, itertools, sys, os
 
-DATA = '/workspace'
+DATA = os.path.dirname(os.path.abspath(__file__))
 
 # ==================== 技能数值 ====================
 MUZ_ATK = {0:0, 1:3, 2:6, 3:10, 4:15, 5:20}
@@ -2110,7 +2110,7 @@ def _quick_skill_upper_bound(sk, cached_ctx, wslots):
 
 
 # ==================== 追加技能查询（v3优化版）====================
-def query_extra(fixed_skills, combo_skills, min_rem_armor, charm_pool):
+def query_extra(fixed_skills, combo_skills, min_rem_armor, charm_pool, mode='normal', fav_skills=None, dis_skills=None):
     """逐技能扫描：每个技能从最高级降级搜索，找到1条方案即记录
 
     v3优化：
@@ -2127,21 +2127,39 @@ def query_extra(fixed_skills, combo_skills, min_rem_armor, charm_pool):
     if combo_skills:
         fixed_set.update(combo_skills.keys())
 
-    output_skills = []
-    output_skills.extend([
-        '挑战者', '力量解放', '弱点特效', '无伤',
-        '攻击', '看破',
-        '会心击【属性】', '攻击守势', '属性吸收',
-    ])
-    output_skills.extend([
-        '黑蚀龙之力', '凶爪龙之力', '冻峰龙之反叛', '锁刃龙之饥饿',
-    ])
-    if '巨戟龙的默示录' not in fixed_set:
-        output_skills.append('巨戟龙的默示录')
+    fav_skills = fav_skills or set()
+    dis_skills = dis_skills or set()
 
-    current_elem = '龙属性攻击强化'
-    if current_elem not in fixed_set:
-        output_skills.append(current_elem)
+    # 根据模式过滤技能
+    def _pass(sk):
+        if mode == 'favorite':
+            return sk in fav_skills
+        if mode == 'disabled':
+            return sk not in dis_skills
+        return True
+
+    # 查询所有可能的技能（排除已选中的）
+    output_skills = []
+    for sk, cap in SKILL_CAPS.items():
+        if sk.startswith('Lv') and sk.endswith('插槽'):
+            continue
+        if sk in fixed_set:
+            continue
+        if sk in SERIES_SK or sk in GROUP_SK:
+            continue
+        if not _pass(sk):
+            continue
+        output_skills.append(sk)
+
+    # 系列技能单独处理
+    for ss in series_names:
+        if ss not in fixed_set and _pass(ss):
+            output_skills.append(ss)
+
+    # 组合技能单独处理
+    for cs in GROUP_SK:
+        if cs not in fixed_set and cs in SKILL_CAPS and _pass(cs):
+            output_skills.append(cs)
 
     under_max = []
     for sk, lv in fixed_skills.items():

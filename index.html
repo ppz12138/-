@@ -559,6 +559,16 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
 .baseline-box .bi { font-size: 13px; }
 .baseline-box .bi .k { color: var(--muted); }
 .baseline-box .bi .v { color: var(--accent2); font-weight: 600; font-size: 16px; }
+.progress-bar { display: flex; align-items: center; }
+.progress-fill { transition: width 0.3s; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+.progress-bar[data-indeterminate="true"] .progress-fill {
+  width: 30% !important;
+  animation: progress-indeterminate 1.5s ease-in-out infinite;
+}
+@keyframes progress-indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
 .append-bar {
   position: sticky;
   bottom: 0;
@@ -705,6 +715,8 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
 .saved-plan-item .sp-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
 .compare-check { display: flex; align-items: center; cursor: pointer; }
 .compare-check input { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+.chip-disabled { background: rgba(239,68,68,0.15); color: #f56565; border: 1px solid rgba(239,68,68,0.3); text-decoration: none; cursor: default; }
+.saved-plans-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-top: 8px; }
 
 /* 方案对比 */
 .compare-table th, .compare-table td { white-space: nowrap; }
@@ -896,10 +908,10 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
       </div>
     </div>
     <div class="mt8">
-      <button class="btn btn-sm" onclick="toggleSkillLibrary()">⚙ 管理技能库</button>
+      <button class="btn btn-sm" onclick="toggleSkillLibrary()">⚙ 武器自动匹配排除列表</button>
     </div>
     <div class="skill-library" id="skill-library" style="display:none;">
-      <div class="skill-library-title">武器技能库（点击启用/禁用）</div>
+      <div class="skill-library-title">武器技能库（点击技能可启用/禁用，禁用后该技能不参与自动匹配）</div>
       <div class="lib-grid" id="lib-grid"></div>
     </div>
   </div>
@@ -920,19 +932,6 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
     <div class="selected-bar" id="selected-skills"></div>
   </div>
 
-  <!-- 搜索按钮 + 参数 -->
-  <div class="card">
-    <div class="card-title">搜索</div>
-    <div class="search-bar">
-      <div class="param-group">
-        <label>返回结果数量</label>
-        <input type="number" id="max-results" value="5" min="1" max="50">
-      </div>
-      <button class="btn btn-primary" id="search-btn" onclick="runSearch()">🔍 开始搜索</button>
-      <span id="search-status" class="muted" style="font-size:13px;"></span>
-    </div>
-  </div>
-
   <!-- Tab 导航 -->
   <div class="tab-bar">
     <button class="tab-btn active" data-tab="search" onclick="switchTab('search')">🔍 查询方案</button>
@@ -942,6 +941,17 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 
   <!-- Tab: 查询方案 -->
   <div class="tab-content active" id="tab-search">
+    <div class="card">
+      <div class="card-title">搜索</div>
+      <div class="search-bar">
+        <div class="param-group">
+          <label>返回结果数量</label>
+          <input type="number" id="max-results" value="5" min="1" max="50">
+        </div>
+        <button class="btn btn-primary" id="search-btn" onclick="runSearch()">🔍 开始搜索</button>
+        <span id="search-status" class="muted" style="font-size:13px;"></span>
+      </div>
+    </div>
     <div id="search-results">
       <div class="card"><div class="result-empty">尚未搜索，点击上方"开始搜索"按钮</div></div>
     </div>
@@ -959,6 +969,9 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
       <div class="flex-row mt8">
         <button class="btn btn-primary" id="extra-btn" onclick="runExtraQuery()">📊 查询追加技能空间</button>
         <span id="extra-status" class="muted" style="font-size:13px;"></span>
+        <div class="progress-bar" id="extra-progress" style="display:none;flex:1;max-width:200px;height:8px;background:var(--border);border-radius:4px;overflow:hidden;">
+          <div class="progress-fill" id="extra-progress-fill" style="width:0%;height:100%;background:var(--accent);transition:width 0.3s;"></div>
+        </div>
       </div>
       <div class="mt16" id="extra-area" style="display:none;">
         <div class="baseline-box" id="baseline-box"></div>
@@ -978,11 +991,11 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
     <div class="card">
       <div class="card-title">方案对比 <span class="sub">勾选多个已保存方案进行伤害详细计算对比</span></div>
       <div class="flex-row">
-        <button class="btn" onclick="showSavedPlansModal()">📋 管理已保存方案 (<span id="saved-count">0</span>)</button>
         <button class="btn btn-primary" onclick="runCompare()" id="compare-btn">⚖ 对比选中方案</button>
         <span id="compare-status" class="muted" style="font-size:13px;"></span>
       </div>
       <div class="mt16" id="compare-selected-list"></div>
+      <div class="mt16" id="saved-plans-inline"></div>
       <div class="mt16" id="compare-area" style="display:none;"></div>
     </div>
   </div>
@@ -1122,7 +1135,11 @@ function clearComboSkill() {
 function onSeriesSkillChange() {
   const sel = document.getElementById('series-skill-select');
   const name = sel.value;
-  if (name) {
+  if (name === '__disabled__') {
+    selectedSeriesSkill = '__disabled__';
+    selectedSeriesLevel = 0;
+    renderWeaponSkillBoxes();
+  } else if (name) {
     const lv = SKILL_CAPS[name] || 1;
     selectSeriesSkill(name, lv);
   } else {
@@ -1133,7 +1150,11 @@ function onSeriesSkillChange() {
 function onComboSkillChange() {
   const sel = document.getElementById('combo-skill-select');
   const name = sel.value;
-  if (name) {
+  if (name === '__disabled__') {
+    selectedComboSkill = '__disabled__';
+    selectedComboLevel = 0;
+    renderWeaponSkillBoxes();
+  } else if (name) {
     const lv = SKILL_CAPS[name] || 1;
     selectComboSkill(name, lv);
   } else {
@@ -1147,6 +1168,7 @@ function renderWeaponSkillBoxes() {
 
   if (seriesSel) {
     let sHtml = '<option value="">-- 留空 · 自动匹配最优 --</option>';
+    sHtml += '<option value="__disabled__">-- 禁用（无技能） --</option>';
     SERIES_NAMES.forEach(s => {
       const cap = SKILL_CAPS[s] || 1;
       const sel = selectedSeriesSkill === s ? ' selected' : '';
@@ -1157,6 +1179,7 @@ function renderWeaponSkillBoxes() {
 
   if (comboSel) {
     let cHtml = '<option value="">-- 留空 · 自动匹配最优 --</option>';
+    cHtml += '<option value="__disabled__">-- 禁用（无技能） --</option>';
     COMBO_SKILLS.forEach(s => {
       const cap = SKILL_CAPS[s] || 1;
       const sel = selectedComboSkill === s ? ' selected' : '';
@@ -1167,7 +1190,10 @@ function renderWeaponSkillBoxes() {
 
   const seriesSelected = document.getElementById('series-skill-selected');
   if (seriesSelected) {
-    if (selectedSeriesSkill) {
+    if (selectedSeriesSkill === '__disabled__') {
+      seriesSelected.innerHTML = '<span class="chip chip-disabled">禁用</span>' +
+        '<button class="weapon-skill-clear" onclick="clearSeriesSkill()">✕ 清除</button>';
+    } else if (selectedSeriesSkill) {
       const lv = selectedSeriesLevel || SKILL_CAPS[selectedSeriesSkill] || 1;
       seriesSelected.innerHTML = '<span class="chip chip-selected">' +
         esc(selectedSeriesSkill) + ' Lv' + lv + '</span>' +
@@ -1179,7 +1205,10 @@ function renderWeaponSkillBoxes() {
 
   const comboSelected = document.getElementById('combo-skill-selected');
   if (comboSelected) {
-    if (selectedComboSkill) {
+    if (selectedComboSkill === '__disabled__') {
+      comboSelected.innerHTML = '<span class="chip chip-disabled">禁用</span>' +
+        '<button class="weapon-skill-clear" onclick="clearComboSkill()">✕ 清除</button>';
+    } else if (selectedComboSkill) {
       const lv = selectedComboLevel || SKILL_CAPS[selectedComboSkill] || 1;
       comboSelected.innerHTML = '<span class="chip chip-selected">' +
         esc(selectedComboSkill) + ' Lv' + lv + '</span>' +
@@ -1397,20 +1426,23 @@ async function runSearch() {
     if (isComboSkill(sk)) combo[sk] = lv;
     else fixed[sk] = lv;
   }
-  if (selectedSeriesSkill) {
+  const hasDisabledSeries = selectedSeriesSkill === '__disabled__';
+  const hasDisabledCombo = selectedComboSkill === '__disabled__';
+  if (selectedSeriesSkill && !hasDisabledSeries) {
     const lv = selectedSeriesLevel || SKILL_CAPS[selectedSeriesSkill] || 1;
     combo[selectedSeriesSkill] = lv;
   }
-  if (selectedComboSkill) {
+  if (selectedComboSkill && !hasDisabledCombo) {
     const lv = selectedComboLevel || SKILL_CAPS[selectedComboSkill] || 1;
     combo[selectedComboSkill] = lv;
   }
+  const autoWeapon = !hasDisabledSeries && !hasDisabledCombo;
   const maxResults = parseInt(document.getElementById('max-results').value) || 5;
   const params = {
     fixed_skills: fixed, combo_skills: combo,
     weapon_slots: weaponSlotLevels.slice(),
     max_results: maxResults, min_rem_armor: 0,
-    auto_weapon_skill: true,  // 留空时自动匹配最优武器技能
+    auto_weapon_skill: autoWeapon,
     disabled_weapon_skills: [...disabledWeaponSkills]
   };
   lastSearchParams = params;
@@ -1423,7 +1455,6 @@ async function runSearch() {
     const res = await API('/api/custom_search', params);
     if (res.error) throw new Error(res.error);
     lastSearchResults = res;
-    // 记录自动匹配的武器技能（用于结果展示高亮）
     window._lastAutoWeapon = res.auto_weapon_skill || null;
     const autoInfo = res.auto_weapon_skill ? ' · 自动匹配武器技能: <b>' + esc(res.auto_weapon_skill) + '</b>' : '';
     document.getElementById('search-status').innerHTML = '找到 <b>' + res.count + '</b> 个方案 (' + res.total_time + 's)' + autoInfo;
@@ -1444,6 +1475,7 @@ function renderSearchResults(res) {
     return;
   }
   div.innerHTML = res.results.map((r, i) => renderResultCard(r, i)).join('');
+  res.results.forEach((_, i) => renderPlanAppendLevels(i));
 }
 
 function renderResultCard(r, idx) {
@@ -1487,15 +1519,15 @@ function renderResultCard(r, idx) {
   if (r.series_check) {
     for (const s of r.series_check) {
       // 系列/组合技能与其他技能同样显示 LvX/Cap，不加件数徽章
-      allSkills[s.skill] = { level: s.level, cap: s.cap || (s.skill in (window.COMBO_SKILLS||[]) ? 1 : 2) };
+      allSkills[s.skill] = { level: s.level, cap: SKILL_CAPS[s.skill] || 1 };
     }
   }
 
   // 排序：收藏置顶 + 按分类中出现顺序
   const selKeys = Object.keys(selectedSkills);
   const weaponSel = [];
-  if (selectedSeriesSkill && !disabledWeaponSkills.has(selectedSeriesSkill)) weaponSel.push(selectedSeriesSkill);
-  if (selectedComboSkill && !disabledWeaponSkills.has(selectedComboSkill)) weaponSel.push(selectedComboSkill);
+  if (selectedSeriesSkill && selectedSeriesSkill !== '__disabled__' && !disabledWeaponSkills.has(selectedSeriesSkill)) weaponSel.push(selectedSeriesSkill);
+  if (selectedComboSkill && selectedComboSkill !== '__disabled__' && !disabledWeaponSkills.has(selectedComboSkill)) weaponSel.push(selectedComboSkill);
   // 加入自动匹配的武器技能
   if (window._lastAutoWeapon && !weaponSel.includes(window._lastAutoWeapon)) weaponSel.push(window._lastAutoWeapon);
 
@@ -1526,6 +1558,18 @@ function renderResultCard(r, idx) {
     return '<span class="chip ' + cls + '">' + esc(k) + ' Lv' + v.level + '/' + v.cap + '</span>';
   }).join('');
 
+  // 追加技能区域（一级菜单，直接在方案卡片内）
+  const appendHTML = true ?
+    '<div class="section-title">追加技能（点击选择等级，然后点击追加）</div>' +
+    '<div class="chips" id="plan-append-chips-' + idx + '"></div>' +
+    '<div class="append-bar" style="position:static;display:flex;margin-top:8px;">' +
+      '<span class="muted" style="font-size:13px;">待追加:</span>' +
+      '<div class="chips" id="plan-append-bar-' + idx + '"></div>' +
+      '<button class="btn btn-success" onclick="appendFromPlanAndSearch(' + idx + ')" style="margin-left:auto;">➕ 追加并搜索</button>' +
+      '<button class="btn btn-sm" onclick="clearPlanAppend(' + idx + ')">清空</button>' +
+    '</div>' +
+    '<div class="mt8" id="plan-append-levels-' + idx + '"></div>' : '';
+
   const remA = (r.remaining_slots && r.remaining_slots.armor) || [];
   const remW = (r.remaining_slots && r.remaining_slots.weapon) || [];
   const remASum = remA.reduce((a,b)=>a+b,0);
@@ -1538,7 +1582,6 @@ function renderResultCard(r, idx) {
         '<div class="damage-big">' + (r.damage || 0).toFixed(1) + '</div></div>' +
       '<div class="result-actions">' +
         '<button class="btn btn-sm" onclick="showDetailModal(' + idx + ')">📄 详情</button>' +
-        '<button class="btn btn-sm" onclick="openAppendFromPlan(' + idx + ')">➕ 追加技能</button>' +
         '<button class="btn btn-sm btn-success" onclick="savePlan(' + idx + ')">💾 保存</button>' +
       '</div>' +
     '</div>' +
@@ -1554,6 +1597,7 @@ function renderResultCard(r, idx) {
     '<div class="armor-grid">' + armorsHTML + charmHTML + '</div>' +
     '<div class="section-title">装饰品</div><div class="deco-list">' + decoHTML + '</div>' +
     (sortedSkillNames.length > 0 ? '<div class="section-title">方案技能</div><div class="chips">' + skillsHTML + '</div>' : '') +
+    appendHTML +
   '</div>';
 }
 
@@ -1571,25 +1615,25 @@ async function showDetailModal(idx) {
   modal.classList.add('show');
   body.innerHTML = '<div class="card-title">方案详情</div><div class="spinner-wrap"><div class="loading"></div><span>计算详细伤害...</span></div>';
 
-  // 构建详情计算参数
+  // 从方案中提取所有技能用于详情计算
   const fixed = {};
   const combo = {};
-  for (const [sk, lv] of Object.entries(selectedSkills)) {
-    if (lv <= 0) continue;
-    if (isComboSkill(sk)) combo[sk] = lv;
-    else fixed[sk] = lv;
+  if (r.core_skills) {
+    for (const [k, v] of Object.entries(r.core_skills)) {
+      if (isComboSkill(k)) combo[k] = v.level;
+      else fixed[k] = v.level;
+    }
   }
-  if (selectedSeriesSkill) {
-    const lv = selectedSeriesLevel || SKILL_CAPS[selectedSeriesSkill] || 1;
-    combo[selectedSeriesSkill] = lv;
+  if (r.other_skills) {
+    for (const [k, v] of Object.entries(r.other_skills)) {
+      if (isComboSkill(k)) combo[k] = v.level;
+      else fixed[k] = v.level;
+    }
   }
-  if (selectedComboSkill) {
-    const lv = selectedComboLevel || SKILL_CAPS[selectedComboSkill] || 1;
-    combo[selectedComboSkill] = lv;
-  }
-  // 若自动匹配到武器技能，加入combo用于详情计算
-  if (window._lastAutoWeapon && !combo[window._lastAutoWeapon]) {
-    combo[window._lastAutoWeapon] = SKILL_CAPS[window._lastAutoWeapon] || 1;
+  if (r.series_check) {
+    for (const s of r.series_check) {
+      combo[s.skill] = s.level;
+    }
   }
   try {
     const detail = await API('/api/detail_calc', {
@@ -1654,32 +1698,43 @@ function closeDetailModal() {
 
 // ==================== 保存方案 ====================
 function savePlan(idx) {
-  if (!lastSearchResults || !lastSearchResults.results[idx]) return;
-  const r = lastSearchResults.results[idx];
-  const name = '方案 #' + (savedPlans.length + 1) + ' · 伤害' + (r.damage || 0).toFixed(1);
-  savedPlans.push({
-    name: name,
-    damage: r.damage,
-    result: r,
-    params: lastSearchParams,
-    time: new Date().toLocaleString('zh-CN')
-  });
-  saveState();
-  updateSavedCount();
-  alert('已保存: ' + name);
+  if (!lastSearchResults || !lastSearchResults.results || !lastSearchResults.results[idx]) {
+    alert('没有可保存的方案，请先搜索');
+    return;
+  }
+  try {
+    const r = lastSearchResults.results[idx];
+    const name = '方案 #' + (savedPlans.length + 1) + ' · 伤害' + (r.damage || 0).toFixed(1);
+    savedPlans.push({
+      name: name,
+      damage: r.damage,
+      result: r,
+      params: lastSearchParams,
+      time: new Date().toLocaleString('zh-CN')
+    });
+    saveState();
+    updateSavedCount();
+    alert('已保存: ' + name);
+  } catch (e) {
+    alert('保存失败: ' + e.message);
+  }
 }
 function updateSavedCount() {
   document.getElementById('saved-count').textContent = savedPlans.length;
+  renderInlineSavedPlans();
 }
-function showSavedPlansModal() {
-  const el = document.getElementById('saved-plans-list');
+function renderInlineSavedPlans() {
+  const el = document.getElementById('saved-plans-inline');
+  if (!el) return;
   if (savedPlans.length === 0) {
-    el.innerHTML = '<div class="result-empty">暂无保存的方案</div>';
-  } else {
-    el.innerHTML = savedPlans.map((p, i) => {
+    el.innerHTML = '<div class="muted" style="font-size:13px;">暂无保存的方案，在搜索结果中点击"保存"按钮添加</div>';
+    return;
+  }
+  el.innerHTML = '<div class="section-title">已保存方案 (' + savedPlans.length + ')</div>' +
+    '<div class="saved-plans-grid">' + savedPlans.map((p, i) => {
       const checked = compareSelected.has(i) ? ' checked' : '';
       return '<div class="saved-plan-item">' +
-        '<label class="compare-check"><input type="checkbox" onchange="toggleCompareSelected(' + i + ')"' + checked + '></label>' +
+        '<label class="compare-check"><input type="checkbox" onchange="toggleCompareSelected(' + i + ');renderCompareSelectedList();renderInlineSavedPlans()"' + checked + '></label>' +
         '<div><div class="sp-label">' + esc(p.name) + '</div>' +
         '<div class="sp-sub">伤害 ' + (p.damage||0).toFixed(1) + ' · ' + esc(p.time) + '</div></div>' +
         '<div class="flex-row">' +
@@ -1687,18 +1742,18 @@ function showSavedPlansModal() {
           '<button class="btn btn-sm btn-danger" onclick="deleteSavedPlan(' + i + ')">删除</button>' +
         '</div>' +
       '</div>';
-    }).join('');
-  }
-  document.getElementById('saved-modal').classList.add('show');
-  renderCompareSelectedList();
+    }).join('') + '</div>';
+}
+function showSavedPlansModal() {
+  renderInlineSavedPlans();
+  // 滚动到已保存方案区域
+  document.getElementById('saved-plans-inline').scrollIntoView({ behavior: 'smooth' });
 }
 function closeSavedPlansModal() {
-  document.getElementById('saved-modal').classList.remove('show');
 }
 function loadSavedPlan(idx) {
   const p = savedPlans[idx];
   if (!p) return;
-  closeSavedPlansModal();
   const modal = document.getElementById('detail-modal');
   const body = document.getElementById('detail-modal-body');
   modal.classList.add('show');
@@ -1708,7 +1763,6 @@ function loadSavedPlan(idx) {
 }
 function deleteSavedPlan(idx) {
   savedPlans.splice(idx, 1);
-  // 重建 compareSelected 索引
   const newSel = new Set();
   compareSelected.forEach(i => {
     if (i < idx) newSel.add(i);
@@ -1717,7 +1771,7 @@ function deleteSavedPlan(idx) {
   compareSelected = newSel;
   saveState();
   updateSavedCount();
-  showSavedPlansModal();
+  renderCompareSelectedList();
 }
 
 // ==================== 方案对比 ====================
@@ -1731,14 +1785,14 @@ function renderCompareSelectedList() {
   const el = document.getElementById('compare-selected-list');
   if (!el) return;
   if (compareSelected.size === 0) {
-    el.innerHTML = '<div class="muted" style="font-size:13px;">未勾选任何方案，请在「管理已保存方案」中勾选要对比的方案</div>';
+    el.innerHTML = '<div class="muted" style="font-size:13px;">请在上方已保存方案中勾选至少 2 个方案进行对比</div>';
     return;
   }
   const sorted = [...compareSelected].sort((a,b) => savedPlans[b].damage - savedPlans[a].damage);
   el.innerHTML = '<div class="section-title">已选对比方案 (' + sorted.length + ')</div>' +
     '<div class="chips">' + sorted.map(i =>
       '<span class="chip chip-selected">' + esc(savedPlans[i].name) + ' · ' + (savedPlans[i].damage||0).toFixed(1) +
-      ' <span class="chip-x" onclick="toggleCompareSelected(' + i + ');renderCompareSelectedList();document.getElementById(\'saved-modal\').classList.contains(\'show\')&&showSavedPlansModal()">✕</span></span>'
+      ' <span class="chip-x" onclick="toggleCompareSelected(' + i + ');renderCompareSelectedList();renderInlineSavedPlans()">✕</span></span>'
     ).join('') + '</div>';
 }
 
@@ -1758,11 +1812,30 @@ async function runCompare() {
     // 并行请求每个方案的详情
     const details = await Promise.all(idxs.map(async (i, ord) => {
       const p = savedPlans[i];
-      const params = p.params || {};
+      const r = p.result || {};
+      const detailFixed = {};
+      const detailCombo = {};
+      if (r.core_skills) {
+        for (const [k, v] of Object.entries(r.core_skills)) {
+          if (isComboSkill(k)) detailCombo[k] = v.level;
+          else detailFixed[k] = v.level;
+        }
+      }
+      if (r.other_skills) {
+        for (const [k, v] of Object.entries(r.other_skills)) {
+          if (isComboSkill(k)) detailCombo[k] = v.level;
+          else detailFixed[k] = v.level;
+        }
+      }
+      if (r.series_check) {
+        for (const s of r.series_check) {
+          detailCombo[s.skill] = s.level;
+        }
+      }
       const detail = await API('/api/detail_calc', {
-        fixed_skills: params.fixed_skills || {},
-        combo_skills: params.combo_skills || {},
-        weapon_slots: params.weapon_slots || [3,3,3]
+        fixed_skills: detailFixed,
+        combo_skills: detailCombo,
+        weapon_slots: p.params?.weapon_slots || [3,3,3]
       });
       return { idx: i, ord: ord, plan: p, detail: detail };
     }));
@@ -1778,7 +1851,6 @@ async function runCompare() {
 
 function renderCompareResult(details) {
   const area = document.getElementById('compare-area');
-  // 找出最优方案的伤害作为基准
   const bestDmg = Math.max(...details.map(d => d.detail.final_dmg || d.plan.damage || 0));
 
   // 1. 伤害总览对比表
@@ -1809,7 +1881,6 @@ function renderCompareResult(details) {
 
   // 2. 各技能独立贡献对比表
   html += '<div class="section-title">各技能独立伤害贡献对比</div>';
-  // 收集所有技能
   const allSkillsSet = new Set();
   details.forEach(d => {
     const sd = d.detail.skill_damages || {};
@@ -1834,9 +1905,8 @@ function renderCompareResult(details) {
   });
   html += '</tr></thead><tbody>';
   allSkills.forEach(sk => {
-    // 检查是否至少有一个方案含此技能
     const hasAny = details.some(d => (d.detail.skill_damages || {})[sk]);
-    if (!hasAny) return;  // 跳过全空行
+    if (!hasAny) return;
     let rowHtml = '<tr><td>' + esc(sk) + '</td>';
     details.forEach(d => {
       const sd = d.detail.skill_damages || {};
@@ -1855,8 +1925,34 @@ function renderCompareResult(details) {
   });
   html += '</tbody></table>';
 
-  // 3. 各方案技能构成
-  html += '<div class="section-title">各方案技能构成</div>';
+  // 3. 伤害计算过程对比
+  html += '<div class="section-title">伤害计算过程对比</div>';
+  html += '<table class="detail-table compare-table"><thead><tr>' +
+    '<th>方案</th><th>基线伤害</th><th>基线会心</th><th>最终伤害</th><th>最终会心</th><th>伤害提升</th><th>提升比例</th>' +
+  '</tr></thead><tbody>';
+  details.forEach((d, i) => {
+    const det = d.detail;
+    const finalDmg = det.final_dmg || d.plan.damage || 0;
+    const baseDmg = det.baseline_dmg || 0;
+    const baseWcr = det.baseline_wcr || 0;
+    const finalWcr = det.final_wcr || 0;
+    const inc = det.dmg_increase || 0;
+    const pct = det.dmg_increase_pct || 0;
+    const isBest = finalDmg >= bestDmg - 0.01;
+    html += '<tr' + (isBest ? ' class="best-row"' : '') + '>' +
+      '<td>' + esc(d.plan.name) + '</td>' +
+      '<td>' + baseDmg.toFixed(1) + '</td>' +
+      '<td>' + baseWcr.toFixed(1) + '%</td>' +
+      '<td style="color:var(--accent2);font-weight:700;">' + finalDmg.toFixed(1) + '</td>' +
+      '<td>' + finalWcr.toFixed(1) + '%</td>' +
+      '<td>+' + inc.toFixed(1) + '</td>' +
+      '<td>' + pct + '%</td>' +
+    '</tr>';
+  });
+  html += '</tbody></table>';
+
+  // 4. 各方案技能构成 + 完整计算过程
+  html += '<div class="section-title">各方案技能构成与计算过程</div>';
   html += '<div class="compare-skills-grid">';
   details.forEach(d => {
     const det = d.detail;
@@ -1873,9 +1969,10 @@ function renderCompareResult(details) {
       html += '<span class="chip ' + cls + '">' + (fav ? '★ ' : '') + esc(sk) + ' Lv' + info.level + '/' + info.cap + '</span>';
     });
     html += '</div>';
-    // 完整计算过程
+    // 完整计算过程（直接展示，不折叠）
     if (det.detail_text) {
-      html += '<details class="cpp-details"><summary>完整计算过程</summary><div class="detail-text">' + esc(det.detail_text) + '</div></details>';
+      html += '<div class="section-title" style="font-size:12px;margin-top:12px;">完整计算过程</div>';
+      html += '<div class="detail-text">' + esc(det.detail_text) + '</div>';
     }
     html += '</div>';
   });
@@ -1893,35 +1990,45 @@ async function runExtraQuery() {
     if (isComboSkill(sk)) combo[sk] = lv;
     else fixed[sk] = lv;
   }
-  if (selectedSeriesSkill) {
+  const hasDisabledSeries = selectedSeriesSkill === '__disabled__';
+  const hasDisabledCombo = selectedComboSkill === '__disabled__';
+  if (selectedSeriesSkill && !hasDisabledSeries) {
     const lv = selectedSeriesLevel || SKILL_CAPS[selectedSeriesSkill] || 1;
     combo[selectedSeriesSkill] = lv;
   }
-  if (selectedComboSkill) {
+  if (selectedComboSkill && !hasDisabledCombo) {
     const lv = selectedComboLevel || SKILL_CAPS[selectedComboSkill] || 1;
     combo[selectedComboSkill] = lv;
   }
   // 若自动匹配到武器技能，加入combo用于追加查询（保持与搜索一致）
-  if (window._lastAutoWeapon && !combo[window._lastAutoWeapon]) {
+  if (window._lastAutoWeapon && !combo[window._lastAutoWeapon] && !hasDisabledSeries && !hasDisabledCombo) {
     combo[window._lastAutoWeapon] = SKILL_CAPS[window._lastAutoWeapon] || 1;
   }
   const params = {
     fixed_skills: fixed, combo_skills: combo,
-    weapon_slots: weaponSlotLevels.slice(), min_rem_armor: 0
+    weapon_slots: weaponSlotLevels.slice(), min_rem_armor: 0,
+    mode: extraMode,
+    favorite_skills: [...favSkills].filter(s => !disabledSkills.has(s)),
+    disabled_skills: [...disabledSkills]
   };
   const btn = document.getElementById('extra-btn');
   btn.disabled = true;
   document.getElementById('extra-status').innerHTML = '<span class="loading"></span> 查询中...';
+  document.getElementById('extra-progress').style.display = 'flex';
+  document.getElementById('extra-progress').setAttribute('data-indeterminate', 'true');
+  document.getElementById('extra-progress-fill').style.width = '0%';
   document.getElementById('extra-area').style.display = 'none';
   try {
     const res = await API('/api/query_extra', params);
     if (res.error) throw new Error(res.error);
     extraQueryResult = res;
     document.getElementById('extra-status').innerHTML = '完成 (' + (res.time || 0) + 's)';
+    document.getElementById('extra-progress').style.display = 'none';
     document.getElementById('extra-area').style.display = 'block';
     renderExtraSection();
   } catch (e) {
     document.getElementById('extra-status').textContent = '错误: ' + e.message;
+    document.getElementById('extra-progress').style.display = 'none';
   } finally {
     btn.disabled = false;
   }
@@ -2145,115 +2252,77 @@ function switchTab(tab) {
   });
 }
 
-// ==================== 方案追加技能 ====================
-function openAppendFromPlan(idx) {
-  if (!lastSearchResults || !lastSearchResults.results[idx]) return;
-  const r = lastSearchResults.results[idx];
-  // 收集方案已有技能
-  const planSkills = {};
-  if (r.core_skills) for (const [k,v] of Object.entries(r.core_skills)) planSkills[k] = v.level;
-  if (r.other_skills) for (const [k,v] of Object.entries(r.other_skills)) planSkills[k] = v.level;
-  if (r.series_check) for (const s of r.series_check) planSkills[s.skill] = s.level;
+// ==================== 方案追加技能（一级菜单） ====================
+let planAppendSkills = {};  // { planIdx: { skill: lv } }
 
-  // 构建可选技能列表（排除已满级）
-  const catOrder = {};
-  let orderIdx = 0;
-  for (const skills of Object.values(SKILL_CATEGORIES || {})) {
-    for (const s of skills) {
-      if (!(s in catOrder)) catOrder[s] = orderIdx++;
-    }
+function togglePlanAppendLevel(planIdx, skill) {
+  const planSkills = planAppendSkills[planIdx] || {};
+  const curLv = planSkills[skill] || 0;
+  const cap = SKILL_CAPS[skill] || 1;
+  // 循环切换：0 -> 1 -> 2 -> ... -> cap -> 0
+  const nextLv = curLv >= cap ? 0 : curLv + 1;
+  if (nextLv === 0) {
+    delete planSkills[skill];
+  } else {
+    planSkills[skill] = nextLv;
   }
-  const candidates = [];
+  planAppendSkills[planIdx] = planSkills;
+  renderPlanAppendBar(planIdx);
+  renderPlanAppendLevels(planIdx);
+}
+
+function renderPlanAppendBar(planIdx) {
+  const bar = document.getElementById('plan-append-bar-' + planIdx);
+  if (!bar) return;
+  const planSkills = planAppendSkills[planIdx] || {};
+  const keys = Object.keys(planSkills).filter(k => planSkills[k] > 0);
+  if (keys.length === 0) {
+    bar.innerHTML = '<span class="muted">--</span>';
+    return;
+  }
+  bar.innerHTML = keys.map(k =>
+    '<span class="chip chip-append">' + esc(k) + ' Lv' + planSkills[k] +
+    ' <span class="chip-x" onclick="event.stopPropagation();togglePlanAppendLevel(' + planIdx + ',\'' + esc(k) + '\')">✕</span></span>'
+  ).join('');
+}
+
+function renderPlanAppendLevels(planIdx) {
+  const el = document.getElementById('plan-append-levels-' + planIdx);
+  if (!el) return;
+  const r = lastSearchResults.results[planIdx];
+  if (!r) return;
+  const planSkills = planAppendSkills[planIdx] || {};
+  const allSkills = {};
+  if (r.core_skills) for (const [k,v] of Object.entries(r.core_skills)) allSkills[k] = v.level;
+  if (r.other_skills) for (const [k,v] of Object.entries(r.other_skills)) allSkills[k] = v.level;
+  if (r.series_check) for (const s of r.series_check) allSkills[s.skill] = s.level;
+  
+  let html = '';
   for (const [sk, cap] of Object.entries(SKILL_CAPS)) {
     if (cap <= 0) continue;
-    const curLv = planSkills[sk] || selectedSkills[sk] || 0;
-    if (curLv >= cap) continue;  // 已满级跳过
-    candidates.push({ skill: sk, cap: cap, curLv: curLv, catOrder: catOrder[sk] || 9999 });
+    const curLv = allSkills[sk] || 0;
+    if (curLv > 0) continue;  // 只显示方案中未选的技能
+    const selected = planSkills[sk] > 0;
+    const lv = planSkills[sk] || 0;
+    html += '<span class="chip ' + (selected ? 'chip-selected' : 'chip-unselected') + '" style="cursor:pointer;" onclick="togglePlanAppendLevel(' + planIdx + ',\'' + esc(sk) + '\')">' + esc(sk) + ' (上限 Lv' + cap + ')</span>';
   }
-  candidates.sort((a, b) => {
-    const fa = favSkills.has(a.skill), fb = favSkills.has(b.skill);
-    if (fa && !fb) return -1;
-    if (!fa && fb) return 1;
-    return a.catOrder - b.catOrder;
-  });
-
-  const modal = document.getElementById('detail-modal');
-  const body = document.getElementById('detail-modal-body');
-  modal.classList.add('show');
-  let html = '<div class="card-title">➕ 追加技能并重新搜索</div>';
-  html += '<div class="muted" style="font-size:13px;margin-bottom:14px;">选择要追加的技能（基于方案 #' + (idx+1) + ' 的现有技能），追加后将以新技能组合重新搜索。</div>';
-  if (candidates.length === 0) {
-    html += '<div class="result-empty">所有技能均已满级，无可追加项</div>';
-  } else {
-    html += '<div id="plan-append-list">';
-    candidates.forEach(c => {
-      const fav = favSkills.has(c.skill);
-      html += '<div class="extra-skill-item">' +
-        '<span class="fav-star ' + (fav?'on':'') + '" onclick="toggleFav(\'' + esc(c.skill) + '\');openAppendFromPlan(' + idx + ')" style="cursor:pointer;">' + (fav?'★':'☆') + '</span>' +
-        '<span class="es-name">' + esc(c.skill) + '</span>' +
-        '<span class="es-info">当前 Lv' + c.curLv + '/' + c.cap + '</span>' +
-        '<div class="es-levels" id="pa-' + esc(c.skill) + '"></div>' +
-      '</div>';
-    });
-    html += '</div>';
-    html += '<div class="append-bar" style="position:static;display:flex;margin-top:14px;">' +
-      '<span class="muted" style="font-size:13px;">待追加:</span>' +
-      '<div class="chips" id="plan-append-chips"></div>' +
-      '<button class="btn btn-success" onclick="appendFromPlanAndSearch(' + idx + ')" style="margin-left:auto;">➕ 追加并搜索</button>' +
-      '<button class="btn btn-sm" onclick="clearPlanAppend()">清空</button>' +
-    '</div>';
-  }
-  body.innerHTML = html;
-  window._planAppendSkills = {};
-  window._planAppendIdx = idx;
-  // 渲染等级选择按钮
-  candidates.forEach(c => {
-    const el = document.getElementById('pa-' + c.skill);
-    if (!el) return;
-    let h = '';
-    for (let i = (c.curLv + 1); i <= c.cap; i++) {
-      h += '<button class="lv-btn" onclick="setPlanAppendSkill(\'' + esc(c.skill) + '\',' + i + ',' + idx + ')">' + i + '</button>';
-    }
-    el.innerHTML = h;
-  });
+  el.innerHTML = html;
 }
 
-function setPlanAppendSkill(skill, lv, idx) {
-  window._planAppendSkills = window._planAppendSkills || {};
-  window._planAppendSkills[skill] = lv;
-  // 更新按钮高亮
-  const el = document.getElementById('pa-' + skill);
-  if (el) {
-    el.querySelectorAll('.lv-btn').forEach(b => {
-      b.classList.toggle('active', parseInt(b.textContent) === lv);
-    });
-  }
-  // 更新待追加chips
-  const chipsEl = document.getElementById('plan-append-chips');
-  if (chipsEl) {
-    const keys = Object.keys(window._planAppendSkills).filter(k => window._planAppendSkills[k] > 0);
-    chipsEl.innerHTML = keys.map(k =>
-      '<span class="chip chip-append">' + esc(k) + ' Lv' + window._planAppendSkills[k] +
-      ' <span class="chip-x" onclick="setPlanAppendSkill(\'' + esc(k) + '\',0,' + idx + ')">✕</span></span>'
-    ).join('') || '<span class="muted">--</span>';
-  }
+function clearPlanAppend(planIdx) {
+  planAppendSkills[planIdx] = {};
+  renderPlanAppendBar(planIdx);
+  renderPlanAppendLevels(planIdx);
 }
 
-function clearPlanAppend() {
-  window._planAppendSkills = {};
-  if (window._planAppendIdx != null) openAppendFromPlan(window._planAppendIdx);
-}
-
-function appendFromPlanAndSearch(idx) {
-  const appends = window._planAppendSkills || {};
+function appendFromPlanAndSearch(planIdx) {
+  const appends = planAppendSkills[planIdx] || {};
   const keys = Object.keys(appends).filter(k => appends[k] > 0);
   if (keys.length === 0) { alert('请先选择要追加的技能'); return; }
-  // 将追加技能加入 selectedSkills
   for (const k of keys) {
     selectedSkills[k] = Math.max(selectedSkills[k] || 0, appends[k]);
   }
-  window._planAppendSkills = {};
-  closeDetailModal();
+  planAppendSkills[planIdx] = {};
   saveState();
   renderSelectedSkills();
   renderSkillSelection();

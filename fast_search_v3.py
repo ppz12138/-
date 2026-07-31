@@ -95,6 +95,9 @@ SKILL_CAPS = {
     '海龙的涡雷': 4, '冻峰龙之反叛': 4, '锁刃龙之饥饿': 4, '霸主之魂': 3,
 }
 
+# 从skills_data.json补充缺失的技能上限
+_SKILLS_DATA_FALLBACK = {}
+
 # ==================== 加载数据 ====================
 print("加载数据...", end=' ', flush=True)
 import os
@@ -103,6 +106,21 @@ with open(os.path.join(DATA, 'armors_cn.json'), 'r', encoding='utf-8') as f: arm
 with open(os.path.join(DATA, 'my_charms.json'), 'r', encoding='utf-8') as f: my_charms = json.load(f)
 with open(os.path.join(DATA, 'charms_cn.json'), 'r', encoding='utf-8') as f: craft_charms = json.load(f)
 with open(os.path.join(DATA, 'skills_data.json'), 'r', encoding='utf-8') as f: skills_data = json.load(f)
+
+# 从skills_data.json补充缺失的SKILL_CAPS
+for _cat_key in ['武器技能', '防具技能']:
+    for _sname, _sinfo in skills_data.get(_cat_key, {}).items():
+        _lv = _sinfo.get('max_lv', 0)
+        if _lv > 0 and _sname not in SKILL_CAPS:
+            SKILL_CAPS[_sname] = _lv
+# 系列技能统一2级，覆盖硬编码值
+for _sname in skills_data.get('系列技能', {}):
+    if _sname != '说明':
+        SKILL_CAPS[_sname] = 2
+# 组合技能统一1级，覆盖硬编码值
+for _sname in skills_data.get('组合技能', {}):
+    if _sname != '说明':
+        SKILL_CAPS[_sname] = 1
 
 WEAPON_SK = frozenset(skills_data.get('武器技能', {}).keys())
 
@@ -729,7 +747,9 @@ def _build_candidates(charm_pool, fixed_skills, combo_skills, quiet=False, extra
         for sk in combo_skills:
             weapon_skills[sk] = weapon_skills.get(sk, 0) + 1
 
-    armor_fixed = {s: r for s, r in fixed_skills.items() if s not in WEAPON_SK}
+    # 武器技能也可以由防具和护石提供，所以不将它们从armor_fixed中排除
+    # weapon_fixed仅用于武器孔位填充优化，不影响候选预过滤
+    armor_fixed = dict(fixed_skills)  # 所有技能都参与防具候选筛选
     weapon_fixed = {s: r for s, r in fixed_skills.items() if s in WEAPON_SK}
 
     all_skill_names = set(fixed_skills.keys())
@@ -856,61 +876,11 @@ def _build_candidates(charm_pool, fixed_skills, combo_skills, quiet=False, extra
 
     candidates.sort(key=_sort_key)
 
-    # 护石可行性过滤（优化版：基线快速路径 + _fill_weapon_slots_smart缓存）
+    # 护石可行性过滤：跳过武器技能赤字检查
+    # 武器技能(攻击/看破等)也可以由防具提供，不能仅靠武器孔+护石判断可行性
     charm_cands = [c for c in candidates if c['part_idx'] == 5]
     armor_cands = [c for c in candidates if c['part_idx'] != 5]
-    w_deficit_set = set(s for s, d in fixed_skills.items() if s in WEAPON_SK and d > 0)
-    if w_deficit_set:
-        w_deficit_init = {}
-        for s, need in weapon_fixed.items():
-            if s.startswith('Lv') and s.endswith('插槽'): continue
-            if s in NO_DECO_SK: continue
-            h = weapon_skills.get(s, 0)
-            if h < need:
-                w_deficit_init[s] = need - h
-        if combo_skills:
-            for s, need in combo_skills.items():
-                if s in NO_DECO_SK: continue
-                if s not in WEAPON_SK: continue
-                h = max(0, weapon_skills.get(s, 0) - weapon_skills.get(s, 0))
-                if h < need:
-                    w_deficit_init[s] = w_deficit_init.get(s, 0) + (need - h)
-        if w_deficit_init:
-            # 快速路径：先检查基线（无护石贡献）能否满足武器赤字
-            _base_fs = dict(weapon_skills)
-            _base_fixed = {}
-            for s, d in w_deficit_init.items():
-                _base_fixed[s] = _base_fs.get(s, 0) + d
-            _base_ok = _fill_weapon_slots_smart(_base_fs, list(WSLOTS), _base_fixed) is not None
-            if not _base_ok:
-                # 基线不可行 → 逐组检查（按武器技能贡献分组，复用缓存）
-                _charm_by_wsk = {}
-                for cc in charm_cands:
-                    wsk_key = frozenset((s, lv) for s, lv in cc['skills'].items()
-                               if s in w_deficit_init and lv > 0)
-                    _charm_by_wsk.setdefault(wsk_key, []).append(cc)
-                _viable_charms = []
-                for _wsk_key, _cc_list in _charm_by_wsk.items():
-                    _test_fs = dict(weapon_skills)
-                    if _wsk_key:
-                        for s, lv in _wsk_key:
-                            _test_fs[s] = _test_fs.get(s, 0) + lv
-                    _test_fixed = {}
-                    for s, d in w_deficit_init.items():
-                        rem = d - (_test_fs.get(s, 0) - weapon_skills.get(s, 0))
-                        if rem > 0:
-                            _test_fixed[s] = _test_fs.get(s, 0) + rem
-                    if not _test_fixed:
-                        _viable_charms.extend(_cc_list)
-                        continue
-                    result = _fill_weapon_slots_smart(_test_fs, list(WSLOTS), _test_fixed)
-                    if result is not None:
-                        _viable_charms.extend(_cc_list)
-                charm_cands = _viable_charms
-        charm_cands.sort(key=lambda c: (
-            -sum(1 for s in c['skills'] if s in w_deficit_set),
-            -c['score']
-        ))
+    charm_cands.sort(key=lambda c: (-c['score']))
     candidates = charm_cands + armor_cands
     if not quiet:
         orig_count = sum(len(parts[p]) for p in part_names) + len(charm_pool)
@@ -1156,95 +1126,20 @@ def dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
             print(f"  预检查: 初始赤字{init_def_score}>{max_possible_cap}→无解")
         return []
 
-    # 武器技能赤字检查（复用_fill_weapon_slots_smart缓存）
+    # 武器技能赤字检查：只检查完全没有珠子且护石也没有的技能
+    # 注意：武器技能也可以由防具提供，所以不能仅检查武器孔
     w_deficit = {tracked_skills[i]: init_deficit[i] for i in range(n_skills)
                  if init_deficit[i] > 0 and tracked_skills[i] in WEAPON_SK}
     if w_deficit:
-        w_def_score = sum(w_deficit.values())
         for s, d in w_deficit.items():
             pool = deco_idx.get((s, 'weapon'), [])
             best_charm_lv = max((c.get('skills', {}).get(s, 0) for c in charm_pool), default=0)
-            if not pool and best_charm_lv < d:
+            # 只在珠子和护石都没有该技能时才判定无解
+            has_armor_source = any(a.get('skills', {}).get(s, 0) > 0 for a in armors)
+            if not pool and best_charm_lv < d and not has_armor_source:
                 if not quiet:
-                    print(f"  预检查: {s}无珠子且护石最高Lv{best_charm_lv}<需{d}→无解")
+                    print(f"  预检查: {s}无珠子且护石最高Lv{best_charm_lv}<需{d}且防具也无→无解")
                 return []
-        # 快速上界检查（精确版：考虑组合珠多技能贡献+实际孔位数）
-        # 1. 计算每个武器珠对赤字技能的总贡献，找最大值
-        w_deficit_set = set(w_deficit.keys())
-        max_total_pts_per_deco = 0
-        _seen_dn = set()
-        for s in w_deficit:
-            pool = deco_idx.get((s, 'weapon'), [])
-            for sr, pts, dn in pool:
-                if dn in _seen_dn:
-                    continue
-                _seen_dn.add(dn)
-                deco_skills = deco_skill_map.get(dn, [])
-                total_pts = sum(min(p, w_deficit.get(sk, 0)) for sk, p in deco_skills if sk in w_deficit_set)
-                if total_pts > max_total_pts_per_deco:
-                    max_total_pts_per_deco = total_pts
-        # 2. 武器孔位数（非总等级）+ 防具武器孔上限
-        w_num_slots = len(WSLOTS)
-        max_armor_wslots = 0
-        for _pi in range(5):
-            _cands = candidates_by_part.get(_pi, [])
-            if _cands:
-                _part_max = max(len(c.get('weapon_slots', [])) for c in _cands)
-                max_armor_wslots += _part_max
-        total_w_slots = w_num_slots + max_armor_wslots
-        # 3. 最佳护石武器技能贡献
-        best_charm_w_total = 0
-        if charm_pool:
-            for c in charm_pool:
-                wsk_sum = sum(min(lv, w_deficit.get(s, 0)) for s, lv in c.get('skills', {}).items()
-                             if s in w_deficit and lv > 0)
-                best_charm_w_total = max(best_charm_w_total, wsk_sum)
-        # 4. 上界 = 总孔位数 × 每珠最大贡献 + 护石贡献
-        max_fillable = total_w_slots * max_total_pts_per_deco + best_charm_w_total if max_total_pts_per_deco > 0 else best_charm_w_total
-        if w_def_score > max_fillable:
-            if not quiet:
-                print(f"  预检查: 武器赤字{w_def_score}>{max_fillable}(精确上界)→无解")
-            return []
-        # 精确检查：用_fill_weapon_slots_smart验证（有缓存，O(1)命中）
-        w_test_fs = dict(weapon_skills)
-        w_test_fixed = {}
-        for s, d in w_deficit.items():
-            w_test_fixed[s] = weapon_skills.get(s, 0) + d
-        # 检查每个含武器技能的护石选项
-        charm_wsk_seen = set()
-        charm_wsk_options = [None]
-        if charm_pool:
-            for c in charm_pool:
-                wsk_in_charm = {s: lv for s, lv in c.get('skills', {}).items()
-                               if s in w_deficit and lv > 0}
-                if wsk_in_charm:
-                    key = frozenset(wsk_in_charm.items())
-                    if key not in charm_wsk_seen:
-                        charm_wsk_seen.add(key)
-                        charm_wsk_options.append(wsk_in_charm)
-        any_viable = False
-        for charm_wsk in charm_wsk_options:
-            test_fs = dict(w_test_fs)
-            if charm_wsk:
-                for s, lv in charm_wsk.items():
-                    test_fs[s] = test_fs.get(s, 0) + lv
-            # 检查剩余赤字
-            rem_deficit = {s: max(0, d - (test_fs.get(s, 0) - w_test_fs.get(s, 0)))
-                          for s, d in w_deficit.items()}
-            rem_deficit = {s: d for s, d in rem_deficit.items() if d > 0}
-            if not rem_deficit:
-                any_viable = True
-                break
-            # 用_fill_weapon_slots_smart检查
-            test_w_fixed = {s: test_fs.get(s, 0) + d for s, d in rem_deficit.items()}
-            result = _fill_weapon_slots_smart(test_fs, list(WSLOTS), test_w_fixed)
-            if result is not None:
-                any_viable = True
-                break
-        if not any_viable:
-            if not quiet:
-                print(f"  预检查: 武器技能赤字{w_deficit}无法满足→无解")
-            return []
 
     # ===== 搜索状态 =====
     results = []
@@ -2093,6 +1988,87 @@ def dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
     return results
 
 
+def dfs_search_auto_weapon(charm_pool, fixed_skills, combo_skills, min_rem_armor,
+                           max_results=5, timeout_s=99999.0, quiet=True,
+                           disabled_weapon_skills=None):
+    """武器技能自动匹配最优：当用户未指定系列/组合技能时，
+    遍历所有可用的系列+组合技能作为武器技能，挑选伤害最高的方案。
+
+    返回 (results, auto_weapon_skill)：
+      - results: 搜索结果列表
+      - auto_weapon_skill: 自动匹配到的武器技能名 (None 表示无匹配或用户已指定)
+    """
+    # 如果用户已指定系列/组合技能，直接走普通搜索
+    has_user_weapon = any(s in NO_DECO_SK for s in (combo_skills or {}))
+    if has_user_weapon:
+        results = dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
+                             max_results=max_results, timeout_s=timeout_s, quiet=quiet)
+        return results, None
+
+    # 收集候选武器技能：系列技能 + 组合技能，排除被禁用的
+    disabled = disabled_weapon_skills or set()
+    candidates_ws = []
+    for s in SERIES_SK:
+        if s in disabled:
+            continue
+        candidates_ws.append((s, 2))  # 系列技能默认尝试Lv2(4件)
+    for s in GROUP_SK:
+        if s in disabled:
+            continue
+        candidates_ws.append((s, 1))  # 组合技能Lv1(3件)
+
+    if not candidates_ws:
+        # 没有可用武器技能，走普通搜索
+        results = dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
+                             max_results=max_results, timeout_s=timeout_s, quiet=quiet)
+        return results, None
+
+    if not quiet:
+        print(f"  自动匹配武器技能: 候选{len(candidates_ws)}个")
+
+    best_results = []
+    best_weapon_skill = None
+    best_dmg = -1.0
+    per_skill_best = {}  # skill -> (dmg, results)
+
+    for ws_name, ws_lv in candidates_ws:
+        # 构造本次搜索的 combo_skills
+        new_combo = dict(combo_skills) if combo_skills else {}
+        new_combo[ws_name] = ws_lv
+        try:
+            results = dfs_search(charm_pool, fixed_skills, new_combo, min_rem_armor,
+                                 max_results=1, timeout_s=timeout_s, quiet=quiet)
+        except Exception:
+            results = []
+        if not results:
+            continue
+        top = results[0]
+        dmg = top.get('pract', 0)
+        per_skill_best[ws_name] = (dmg, results[0])
+        if dmg > best_dmg:
+            best_dmg = dmg
+            best_weapon_skill = ws_name
+            best_results = results
+
+    if not best_results:
+        # 所有武器技能都搜不到方案，回退到无武器技能搜索
+        results = dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
+                             max_results=max_results, timeout_s=timeout_s, quiet=quiet)
+        return results, None
+
+    # 标记自动匹配的武器技能到结果中
+    for r in best_results:
+        r['_auto_weapon_skill'] = best_weapon_skill
+
+    # 限制返回数量
+    if max_results > 0:
+        best_results = best_results[:max_results]
+
+    if not quiet:
+        print(f"  自动匹配最优武器技能: {best_weapon_skill} (伤害{best_dmg:.1f})")
+    return best_results, best_weapon_skill
+
+
 def _quick_skill_upper_bound(sk, cached_ctx, wslots):
     """快速计算技能sk的理论可追加上界（预筛用）
 
@@ -2348,6 +2324,7 @@ def query_extra(fixed_skills, combo_skills, min_rem_armor, charm_pool):
     lines.append(f"基线加权会心: {baseline_wcr:.1f}%")
     lines.append("")
 
+    upgrade_skills = []
     if under_max:
         lines.append("【固定技能升级空间】（当前等级→可升级到 | 独立伤害 | 增幅 | 加权会心）")
         lines.append("-" * 75)
@@ -2360,10 +2337,15 @@ def query_extra(fixed_skills, combo_skills, min_rem_armor, charm_pool):
         for sk, cur, ml, cap, dmg, delta, wcr in up_items:
             sign = "+" if delta >= 0 else ""
             lines.append(f"  {sk:<14s} | Lv{cur:>2d}→Lv{ml:>2d}/{cap:<2d} | 伤害 {dmg:>7.1f} | {sign}{delta:.1f} | 会心 {wcr:.1f}%")
+            upgrade_skills.append({
+                'skill': sk, 'current_lv': cur, 'max_lv': ml, 'cap': cap,
+                'damage': round(dmg, 1), 'delta': round(delta, 1), 'wcr': round(wcr, 1)
+            })
         lines.append("")
 
     lines.append("【追加技能】（技能名 | 最高等级 | 独立伤害 | 伤害增幅 | 加权会心）")
     lines.append("-" * 75)
+    extra_skills = []
     out_items = []
     for sk in final_output:
         if sk in skill_max:
@@ -2374,6 +2356,10 @@ def query_extra(fixed_skills, combo_skills, min_rem_armor, charm_pool):
     for sk, ml, cap, dmg, delta, wcr in out_items:
         sign = "+" if delta >= 0 else ""
         lines.append(f"  {sk:<14s} | Lv{ml:>2d}/{cap:<2d} | 伤害 {dmg:>7.1f} | {sign}{delta:.1f} | 会心 {wcr:.1f}%")
+        extra_skills.append({
+            'skill': sk, 'max_lv': ml, 'cap': cap,
+            'damage': round(dmg, 1), 'delta': round(delta, 1), 'wcr': round(wcr, 1)
+        })
     lines.append("")
 
     lines.append("【孔位最大化】（将LvN插槽作为技能搜索，向下兼容）")
@@ -2381,4 +2367,13 @@ def query_extra(fixed_skills, combo_skills, min_rem_armor, charm_pool):
     lines.append(f"  Lv2插槽: 基线{slot_info['Lv2']}个 → 最大化{slot_max['Lv2']}个")
     lines.append(f"  Lv3插槽: 基线{slot_info['Lv3']}个 → 最大化{slot_max['Lv3']}个")
 
-    return '\n'.join(lines)
+    result_text = '\n'.join(lines)
+    return {
+        'result_text': result_text,
+        'baseline_dmg': round(baseline_dmg, 1),
+        'baseline_wcr': round(baseline_wcr, 1),
+        'upgrade_skills': upgrade_skills,
+        'extra_skills': extra_skills,
+        'slot_info': slot_info,
+        'slot_max': slot_max,
+    }

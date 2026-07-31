@@ -1,0 +1,2266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MHWilds 配装搜索器</title>
+<style>
+:root {
+  --bg: #161922;
+  --bg2: #1f242f;
+  --bg3: #2a3140;
+  --border: #353d4d;
+  --border-soft: #2a313e;
+  --text: #eef1f6;
+  --muted: #96a0b3;
+  --accent: #7c9cff;
+  --accent-glow: rgba(124,156,255,0.4);
+  --accent2: #4ade80;
+  --danger: #f56565;
+  --warn: #fbbf24;
+  --card: #1e2430;
+  --card-grad: linear-gradient(180deg, #232936 0%, #1e2430 100%);
+  --armor-slot: #5b9bd5;
+  --weapon-slot: #e4b12c;
+  --chip-blue: #7c9cff;
+  --chip-gray: #6b7280;
+  --chip-orange: #fbbf24;
+  --shadow: 0 2px 8px rgba(0,0,0,0.22);
+  --shadow-lg: 0 8px 28px rgba(0,0,0,0.32);
+  --shadow-glow: 0 0 0 1px rgba(124,156,255,0.08), 0 4px 16px rgba(0,0,0,0.2);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background:
+    radial-gradient(1200px 600px at 15% -10%, rgba(124,156,255,0.07), transparent 60%),
+    radial-gradient(900px 500px at 95% 0%, rgba(74,222,128,0.04), transparent 55%),
+    var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+.header {
+  background:
+    linear-gradient(135deg, rgba(124,156,255,0.16) 0%, transparent 45%),
+    linear-gradient(135deg, #2a3a5c 0%, #1e2a47 55%, #161922 100%);
+  padding: 26px 32px;
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+  position: relative;
+  overflow: hidden;
+}
+.header::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-glow), transparent);
+}
+.header h1 { font-size: 24px; font-weight: 700; color: #fff; letter-spacing: 0.4px; text-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+.header p { color: #b6c0d6; font-size: 13px; margin-top: 5px; }
+.content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px 32px;
+}
+.card {
+  background: var(--card-grad);
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  padding: 22px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.card:hover { border-color: var(--border); }
+.card-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  color: var(--text);
+}
+.card-title::before {
+  content: '';
+  width: 4px;
+  height: 18px;
+  background: linear-gradient(180deg, var(--accent), #5a7cf0);
+  border-radius: 2px;
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+.card-title .sub { font-size: 12px; color: var(--muted); font-weight: 400; margin-left: 8px; }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+.btn:hover { border-color: var(--accent); background: #343b4a; box-shadow: 0 2px 6px rgba(108,140,255,0.15); }
+.btn:active { transform: translateY(1px); }
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), #8fa8ff);
+  border-color: transparent;
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(108,140,255,0.3);
+}
+.btn-primary:hover { filter: brightness(1.1); box-shadow: 0 4px 14px rgba(108,140,255,0.4); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; filter: none; box-shadow: none; }
+.btn-success {
+  background: linear-gradient(135deg, var(--accent2), #22c55e);
+  border-color: transparent;
+  color: #003b1f;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(74,222,128,0.25);
+}
+.btn-success:hover { filter: brightness(1.08); box-shadow: 0 4px 14px rgba(74,222,128,0.35); }
+.btn-danger { color: var(--danger); border-color: rgba(239,68,68,0.4); transition: all 0.2s ease; }
+.btn-danger:hover { background: rgba(239,68,68,0.12); border-color: var(--danger); }
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+label {
+  font-size: 12px;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+input[type="text"], input[type="number"], select {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 14px;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+  font-family: inherit;
+}
+input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(108,140,255,0.18); }
+
+/* 武器配置 */
+.weapon-config { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+.weapon-slots-wrap { display: flex; gap: 16px; flex-wrap: wrap; }
+.weapon-slot-group { display: flex; flex-direction: column; gap: 6px; }
+.seg-btns { display: flex; gap: 4px; }
+.seg-btn {
+  width: 34px; height: 34px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+.seg-btn:hover { border-color: var(--weapon-slot); color: var(--text); transform: translateY(-1px); }
+.seg-btn.active {
+  background: var(--weapon-slot);
+  border-color: var(--weapon-slot);
+  color: #1a1d23;
+  box-shadow: 0 2px 8px rgba(212,160,23,0.35);
+}
+.weapon-total {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: rgba(212,160,23,0.12);
+  border: 1px solid rgba(212,160,23,0.35);
+  border-radius: 16px;
+  color: var(--weapon-slot);
+  font-size: 13px;
+  font-weight: 600;
+}
+.skill-library {
+  margin-top: 14px;
+  padding: 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.skill-library-title { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+.lib-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.lib-btn {
+  padding: 6px 13px;
+  border-radius: 16px;
+  border: 1px solid rgba(108,140,255,0.3);
+  background: rgba(108,140,255,0.08);
+  color: #a6b8ff;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+.lib-btn:hover { border-color: var(--accent); background: rgba(108,140,255,0.16); transform: translateY(-1px); }
+.lib-btn.disabled {
+  background: var(--bg3);
+  border-color: var(--border);
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+/* 技能选择 */
+.category-block { margin-bottom: 18px; }
+.category-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.skill-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.skill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+.skill-btn:hover { border-color: var(--accent); color: var(--text); transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,0.18); }
+.skill-btn.selected {
+  background: rgba(108,140,255,0.18);
+  border-color: var(--accent);
+  color: #a6b8ff;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(108,140,255,0.2);
+}
+.fav-star {
+  font-size: 14px;
+  color: #4a4f5d;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  font-style: normal;
+}
+.fav-star:hover { color: var(--warn); transform: scale(1.15); }
+.fav-star.on { color: var(--warn); text-shadow: 0 0 6px rgba(245,158,11,0.5); font-weight: bold; }
+.level-dots { display: inline-flex; gap: 3px; align-items: center; }
+.dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #3a3f4d;
+  transition: all 0.2s ease;
+}
+.dot.on { background: var(--accent); box-shadow: 0 0 5px rgba(108,140,255,0.7); }
+
+/* 等级选择框（展开） */
+.level-selector {
+  flex-basis: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 11px 14px;
+  margin: 2px 0 4px;
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  flex-wrap: wrap;
+  box-shadow: 0 2px 10px rgba(108,140,255,0.12);
+}
+.ls-label { font-size: 12px; color: var(--muted); margin-right: 4px; }
+.lv-btn {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+.lv-btn:hover { border-color: var(--accent); background: rgba(108,140,255,0.1); }
+.lv-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(108,140,255,0.4);
+}
+.lv-btn.cancel {
+  width: auto;
+  padding: 0 12px;
+  color: var(--danger);
+  border-color: rgba(239,68,68,0.3);
+  margin-left: 8px;
+}
+.lv-btn.cancel:hover { background: rgba(239,68,68,0.12); border-color: var(--danger); }
+
+/* Chip 系统 */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 18px;
+  padding: 6px 13px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  font-family: inherit;
+}
+.chip-selected {
+  background: rgba(108,140,255,0.15);
+  border-color: rgba(108,140,255,0.45);
+  color: #a6b8ff;
+  font-weight: 600;
+}
+.chip-selected:hover { background: rgba(108,140,255,0.25); transform: translateY(-1px); }
+.chip-unselected {
+  background: var(--bg3);
+  border-color: var(--border);
+  color: var(--muted);
+}
+.chip-unselected:hover { border-color: var(--chip-gray); color: var(--text); }
+.chip-append {
+  background: rgba(245,158,11,0.15);
+  border-color: rgba(245,158,11,0.45);
+  color: #fbbf24;
+  font-weight: 600;
+}
+.chip-append:hover { background: rgba(245,158,11,0.25); transform: translateY(-1px); }
+.chip-disabled {
+  background: var(--bg3);
+  border-color: var(--border);
+  color: #555a68;
+  text-decoration: line-through;
+  cursor: pointer;
+}
+.chip-disabled:hover { color: var(--muted); }
+.chip-full {
+  border-color: rgba(74,222,128,0.5);
+  color: var(--accent2);
+  background: rgba(74,222,128,0.1);
+  box-shadow: 0 0 8px rgba(74,222,128,0.15);
+}
+.chip .chip-x {
+  font-size: 11px;
+  opacity: 0.7;
+  margin-left: 2px;
+}
+.chip .chip-x:hover { opacity: 1; color: var(--danger); }
+
+/* 已选技能区 */
+.selected-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  min-height: 36px;
+}
+.empty-hint { color: var(--muted); font-size: 13px; }
+
+/* 搜索参数 */
+.search-bar { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; }
+.param-group { display: flex; flex-direction: column; gap: 6px; min-width: 130px; }
+.param-group input { width: 130px; }
+
+/* 结果卡片 */
+.result-card {
+  background: linear-gradient(180deg, #242b39 0%, #1e2430 100%);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+  transition: box-shadow 0.25s ease, transform 0.2s ease, border-color 0.25s ease;
+}
+.result-card:hover { box-shadow: var(--shadow-lg); border-color: var(--accent); transform: translateY(-1px); }
+.result-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.damage-big {
+  font-size: 34px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #8fa8ff 0%, #5eead4 60%, #4ade80 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.1;
+  letter-spacing: 0.5px;
+  filter: drop-shadow(0 2px 6px rgba(124,156,255,0.25));
+}
+.damage-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; }
+.result-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.info-row {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin: 4px 0;
+}
+.info-item { font-size: 12px; }
+.info-item .k { color: var(--muted); margin-right: 4px; }
+.info-item .v { color: var(--text); font-weight: 500; }
+.section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  margin: 14px 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.armor-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+  margin: 8px 0;
+}
+@media (max-width: 1100px) { .armor-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 600px) { .armor-grid { grid-template-columns: repeat(2, 1fr); } }
+.armor-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  transition: border 0.2s ease;
+}
+.armor-card:hover { border-color: var(--accent); }
+.armor-card.charm-card { border-color: rgba(212,160,23,0.3); }
+.armor-part {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.armor-name {
+  font-weight: 600;
+  font-size: 13px;
+  margin: 3px 0;
+  word-break: break-all;
+}
+.slots { display: flex; gap: 4px; margin: 6px 0; flex-wrap: wrap; }
+.slot {
+  width: 22px; height: 22px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+}
+.slot.armor { background: var(--armor-slot); }
+.slot.weapon { background: var(--weapon-slot); color: #1a1d23; }
+.slot.empty { background: var(--bg3); color: var(--muted); }
+.skill-list { font-size: 11px; color: var(--muted); line-height: 1.7; }
+.skill-list span { color: #c7ccd6; }
+.deco-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.deco-chip {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 5px 12px;
+  font-size: 12px;
+  transition: border 0.2s ease;
+}
+.deco-chip:hover { border-color: var(--accent); }
+.ok-badge, .err-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 14px;
+  font-size: 11px;
+  margin: 2px;
+}
+.ok-badge { background: rgba(74,222,128,0.12); color: var(--accent2); }
+.err-badge { background: rgba(239,68,68,0.12); color: var(--danger); }
+
+/* 追加查询 */
+.mode-toggle { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+.mode-btn {
+  padding: 7px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+.mode-btn:hover { color: var(--text); border-color: var(--accent); }
+.mode-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; box-shadow: 0 2px 8px rgba(108,140,255,0.3); }
+.extra-skill-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+.extra-skill-item:hover { border-color: var(--accent); box-shadow: var(--shadow); }
+.extra-skill-item.appended { border-color: rgba(245,158,11,0.5); background: rgba(245,158,11,0.06); }
+.es-name { font-weight: 600; font-size: 14px; min-width: 100px; }
+.es-delta { color: var(--accent2); font-weight: 600; font-size: 13px; }
+.es-delta.neg { color: var(--danger); }
+.es-info { font-size: 12px; color: var(--muted); }
+.es-type {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+.es-type.upgrade { background: rgba(108,140,255,0.15); color: #a6b8ff; }
+.es-type.extra { background: rgba(245,158,11,0.15); color: #fbbf24; }
+.es-levels { display: flex; gap: 4px; flex-wrap: wrap; margin-left: auto; }
+.baseline-box {
+  padding: 14px 18px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 14px;
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  box-shadow: var(--shadow);
+}
+.baseline-box .bi { font-size: 13px; }
+.baseline-box .bi .k { color: var(--muted); }
+.baseline-box .bi .v { color: var(--accent2); font-weight: 600; font-size: 16px; }
+.append-bar {
+  position: sticky;
+  bottom: 0;
+  background: var(--card);
+  border: 1px solid rgba(245,158,11,0.4);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-top: 14px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  box-shadow: 0 -4px 14px rgba(0,0,0,0.2);
+}
+
+/* Modal */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 1000;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 40px 20px;
+  overflow-y: auto;
+  backdrop-filter: blur(2px);
+}
+.modal-overlay.show { display: flex; }
+.modal-content {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  max-width: 1000px;
+  width: 100%;
+  padding: 24px;
+  position: relative;
+  box-shadow: var(--shadow-lg);
+}
+.modal-close {
+  position: absolute;
+  top: 14px; right: 16px;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+.modal-close:hover { color: var(--danger); border-color: var(--danger); background: rgba(239,68,68,0.1); transform: rotate(90deg); }
+.detail-text {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  font-family: "SF Mono", Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  max-height: 400px;
+  overflow-y: auto;
+  margin-top: 12px;
+}
+.detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+  font-size: 13px;
+  background: var(--bg);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.detail-table th, .detail-table td {
+  padding: 9px 13px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-soft);
+}
+.detail-table th {
+  background: linear-gradient(180deg, #2a3140, #232936);
+  font-weight: 600;
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+}
+.detail-table tbody tr:last-child td { border-bottom: none; }
+.detail-table tr:hover td {
+  background: rgba(124,156,255,0.05);
+}
+.detail-table tr.best-row td {
+  background: rgba(74,222,128,0.08);
+  border-bottom-color: rgba(74,222,128,0.2);
+}
+.compare-table { font-size: 12.5px; }
+.compare-table th, .compare-table td { padding: 8px 10px; }
+
+/* 加载 */
+.loading {
+  display: inline-block;
+  width: 16px; height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+  padding: 30px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.result-empty {
+  text-align: center;
+  padding: 40px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.saved-plan-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 13px 16px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  gap: 10px;
+  transition: border 0.2s ease;
+}
+.saved-plan-item:hover { border-color: var(--accent); }
+.saved-plan-item .sp-label { font-weight: 600; font-size: 14px; }
+.saved-plan-item .sp-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.compare-check { display: flex; align-items: center; cursor: pointer; }
+.compare-check input { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+
+/* 方案对比 */
+.compare-table th, .compare-table td { white-space: nowrap; }
+.compare-table .best-row td { background: rgba(74,222,128,0.08) !important; }
+.compare-skills-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+  margin-top: 10px;
+}
+.compare-plan-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  transition: border 0.2s ease;
+}
+.compare-plan-card:hover { border-color: var(--accent); }
+.cpp-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+.cpp-dmg { font-size: 13px; color: var(--muted); }
+.cpp-details { margin-top: 10px; }
+.cpp-details summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--accent);
+  user-select: none;
+  padding: 4px 0;
+}
+.cpp-details summary:hover { text-decoration: underline; }
+.cpp-details .detail-text { max-height: 300px; margin-top: 8px; }
+hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  margin-right: 4px;
+}
+.tag-series { background: rgba(108,140,255,0.15); color: #8fa8ff; }
+.tag-warn { background: rgba(245,158,11,0.15); color: #fbbf24; }
+.flex-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.muted { color: var(--muted); }
+.mt8 { margin-top: 8px; }
+.mt16 { margin-top: 16px; }
+
+/* 武器技能选择盒 */
+.weapon-skills-row { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 14px; }
+.weapon-series-box, .weapon-combo-box {
+  flex: 1;
+  min-width: 260px;
+  padding: 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  transition: border 0.2s ease;
+}
+.weapon-series-box:hover, .weapon-combo-box:hover { border-color: var(--accent); }
+.weapon-skill-box-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.weapon-skill-select {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+.weapon-skill-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(108,140,255,0.18); }
+.weapon-skill-selected {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.weapon-skill-empty {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: italic;
+}
+.weapon-skill-clear {
+  padding: 3px 10px;
+  font-size: 11px;
+  border-radius: 12px;
+  border: 1px solid rgba(239,68,68,0.4);
+  background: rgba(239,68,68,0.1);
+  color: var(--danger);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.weapon-skill-clear:hover { background: rgba(239,68,68,0.2); }
+
+/* Tabs */
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 18px;
+  padding: 0 4px;
+}
+.tab-btn {
+  padding: 11px 20px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13.5px;
+  border-bottom: 2px solid transparent;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  border-radius: 8px 8px 0 0;
+  font-family: inherit;
+  position: relative;
+}
+.tab-btn:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+.tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+  background: linear-gradient(180deg, rgba(124,156,255,0.08), transparent);
+}
+.tab-content { display: none; }
+.tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+/* 紧凑结果卡片 */
+.result-card { padding: 16px; margin-bottom: 12px; }
+.result-head { margin-bottom: 10px; }
+.damage-big { font-size: 28px; }
+.armor-grid { grid-template-columns: repeat(6, 1fr); gap: 8px; }
+.armor-card { padding: 8px; }
+.armor-name { font-size: 12px; }
+
+/* 技能模式切换（已移除，技能始终显示） */
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>⚔️ MHWilds 配装搜索器</h1>
+  <p>怪物猎人荒野 · 自动配装搜索 · 基于向量化DFS算法</p>
+</div>
+
+<div class="content">
+
+  <!-- 武器配置区 -->
+  <div class="card">
+    <div class="card-title">武器配置 <span class="sub">配置武器插槽与武器技能</span></div>
+    <div class="weapon-config">
+      <div>
+        <label>武器插槽（3个，1-3级）</label>
+        <div class="weapon-slots-wrap" id="weapon-slots"></div>
+      </div>
+      <div>
+        <label>插槽总等级</label>
+        <div class="weapon-total" id="weapon-total">总等级: 9</div>
+      </div>
+    </div>
+    <div class="weapon-skills-row">
+      <div class="weapon-series-box" id="weapon-series-box">
+        <div class="weapon-skill-box-title">📜 系列技能</div>
+        <select class="weapon-skill-select" id="series-skill-select" onchange="onSeriesSkillChange()">
+          <option value="">-- 留空 · 自动匹配最优 --</option>
+        </select>
+        <div class="weapon-skill-selected" id="series-skill-selected">
+          <span class="weapon-skill-empty">留空 · 搜索时自动匹配最优</span>
+        </div>
+      </div>
+      <div class="weapon-combo-box" id="weapon-combo-box">
+        <div class="weapon-skill-box-title">⚡ 组合技能</div>
+        <select class="weapon-skill-select" id="combo-skill-select" onchange="onComboSkillChange()">
+          <option value="">-- 留空 · 自动匹配最优 --</option>
+        </select>
+        <div class="weapon-skill-selected" id="combo-skill-selected">
+          <span class="weapon-skill-empty">留空 · 搜索时自动匹配最优</span>
+        </div>
+      </div>
+    </div>
+    <div class="mt8">
+      <button class="btn btn-sm" onclick="toggleSkillLibrary()">⚙ 管理技能库</button>
+    </div>
+    <div class="skill-library" id="skill-library" style="display:none;">
+      <div class="skill-library-title">武器技能库（点击启用/禁用）</div>
+      <div class="lib-grid" id="lib-grid"></div>
+    </div>
+  </div>
+
+  <!-- 技能选择区 -->
+  <div class="card">
+    <div class="card-title">技能选择 <span class="sub">点击技能展开等级选择，⭐收藏置顶</span></div>
+    <div id="skill-selection"></div>
+  </div>
+
+  <!-- 已选技能区 -->
+  <div class="card">
+    <div class="card-title">
+      已选技能
+      <span class="sub" id="selected-count">0 个</span>
+      <button class="btn btn-sm btn-danger" onclick="clearSelectedSkills()" style="margin-left:auto;">清空</button>
+    </div>
+    <div class="selected-bar" id="selected-skills"></div>
+  </div>
+
+  <!-- 搜索按钮 + 参数 -->
+  <div class="card">
+    <div class="card-title">搜索</div>
+    <div class="search-bar">
+      <div class="param-group">
+        <label>返回结果数量</label>
+        <input type="number" id="max-results" value="5" min="1" max="50">
+      </div>
+      <button class="btn btn-primary" id="search-btn" onclick="runSearch()">🔍 开始搜索</button>
+      <span id="search-status" class="muted" style="font-size:13px;"></span>
+    </div>
+  </div>
+
+  <!-- Tab 导航 -->
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="search" onclick="switchTab('search')">🔍 查询方案</button>
+    <button class="tab-btn" data-tab="extra" onclick="switchTab('extra')">📊 查询追加</button>
+    <button class="tab-btn" data-tab="compare" onclick="switchTab('compare')">📋 方案对比</button>
+  </div>
+
+  <!-- Tab: 查询方案 -->
+  <div class="tab-content active" id="tab-search">
+    <div id="search-results">
+      <div class="card"><div class="result-empty">尚未搜索，点击上方"开始搜索"按钮</div></div>
+    </div>
+  </div>
+
+  <!-- Tab: 查询追加 -->
+  <div class="tab-content" id="tab-extra">
+    <div class="card">
+      <div class="card-title">追加技能查询 <span class="sub">查询可升级与可追加技能，选择后追加并重新搜索</span></div>
+      <div class="mode-toggle">
+        <button class="mode-btn active" data-mode="normal" onclick="setExtraMode('normal')">通常模式（全部）</button>
+        <button class="mode-btn" data-mode="favorite" onclick="setExtraMode('favorite')">⭐ 收藏模式</button>
+        <button class="mode-btn" data-mode="disabled" onclick="setExtraMode('disabled')">🚫 排除禁用</button>
+      </div>
+      <div class="flex-row mt8">
+        <button class="btn btn-primary" id="extra-btn" onclick="runExtraQuery()">📊 查询追加技能空间</button>
+        <span id="extra-status" class="muted" style="font-size:13px;"></span>
+      </div>
+      <div class="mt16" id="extra-area" style="display:none;">
+        <div class="baseline-box" id="baseline-box"></div>
+        <div id="extra-skills-list"></div>
+        <div class="append-bar" id="append-bar" style="display:none;">
+          <span class="muted" style="font-size:13px;">待追加:</span>
+          <div class="chips" id="append-skills"></div>
+          <button class="btn btn-success" onclick="appendAndSearch()" style="margin-left:auto;">➕ 追加并重新搜索</button>
+          <button class="btn btn-sm" onclick="clearAppendSkills()">清空追加</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab: 方案对比 -->
+  <div class="tab-content" id="tab-compare">
+    <div class="card">
+      <div class="card-title">方案对比 <span class="sub">勾选多个已保存方案进行伤害详细计算对比</span></div>
+      <div class="flex-row">
+        <button class="btn" onclick="showSavedPlansModal()">📋 管理已保存方案 (<span id="saved-count">0</span>)</button>
+        <button class="btn btn-primary" onclick="runCompare()" id="compare-btn">⚖ 对比选中方案</button>
+        <span id="compare-status" class="muted" style="font-size:13px;"></span>
+      </div>
+      <div class="mt16" id="compare-selected-list"></div>
+      <div class="mt16" id="compare-area" style="display:none;"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 详情 Modal -->
+<div class="modal-overlay" id="detail-modal" onclick="if(event.target===this)closeDetailModal()">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeDetailModal()">✕</button>
+    <div id="detail-modal-body"></div>
+  </div>
+</div>
+
+<!-- 已保存方案 Modal -->
+<div class="modal-overlay" id="saved-modal" onclick="if(event.target===this)closeSavedPlansModal()">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeSavedPlansModal()">✕</button>
+    <div class="card-title">已保存方案 <span class="sub">勾选后到「方案对比」Tab 进行对比</span></div>
+    <div id="saved-plans-list"></div>
+  </div>
+</div>
+
+<script>
+// ==================== 全局状态 ====================
+let SKILL_CAPS = {};
+let SKILL_CATEGORIES = {};
+let WEAPON_SKILL_LIST = [];
+let SKILLS_DATA = {};
+let DAMAGE_SKILLS = [];
+let SERIES_NAMES = [];
+
+let selectedSkills = {};
+let weaponSlotLevels = [3, 3, 3];
+let disabledWeaponSkills = new Set();
+let favSkills = new Set();
+let disabledSkills = new Set();
+let extraMode = 'normal';
+let savedPlans = [];
+let compareSelected = new Set();  // 方案对比勾选的索引
+let expandedSkill = null;   // { context, skill }
+let appendSkills = {};
+let lastSearchResults = null;
+let lastSearchParams = null;
+let extraQueryResult = null;
+let libOpen = false;
+let selectedSeriesSkill = null;
+let selectedSeriesLevel = 0;
+let selectedComboSkill = null;
+let selectedComboLevel = 0;
+let COMBO_SKILLS = [];
+let activeTab = 'search';
+
+// ==================== API ====================
+const API = (path, body = null) => {
+  const opts = { headers: { 'Content-Type': 'application/json' } };
+  if (body) { opts.method = 'POST'; opts.body = JSON.stringify(body); }
+  return fetch(path, opts).then(r => r.json());
+};
+
+// ==================== localStorage ====================
+function loadState() {
+  try {
+    favSkills = new Set(JSON.parse(localStorage.getItem('mhw_fav') || '[]'));
+    disabledSkills = new Set(JSON.parse(localStorage.getItem('mhw_dis') || '[]'));
+    disabledWeaponSkills = new Set(JSON.parse(localStorage.getItem('mhw_wdis') || '[]'));
+    savedPlans = JSON.parse(localStorage.getItem('mhw_plans') || '[]');
+  } catch (e) { /* ignore */ }
+}
+function saveState() {
+  try {
+    localStorage.setItem('mhw_fav', JSON.stringify([...favSkills]));
+    localStorage.setItem('mhw_dis', JSON.stringify([...disabledSkills]));
+    localStorage.setItem('mhw_wdis', JSON.stringify([...disabledWeaponSkills]));
+    localStorage.setItem('mhw_plans', JSON.stringify(savedPlans));
+  } catch (e) { /* ignore */ }
+}
+
+// ==================== 初始化 ====================
+async function init() {
+  try {
+    const info = await API('/api/info');
+    SKILL_CAPS = info.skill_caps || {};
+    SKILL_CATEGORIES = info.skill_categories || {};
+    WEAPON_SKILL_LIST = info.weapon_skill_list || [];
+    SKILLS_DATA = info.skills_data || {};
+    DAMAGE_SKILLS = info.damage_skills || [];
+    SERIES_NAMES = info.series_names || [];
+    COMBO_SKILLS = info.combo_skill_list || [];
+  } catch (e) {
+    document.getElementById('search-results').innerHTML =
+      '<div class="card"><div class="result-empty">无法连接后端 API: ' + e.message + '</div></div>';
+    return;
+  }
+  loadState();
+  renderAll();
+  updateSavedCount();
+}
+
+function isComboSkill(skill) {
+  return WEAPON_SKILL_LIST.includes(skill) || SERIES_NAMES.includes(skill) || COMBO_SKILLS.includes(skill);
+}
+
+// ==================== 武器技能选择 ====================
+function selectSeriesSkill(name, level) {
+  if (!name) {
+    clearSeriesSkill();
+    return;
+  }
+  selectedSeriesSkill = name;
+  selectedSeriesLevel = level || SKILL_CAPS[name] || 1;
+  renderWeaponSkillBoxes();
+}
+
+function selectComboSkill(name, level) {
+  if (!name) {
+    clearComboSkill();
+    return;
+  }
+  selectedComboSkill = name;
+  selectedComboLevel = level || SKILL_CAPS[name] || 1;
+  renderWeaponSkillBoxes();
+}
+
+function clearSeriesSkill() {
+  selectedSeriesSkill = null;
+  selectedSeriesLevel = 0;
+  renderWeaponSkillBoxes();
+}
+
+function clearComboSkill() {
+  selectedComboSkill = null;
+  selectedComboLevel = 0;
+  renderWeaponSkillBoxes();
+}
+
+function onSeriesSkillChange() {
+  const sel = document.getElementById('series-skill-select');
+  const name = sel.value;
+  if (name) {
+    const lv = SKILL_CAPS[name] || 1;
+    selectSeriesSkill(name, lv);
+  } else {
+    clearSeriesSkill();
+  }
+}
+
+function onComboSkillChange() {
+  const sel = document.getElementById('combo-skill-select');
+  const name = sel.value;
+  if (name) {
+    const lv = SKILL_CAPS[name] || 1;
+    selectComboSkill(name, lv);
+  } else {
+    clearComboSkill();
+  }
+}
+
+function renderWeaponSkillBoxes() {
+  const seriesSel = document.getElementById('series-skill-select');
+  const comboSel = document.getElementById('combo-skill-select');
+
+  if (seriesSel) {
+    let sHtml = '<option value="">-- 留空 · 自动匹配最优 --</option>';
+    SERIES_NAMES.forEach(s => {
+      const cap = SKILL_CAPS[s] || 1;
+      const sel = selectedSeriesSkill === s ? ' selected' : '';
+      sHtml += '<option value="' + esc(s) + '"' + sel + '>' + esc(s) + ' (上限 ' + cap + ')</option>';
+    });
+    seriesSel.innerHTML = sHtml;
+  }
+
+  if (comboSel) {
+    let cHtml = '<option value="">-- 留空 · 自动匹配最优 --</option>';
+    COMBO_SKILLS.forEach(s => {
+      const cap = SKILL_CAPS[s] || 1;
+      const sel = selectedComboSkill === s ? ' selected' : '';
+      cHtml += '<option value="' + esc(s) + '"' + sel + '>' + esc(s) + ' (上限 ' + cap + ')</option>';
+    });
+    comboSel.innerHTML = cHtml;
+  }
+
+  const seriesSelected = document.getElementById('series-skill-selected');
+  if (seriesSelected) {
+    if (selectedSeriesSkill) {
+      const lv = selectedSeriesLevel || SKILL_CAPS[selectedSeriesSkill] || 1;
+      seriesSelected.innerHTML = '<span class="chip chip-selected">' +
+        esc(selectedSeriesSkill) + ' Lv' + lv + '</span>' +
+        '<button class="weapon-skill-clear" onclick="clearSeriesSkill()">✕ 清除</button>';
+    } else {
+      seriesSelected.innerHTML = '<span class="weapon-skill-empty">留空 · 搜索时自动匹配最优</span>';
+    }
+  }
+
+  const comboSelected = document.getElementById('combo-skill-selected');
+  if (comboSelected) {
+    if (selectedComboSkill) {
+      const lv = selectedComboLevel || SKILL_CAPS[selectedComboSkill] || 1;
+      comboSelected.innerHTML = '<span class="chip chip-selected">' +
+        esc(selectedComboSkill) + ' Lv' + lv + '</span>' +
+        '<button class="weapon-skill-clear" onclick="clearComboSkill()">✕ 清除</button>';
+    } else {
+      comboSelected.innerHTML = '<span class="weapon-skill-empty">留空 · 搜索时自动匹配最优</span>';
+    }
+  }
+}
+
+// ==================== 渲染 ====================
+function renderAll() {
+  renderWeaponConfig();
+  renderSkillSelection();
+  renderSelectedSkills();
+}
+
+function renderWeaponConfig() {
+  const slotsEl = document.getElementById('weapon-slots');
+  slotsEl.innerHTML = weaponSlotLevels.map((lv, i) =>
+    '<div class="weapon-slot-group">' +
+      '<label style="font-size:11px;">武器孔' + (i+1) + '</label>' +
+      '<div class="seg-btns">' +
+        [1,2,3].map(n =>
+          '<button class="seg-btn ' + (lv===n?'active':'') + '" onclick="setWeaponSlot(' + i + ',' + n + ')">' + n + '</button>'
+        ).join('') +
+      '</div>' +
+    '</div>'
+  ).join('');
+  const total = weaponSlotLevels.reduce((a,b)=>a+b,0);
+  document.getElementById('weapon-total').textContent = '总等级: ' + total;
+
+  if (libOpen) renderSkillLibrary();
+  renderWeaponSkillBoxes();
+}
+
+function renderSkillLibrary() {
+  const el = document.getElementById('lib-grid');
+  el.innerHTML = WEAPON_SKILL_LIST.map(s => {
+    const dis = disabledWeaponSkills.has(s);
+    const cap = SKILL_CAPS[s] || '?';
+    return '<button class="lib-btn ' + (dis?'disabled':'') + '" onclick="toggleWeaponSkillDisabled(\'' + esc(s) + '\')">' +
+      esc(s) + ' (上限' + cap + ')' + (dis?' · 禁用':'') + '</button>';
+  }).join('');
+}
+
+function toggleSkillLibrary() {
+  libOpen = !libOpen;
+  document.getElementById('skill-library').style.display = libOpen ? 'block' : 'none';
+  if (libOpen) renderSkillLibrary();
+}
+
+function setWeaponSlot(idx, lv) {
+  weaponSlotLevels[idx] = lv;
+  renderWeaponConfig();
+}
+
+function toggleWeaponSkillDisabled(skill) {
+  if (disabledWeaponSkills.has(skill)) disabledWeaponSkills.delete(skill);
+  else disabledWeaponSkills.add(skill);
+  saveState();
+  renderWeaponConfig();
+}
+
+// 技能选择区
+function renderSkillSelection() {
+  const el = document.getElementById('skill-selection');
+  let html = '';
+  for (const [cat, skills] of Object.entries(SKILL_CATEGORIES)) {
+    const valid = skills.filter(s => SKILL_CAPS[s] && SKILL_CAPS[s] > 0);
+    if (valid.length === 0) continue;
+    // 收藏置顶
+    const sorted = valid.slice().sort((a, b) => {
+      const fa = favSkills.has(a), fb = favSkills.has(b);
+      if (fa && !fb) return -1;
+      if (!fa && fb) return 1;
+      return 0;
+    });
+    html += '<div class="category-block">';
+    html += '<div class="category-title">' + esc(cat) + ' <span class="muted" style="font-size:11px;font-weight:400;">(' + valid.length + ')</span></div>';
+    html += '<div class="skill-buttons">';
+    sorted.forEach(s => {
+      html += renderSkillButton(s, 'select');
+      if (expandedSkill && expandedSkill.context === 'select' && expandedSkill.skill === s) {
+        html += renderLevelSelector(s, 'select', selectedSkills[s] || 0);
+      }
+    });
+    html += '</div></div>';
+  }
+  el.innerHTML = html;
+}
+
+function renderSkillButton(skill, context) {
+  const cap = SKILL_CAPS[skill] || 1;
+  const selected = context === 'select' ? (selectedSkills[skill] > 0) : false;
+  const fav = favSkills.has(skill);
+  const curLv = selectedSkills[skill] || 0;
+  let dots = '';
+  for (let i = 0; i < cap && i < 7; i++) {
+    dots += '<span class="dot ' + (i < curLv ? 'on' : '') + '"></span>';
+  }
+  return '<button class="skill-btn ' + (selected?'selected':'') + '" onclick="toggleSkillExpand(\'' + context + '\',\'' + esc(skill) + '\')">' +
+    '<span class="fav-star ' + (fav?'on':'') + '" onclick="event.stopPropagation();toggleFav(\'' + esc(skill) + '\')">' + (fav?'★':'☆') + '</span>' +
+    '<span>' + esc(skill) + '</span>' +
+    (selected ? '<span class="level-dots">' + dots + '</span>' : '') +
+    '</button>';
+}
+
+function renderLevelSelector(skill, context, curLv) {
+  const cap = SKILL_CAPS[skill] || 1;
+  let html = '<div class="level-selector"><span class="ls-label">' + esc(skill) + ' 等级:</span>';
+  for (let i = 1; i <= cap; i++) {
+    html += '<button class="lv-btn ' + (i===curLv?'active':'') + '" onclick="setSkillLevel(\'' + esc(skill) + '\',' + i + ',\'' + context + '\')">' + i + '</button>';
+  }
+  html += '<button class="lv-btn cancel" onclick="cancelSkill(\'' + esc(skill) + '\',\'' + context + '\')">取消</button>';
+  html += '</div>';
+  return html;
+}
+
+function toggleSkillExpand(context, skill) {
+  if (!skill || (expandedSkill && expandedSkill.context === context && expandedSkill.skill === skill)) {
+    expandedSkill = null;
+  } else {
+    expandedSkill = { context: context, skill: skill };
+  }
+  if (context === 'select') renderSkillSelection();
+  else if (context === 'selected') renderSelectedSkills();
+  else if (context === 'extra') renderExtraSkills();
+}
+
+function toggleFav(skill) {
+  if (favSkills.has(skill)) favSkills.delete(skill);
+  else favSkills.add(skill);
+  saveState();
+  // 同步刷新所有相关区域，确保各模式收藏置顶一致
+  renderSkillSelection();
+  renderSelectedSkills();
+  if (extraQueryResult) renderExtraSkills();
+}
+
+function setSkillLevel(skill, lv, context) {
+  selectedSkills[skill] = lv;
+  expandedSkill = null;
+  saveState();
+  if (context === 'select') { renderSkillSelection(); renderSelectedSkills(); }
+  else if (context === 'selected') { renderSelectedSkills(); renderSkillSelection(); }
+}
+
+function cancelSkill(skill, context) {
+  selectedSkills[skill] = 0;
+  expandedSkill = null;
+  saveState();
+  if (context === 'select') { renderSkillSelection(); renderSelectedSkills(); }
+  else if (context === 'selected') { renderSelectedSkills(); renderSkillSelection(); }
+  else if (context === 'extra') renderExtraSkills();
+}
+
+// 已选技能区
+function renderSelectedSkills() {
+  const el = document.getElementById('selected-skills');
+  const keys = Object.keys(selectedSkills).filter(k => selectedSkills[k] > 0);
+  // 收藏置顶
+  keys.sort((a, b) => {
+    const fa = favSkills.has(a), fb = favSkills.has(b);
+    if (fa && !fb) return -1;
+    if (!fa && fb) return 1;
+    return 0;
+  });
+  document.getElementById('selected-count').textContent = keys.length + ' 个';
+  if (keys.length === 0) {
+    el.innerHTML = '<span class="empty-hint">尚未选择技能，请在上方技能区点击选择</span>';
+    return;
+  }
+  let html = '';
+  keys.forEach(s => {
+    const cap = SKILL_CAPS[s] || 1;
+    const lv = selectedSkills[s];
+    const full = lv >= cap;
+    html += '<span class="chip ' + (full?'chip-full':'chip-selected') + '" onclick="toggleSkillExpand(\'selected\',\'' + esc(s) + '\')" title="点击调整等级">' +
+      esc(s) + ' Lv' + lv + '/' + cap +
+      ' <span class="chip-x" onclick="event.stopPropagation();removeSkill(\'' + esc(s) + '\')">✕</span></span>';
+  });
+  el.innerHTML = html;
+  // 展开等级选择
+  if (expandedSkill && expandedSkill.context === 'selected') {
+    const sel = document.createElement('div');
+    sel.style.flexBasis = '100%';
+    sel.innerHTML = renderLevelSelector(expandedSkill.skill, 'selected', selectedSkills[expandedSkill.skill] || 0);
+    el.appendChild(sel);
+  }
+}
+
+function removeSkill(skill) {
+  delete selectedSkills[skill];
+  if (expandedSkill && expandedSkill.skill === skill) expandedSkill = null;
+  saveState();
+  renderSelectedSkills();
+  renderSkillSelection();
+}
+
+function clearSelectedSkills() {
+  selectedSkills = {};
+  expandedSkill = null;
+  saveState();
+  renderSelectedSkills();
+  renderSkillSelection();
+}
+
+// ==================== 搜索 ====================
+async function runSearch() {
+  const fixed = {};
+  const combo = {};
+  for (const [sk, lv] of Object.entries(selectedSkills)) {
+    if (lv <= 0) continue;
+    if (isComboSkill(sk)) combo[sk] = lv;
+    else fixed[sk] = lv;
+  }
+  if (selectedSeriesSkill) {
+    const lv = selectedSeriesLevel || SKILL_CAPS[selectedSeriesSkill] || 1;
+    combo[selectedSeriesSkill] = lv;
+  }
+  if (selectedComboSkill) {
+    const lv = selectedComboLevel || SKILL_CAPS[selectedComboSkill] || 1;
+    combo[selectedComboSkill] = lv;
+  }
+  const maxResults = parseInt(document.getElementById('max-results').value) || 5;
+  const params = {
+    fixed_skills: fixed, combo_skills: combo,
+    weapon_slots: weaponSlotLevels.slice(),
+    max_results: maxResults, min_rem_armor: 0,
+    auto_weapon_skill: true,  // 留空时自动匹配最优武器技能
+    disabled_weapon_skills: [...disabledWeaponSkills]
+  };
+  lastSearchParams = params;
+  const btn = document.getElementById('search-btn');
+  btn.disabled = true;
+  document.getElementById('search-status').innerHTML = '<span class="loading"></span> 搜索中...';
+  const div = document.getElementById('search-results');
+  div.innerHTML = '<div class="card"><div class="spinner-wrap"><div class="loading"></div><span>搜索中...</span></div></div>';
+  try {
+    const res = await API('/api/custom_search', params);
+    if (res.error) throw new Error(res.error);
+    lastSearchResults = res;
+    // 记录自动匹配的武器技能（用于结果展示高亮）
+    window._lastAutoWeapon = res.auto_weapon_skill || null;
+    const autoInfo = res.auto_weapon_skill ? ' · 自动匹配武器技能: <b>' + esc(res.auto_weapon_skill) + '</b>' : '';
+    document.getElementById('search-status').innerHTML = '找到 <b>' + res.count + '</b> 个方案 (' + res.total_time + 's)' + autoInfo;
+    renderSearchResults(res);
+    switchTab('search');
+  } catch (e) {
+    div.innerHTML = '<div class="card"><div class="result-empty">错误: ' + esc(e.message) + '</div></div>';
+    document.getElementById('search-status').textContent = '搜索失败';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderSearchResults(res) {
+  const div = document.getElementById('search-results');
+  if (!res.results || res.results.length === 0) {
+    div.innerHTML = '<div class="card"><div class="result-empty">❌ 无满足条件的方案</div></div>';
+    return;
+  }
+  div.innerHTML = res.results.map((r, i) => renderResultCard(r, i)).join('');
+}
+
+function renderResultCard(r, idx) {
+  const armorsHTML = (r.armors || []).map(a => {
+    const slotHTML = (a.slots || []).map(s => slotHTMLFn(s, 'armor')).join('');
+    const skillHTML = Object.entries(a.skills || {}).map(([k,v]) => '<div>' + esc(k) + ' <span>Lv' + v + '</span></div>').join('');
+    return '<div class="armor-card"><div class="armor-part">' + esc(a.part) + '</div>' +
+      '<div class="armor-name">' + esc(a.name) + '</div>' +
+      '<div class="slots">' + slotHTML + '</div>' +
+      '<div class="skill-list">' + skillHTML + '</div></div>';
+  }).join('');
+
+  const charmHTML = r.charm ? (() => {
+    const c = r.charm;
+    const as = (c.armor_slots || []).map(s => slotHTMLFn(s, 'armor')).join('');
+    const ws = (c.weapon_slots || []).map(s => slotHTMLFn(s, 'weapon')).join('');
+    const sk = Object.entries(c.skills || {}).map(([k,v]) => '<div>' + esc(k) + ' <span>Lv' + v + '</span></div>').join('');
+    return '<div class="armor-card charm-card"><div class="armor-part">护石</div>' +
+      '<div class="armor-name" style="font-size:12px;color:var(--muted);">' + esc(c.name) + '</div>' +
+      '<div style="font-size:10px;color:var(--muted);margin:2px 0;">防具孔 / 武器孔</div>' +
+      '<div class="slots">' + as + (ws?'<span style="color:var(--muted);">/</span>':'') + ws + '</div>' +
+      '<div class="skill-list">' + sk + '</div></div>';
+  })() : '';
+
+  const decoHTML = Object.entries(r.decorations || {}).map(([k,v]) =>
+    '<span class="deco-chip">' + esc(k) + ' ×' + v + '</span>').join('') ||
+    '<span class="muted">无</span>';
+
+  // 合并所有技能：core_skills + other_skills + series_check → 统一展示（不区别对待）
+  const allSkills = {};
+  if (r.core_skills) {
+    for (const [k, v] of Object.entries(r.core_skills)) {
+      allSkills[k] = { level: v.level, cap: v.cap };
+    }
+  }
+  if (r.other_skills) {
+    for (const [k, v] of Object.entries(r.other_skills)) {
+      allSkills[k] = { level: v.level, cap: v.cap };
+    }
+  }
+  if (r.series_check) {
+    for (const s of r.series_check) {
+      // 系列/组合技能与其他技能同样显示 LvX/Cap，不加件数徽章
+      allSkills[s.skill] = { level: s.level, cap: s.cap || (s.skill in (window.COMBO_SKILLS||[]) ? 1 : 2) };
+    }
+  }
+
+  // 排序：收藏置顶 + 按分类中出现顺序
+  const selKeys = Object.keys(selectedSkills);
+  const weaponSel = [];
+  if (selectedSeriesSkill && !disabledWeaponSkills.has(selectedSeriesSkill)) weaponSel.push(selectedSeriesSkill);
+  if (selectedComboSkill && !disabledWeaponSkills.has(selectedComboSkill)) weaponSel.push(selectedComboSkill);
+  // 加入自动匹配的武器技能
+  if (window._lastAutoWeapon && !weaponSel.includes(window._lastAutoWeapon)) weaponSel.push(window._lastAutoWeapon);
+
+  // 构建分类顺序映射
+  const catOrder = {};
+  let orderIdx = 0;
+  for (const skills of Object.values(SKILL_CATEGORIES || {})) {
+    for (const s of skills) {
+      if (!(s in catOrder)) { catOrder[s] = orderIdx++; }
+    }
+  }
+
+  const sortedSkillNames = Object.keys(allSkills).sort((a, b) => {
+    const fa = favSkills.has(a), fb = favSkills.has(b);
+    if (fa && !fb) return -1;
+    if (!fa && fb) return 1;
+    const oa = catOrder[a] || 9999;
+    const ob = catOrder[b] || 9999;
+    return oa - ob;
+  });
+
+  // 技能与其他技能同样显示，不加特殊徽章
+  const skillsHTML = sortedSkillNames.map(k => {
+    const v = allSkills[k];
+    const isSel = selKeys.includes(k) || weaponSel.includes(k);
+    const full = v.level >= v.cap;
+    const cls = full ? 'chip-full' : (isSel ? 'chip-selected' : 'chip-unselected');
+    return '<span class="chip ' + cls + '">' + esc(k) + ' Lv' + v.level + '/' + v.cap + '</span>';
+  }).join('');
+
+  const remA = (r.remaining_slots && r.remaining_slots.armor) || [];
+  const remW = (r.remaining_slots && r.remaining_slots.weapon) || [];
+  const remASum = remA.reduce((a,b)=>a+b,0);
+  const remWSum = remW.reduce((a,b)=>a+b,0);
+  const t = r.timing || {};
+
+  return '<div class="result-card">' +
+    '<div class="result-head">' +
+      '<div><div class="damage-label">方案 #' + (idx+1) + ' · 期望伤害</div>' +
+        '<div class="damage-big">' + (r.damage || 0).toFixed(1) + '</div></div>' +
+      '<div class="result-actions">' +
+        '<button class="btn btn-sm" onclick="showDetailModal(' + idx + ')">📄 详情</button>' +
+        '<button class="btn btn-sm" onclick="openAppendFromPlan(' + idx + ')">➕ 追加技能</button>' +
+        '<button class="btn btn-sm btn-success" onclick="savePlan(' + idx + ')">💾 保存</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="info-row">' +
+      '<div class="info-item"><span class="k">防性:</span><span class="v">Lv' + (r.cfg && r.cfg.guard_lv != null ? r.cfg.guard_lv : '-') + '</span></div>' +
+      '<div class="info-item"><span class="k">精神:</span><span class="v">Lv' + (r.cfg && r.cfg.spirit_lv != null ? r.cfg.spirit_lv : 0) + '</span></div>' +
+      '<div class="info-item"><span class="k">尝试:</span><span class="v">' + (t.attempts || 0) + '</span></div>' +
+      '<div class="info-item"><span class="k">验证:</span><span class="v">' + (t.verified ? '✓' : '✗') + '</span></div>' +
+      '<div class="info-item"><span class="k">搜索耗时:</span><span class="v">' + (t.search_time || 0) + 's</span></div>' +
+      '<div class="info-item"><span class="k">剩余孔(防/武):</span><span class="v">' + remASum + '级 / ' + remWSum + '级</span></div>' +
+    '</div>' +
+    '<div class="section-title">装备组合</div>' +
+    '<div class="armor-grid">' + armorsHTML + charmHTML + '</div>' +
+    '<div class="section-title">装饰品</div><div class="deco-list">' + decoHTML + '</div>' +
+    (sortedSkillNames.length > 0 ? '<div class="section-title">方案技能</div><div class="chips">' + skillsHTML + '</div>' : '') +
+  '</div>';
+}
+
+function slotHTMLFn(s, type) {
+  if (!s || s === 0) return '<div class="slot empty">·</div>';
+  return '<div class="slot ' + type + '">' + s + '</div>';
+}
+
+// ==================== 详情 Modal ====================
+async function showDetailModal(idx) {
+  if (!lastSearchResults || !lastSearchResults.results[idx]) return;
+  const r = lastSearchResults.results[idx];
+  const modal = document.getElementById('detail-modal');
+  const body = document.getElementById('detail-modal-body');
+  modal.classList.add('show');
+  body.innerHTML = '<div class="card-title">方案详情</div><div class="spinner-wrap"><div class="loading"></div><span>计算详细伤害...</span></div>';
+
+  // 构建详情计算参数
+  const fixed = {};
+  const combo = {};
+  for (const [sk, lv] of Object.entries(selectedSkills)) {
+    if (lv <= 0) continue;
+    if (isComboSkill(sk)) combo[sk] = lv;
+    else fixed[sk] = lv;
+  }
+  if (selectedSeriesSkill) {
+    const lv = selectedSeriesLevel || SKILL_CAPS[selectedSeriesSkill] || 1;
+    combo[selectedSeriesSkill] = lv;
+  }
+  if (selectedComboSkill) {
+    const lv = selectedComboLevel || SKILL_CAPS[selectedComboSkill] || 1;
+    combo[selectedComboSkill] = lv;
+  }
+  // 若自动匹配到武器技能，加入combo用于详情计算
+  if (window._lastAutoWeapon && !combo[window._lastAutoWeapon]) {
+    combo[window._lastAutoWeapon] = SKILL_CAPS[window._lastAutoWeapon] || 1;
+  }
+  try {
+    const detail = await API('/api/detail_calc', {
+      fixed_skills: fixed, combo_skills: combo, weapon_slots: weaponSlotLevels.slice()
+    });
+    let html = '<div class="card-title">方案详情</div>';
+    if (detail.ok) {
+      // 基础数据
+      html += '<div class="info-row mt8">' +
+        '<div class="info-item"><span class="k">基线伤害:</span><span class="v">' + (detail.baseline_dmg || 0) + '</span></div>' +
+        '<div class="info-item"><span class="k">基线会心:</span><span class="v">' + (detail.baseline_wcr || 0) + '%</span></div>' +
+        '<div class="info-item"><span class="k">最终伤害:</span><span class="v" style="color:var(--accent2);">' + (detail.final_dmg || 0) + '</span></div>' +
+        '<div class="info-item"><span class="k">最终会心:</span><span class="v">' + (detail.final_wcr || 0) + '%</span></div>' +
+        '<div class="info-item"><span class="k">提升:</span><span class="v">+' + (detail.dmg_increase || 0) + ' (' + (detail.dmg_increase_pct || 0) + '%)</span></div>' +
+      '</div>';
+
+      // 技能独立贡献表格
+      const sd = detail.skill_damages || {};
+      const sortedSd = Object.entries(sd).sort((a, b) => b[1].standalone_dmg - a[1].standalone_dmg);
+      if (sortedSd.length > 0) {
+        html += '<div class="section-title">各技能独立贡献</div>';
+        html += '<table class="detail-table"><thead><tr>' +
+          '<th>技能</th><th>等级</th><th>独立伤害贡献</th><th>状态</th>' +
+        '</tr></thead><tbody>';
+        for (const [sk, info] of sortedSd) {
+          const delta = info.standalone_dmg;
+          const sign = delta >= 0 ? '+' : '';
+          const color = delta >= 0 ? 'var(--accent2)' : 'var(--danger)';
+          const full = info.level >= info.cap;
+          const status = full ? '<span style="color:var(--success);">满级</span>' : '<span style="color:var(--muted);">未满级</span>';
+          html += '<tr>' +
+            '<td>' + esc(sk) + '</td>' +
+            '<td>Lv' + info.level + '/' + info.cap + '</td>' +
+            '<td style="color:' + color + ';' + 'font-weight:700;">' + sign + delta.toFixed(1) + '</td>' +
+            '<td>' + status + '</td>' +
+          '</tr>';
+        }
+        html += '</tbody></table>';
+      }
+
+      // 原始方案展示
+      html += '<div class="section-title">方案配置</div>';
+      html += renderResultCard(r, idx);
+
+      // 完整计算过程文本
+      html += '<div class="section-title">完整计算过程</div>';
+      html += '<div class="detail-text">' + esc(detail.detail_text || '') + '</div>';
+
+      html += '<div class="info-row mt8"><div class="muted">计算耗时: ' + (detail.time || 0) + 's</div></div>';
+    } else {
+      html += '<div class="result-empty">' + esc(detail.error || '计算失败') + '</div>';
+      html += renderResultCard(r, idx);
+    }
+    body.innerHTML = html;
+  } catch (e) {
+    body.innerHTML = '<div class="card-title">方案详情</div><div class="result-empty">错误: ' + esc(e.message) + '</div>' + renderResultCard(r, idx);
+  }
+}
+function closeDetailModal() {
+  document.getElementById('detail-modal').classList.remove('show');
+}
+
+// ==================== 保存方案 ====================
+function savePlan(idx) {
+  if (!lastSearchResults || !lastSearchResults.results[idx]) return;
+  const r = lastSearchResults.results[idx];
+  const name = '方案 #' + (savedPlans.length + 1) + ' · 伤害' + (r.damage || 0).toFixed(1);
+  savedPlans.push({
+    name: name,
+    damage: r.damage,
+    result: r,
+    params: lastSearchParams,
+    time: new Date().toLocaleString('zh-CN')
+  });
+  saveState();
+  updateSavedCount();
+  alert('已保存: ' + name);
+}
+function updateSavedCount() {
+  document.getElementById('saved-count').textContent = savedPlans.length;
+}
+function showSavedPlansModal() {
+  const el = document.getElementById('saved-plans-list');
+  if (savedPlans.length === 0) {
+    el.innerHTML = '<div class="result-empty">暂无保存的方案</div>';
+  } else {
+    el.innerHTML = savedPlans.map((p, i) => {
+      const checked = compareSelected.has(i) ? ' checked' : '';
+      return '<div class="saved-plan-item">' +
+        '<label class="compare-check"><input type="checkbox" onchange="toggleCompareSelected(' + i + ')"' + checked + '></label>' +
+        '<div><div class="sp-label">' + esc(p.name) + '</div>' +
+        '<div class="sp-sub">伤害 ' + (p.damage||0).toFixed(1) + ' · ' + esc(p.time) + '</div></div>' +
+        '<div class="flex-row">' +
+          '<button class="btn btn-sm" onclick="loadSavedPlan(' + i + ')">查看</button>' +
+          '<button class="btn btn-sm btn-danger" onclick="deleteSavedPlan(' + i + ')">删除</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+  document.getElementById('saved-modal').classList.add('show');
+  renderCompareSelectedList();
+}
+function closeSavedPlansModal() {
+  document.getElementById('saved-modal').classList.remove('show');
+}
+function loadSavedPlan(idx) {
+  const p = savedPlans[idx];
+  if (!p) return;
+  closeSavedPlansModal();
+  const modal = document.getElementById('detail-modal');
+  const body = document.getElementById('detail-modal-body');
+  modal.classList.add('show');
+  body.innerHTML = '<div class="card-title">' + esc(p.name) + '</div>' +
+    '<div class="sp-sub" style="margin-bottom:12px;">保存于 ' + esc(p.time) + ' · 伤害 ' + (p.damage||0).toFixed(1) + '</div>' +
+    renderResultCard(p.result, 0);
+}
+function deleteSavedPlan(idx) {
+  savedPlans.splice(idx, 1);
+  // 重建 compareSelected 索引
+  const newSel = new Set();
+  compareSelected.forEach(i => {
+    if (i < idx) newSel.add(i);
+    else if (i > idx) newSel.add(i - 1);
+  });
+  compareSelected = newSel;
+  saveState();
+  updateSavedCount();
+  showSavedPlansModal();
+}
+
+// ==================== 方案对比 ====================
+function toggleCompareSelected(idx) {
+  if (compareSelected.has(idx)) compareSelected.delete(idx);
+  else compareSelected.add(idx);
+  renderCompareSelectedList();
+}
+
+function renderCompareSelectedList() {
+  const el = document.getElementById('compare-selected-list');
+  if (!el) return;
+  if (compareSelected.size === 0) {
+    el.innerHTML = '<div class="muted" style="font-size:13px;">未勾选任何方案，请在「管理已保存方案」中勾选要对比的方案</div>';
+    return;
+  }
+  const sorted = [...compareSelected].sort((a,b) => savedPlans[b].damage - savedPlans[a].damage);
+  el.innerHTML = '<div class="section-title">已选对比方案 (' + sorted.length + ')</div>' +
+    '<div class="chips">' + sorted.map(i =>
+      '<span class="chip chip-selected">' + esc(savedPlans[i].name) + ' · ' + (savedPlans[i].damage||0).toFixed(1) +
+      ' <span class="chip-x" onclick="toggleCompareSelected(' + i + ');renderCompareSelectedList();document.getElementById(\'saved-modal\').classList.contains(\'show\')&&showSavedPlansModal()">✕</span></span>'
+    ).join('') + '</div>';
+}
+
+async function runCompare() {
+  if (compareSelected.size < 2) {
+    document.getElementById('compare-status').textContent = '请至少勾选 2 个方案';
+    return;
+  }
+  const idxs = [...compareSelected].sort((a,b) => savedPlans[b].damage - savedPlans[a].damage);
+  const btn = document.getElementById('compare-btn');
+  btn.disabled = true;
+  document.getElementById('compare-status').innerHTML = '<span class="loading"></span> 计算详细伤害中...';
+  const area = document.getElementById('compare-area');
+  area.style.display = 'block';
+  area.innerHTML = '<div class="spinner-wrap"><div class="loading"></div><span>正在计算各方案伤害详情...</span></div>';
+  try {
+    // 并行请求每个方案的详情
+    const details = await Promise.all(idxs.map(async (i, ord) => {
+      const p = savedPlans[i];
+      const params = p.params || {};
+      const detail = await API('/api/detail_calc', {
+        fixed_skills: params.fixed_skills || {},
+        combo_skills: params.combo_skills || {},
+        weapon_slots: params.weapon_slots || [3,3,3]
+      });
+      return { idx: i, ord: ord, plan: p, detail: detail };
+    }));
+    renderCompareResult(details);
+    document.getElementById('compare-status').textContent = '对比完成';
+  } catch (e) {
+    area.innerHTML = '<div class="result-empty">对比出错: ' + esc(e.message) + '</div>';
+    document.getElementById('compare-status').textContent = '对比失败';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderCompareResult(details) {
+  const area = document.getElementById('compare-area');
+  // 找出最优方案的伤害作为基准
+  const bestDmg = Math.max(...details.map(d => d.detail.final_dmg || d.plan.damage || 0));
+
+  // 1. 伤害总览对比表
+  let html = '<div class="section-title">伤害总览对比</div>';
+  html += '<table class="detail-table compare-table"><thead><tr>' +
+    '<th>排名</th><th>方案</th><th>期望伤害</th><th>基线伤害</th><th>会心</th><th>伤害提升</th><th>vs最优</th>' +
+  '</tr></thead><tbody>';
+  details.forEach((d, i) => {
+    const det = d.detail;
+    const finalDmg = det.final_dmg || d.plan.damage || 0;
+    const baseDmg = det.baseline_dmg || 0;
+    const wcr = det.final_wcr || 0;
+    const inc = det.dmg_increase || 0;
+    const pct = det.dmg_increase_pct || 0;
+    const vsBest = bestDmg - finalDmg;
+    const isBest = i === 0;
+    html += '<tr' + (isBest ? ' class="best-row"' : '') + '>' +
+      '<td>' + (i + 1) + (isBest ? ' 🏆' : '') + '</td>' +
+      '<td>' + esc(d.plan.name) + '</td>' +
+      '<td style="color:var(--accent2);font-weight:700;">' + finalDmg.toFixed(1) + '</td>' +
+      '<td>' + baseDmg.toFixed(1) + '</td>' +
+      '<td>' + wcr.toFixed(1) + '%</td>' +
+      '<td>+' + inc.toFixed(1) + ' (' + pct + '%)</td>' +
+      '<td>' + (vsBest > 0.01 ? '<span style="color:var(--danger);">-' + vsBest.toFixed(1) + '</span>' : '<span style="color:var(--accent2);">最优</span>') + '</td>' +
+    '</tr>';
+  });
+  html += '</tbody></table>';
+
+  // 2. 各技能独立贡献对比表
+  html += '<div class="section-title">各技能独立伤害贡献对比</div>';
+  // 收集所有技能
+  const allSkillsSet = new Set();
+  details.forEach(d => {
+    const sd = d.detail.skill_damages || {};
+    Object.keys(sd).forEach(s => allSkillsSet.add(s));
+  });
+  const catOrder = {};
+  let orderIdx = 0;
+  for (const skills of Object.values(SKILL_CATEGORIES || {})) {
+    for (const s of skills) {
+      if (!(s in catOrder)) catOrder[s] = orderIdx++;
+    }
+  }
+  const allSkills = [...allSkillsSet].sort((a, b) => {
+    const fa = favSkills.has(a), fb = favSkills.has(b);
+    if (fa && !fb) return -1;
+    if (!fa && fb) return 1;
+    return (catOrder[a] || 9999) - (catOrder[b] || 9999);
+  });
+  html += '<table class="detail-table compare-table"><thead><tr><th>技能</th>';
+  details.forEach(d => {
+    html += '<th>' + esc(d.plan.name) + '</th>';
+  });
+  html += '</tr></thead><tbody>';
+  allSkills.forEach(sk => {
+    // 检查是否至少有一个方案含此技能
+    const hasAny = details.some(d => (d.detail.skill_damages || {})[sk]);
+    if (!hasAny) return;  // 跳过全空行
+    let rowHtml = '<tr><td>' + esc(sk) + '</td>';
+    details.forEach(d => {
+      const sd = d.detail.skill_damages || {};
+      const info = sd[sk];
+      if (info) {
+        const delta = info.standalone_dmg;
+        const sign = delta >= 0 ? '+' : '';
+        const color = delta >= 0 ? 'var(--accent2)' : 'var(--danger)';
+        rowHtml += '<td><span style="color:' + color + ';font-weight:600;">' + sign + delta.toFixed(1) + '</span> <span class="muted" style="font-size:11px;">Lv' + info.level + '/' + info.cap + '</span></td>';
+      } else {
+        rowHtml += '<td class="muted">—</td>';
+      }
+    });
+    rowHtml += '</tr>';
+    html += rowHtml;
+  });
+  html += '</tbody></table>';
+
+  // 3. 各方案技能构成
+  html += '<div class="section-title">各方案技能构成</div>';
+  html += '<div class="compare-skills-grid">';
+  details.forEach(d => {
+    const det = d.detail;
+    html += '<div class="compare-plan-card">';
+    html += '<div class="cpp-title">' + (d.ord + 1) + '. ' + esc(d.plan.name) + '</div>';
+    html += '<div class="cpp-dmg">伤害 <b style="color:var(--accent2);">' + (det.final_dmg || d.plan.damage || 0).toFixed(1) + '</b></div>';
+    const sd = det.skill_damages || {};
+    const sortedSd = Object.entries(sd).sort((a, b) => b[1].standalone_dmg - a[1].standalone_dmg);
+    html += '<div class="chips" style="margin-top:8px;">';
+    sortedSd.forEach(([sk, info]) => {
+      const fav = favSkills.has(sk);
+      const full = info.level >= info.cap;
+      const cls = full ? 'chip-full' : 'chip-selected';
+      html += '<span class="chip ' + cls + '">' + (fav ? '★ ' : '') + esc(sk) + ' Lv' + info.level + '/' + info.cap + '</span>';
+    });
+    html += '</div>';
+    // 完整计算过程
+    if (det.detail_text) {
+      html += '<details class="cpp-details"><summary>完整计算过程</summary><div class="detail-text">' + esc(det.detail_text) + '</div></details>';
+    }
+    html += '</div>';
+  });
+  html += '</div>';
+
+  area.innerHTML = html;
+}
+
+// ==================== 追加查询 ====================
+async function runExtraQuery() {
+  const fixed = {};
+  const combo = {};
+  for (const [sk, lv] of Object.entries(selectedSkills)) {
+    if (lv <= 0) continue;
+    if (isComboSkill(sk)) combo[sk] = lv;
+    else fixed[sk] = lv;
+  }
+  if (selectedSeriesSkill) {
+    const lv = selectedSeriesLevel || SKILL_CAPS[selectedSeriesSkill] || 1;
+    combo[selectedSeriesSkill] = lv;
+  }
+  if (selectedComboSkill) {
+    const lv = selectedComboLevel || SKILL_CAPS[selectedComboSkill] || 1;
+    combo[selectedComboSkill] = lv;
+  }
+  // 若自动匹配到武器技能，加入combo用于追加查询（保持与搜索一致）
+  if (window._lastAutoWeapon && !combo[window._lastAutoWeapon]) {
+    combo[window._lastAutoWeapon] = SKILL_CAPS[window._lastAutoWeapon] || 1;
+  }
+  const params = {
+    fixed_skills: fixed, combo_skills: combo,
+    weapon_slots: weaponSlotLevels.slice(), min_rem_armor: 0
+  };
+  const btn = document.getElementById('extra-btn');
+  btn.disabled = true;
+  document.getElementById('extra-status').innerHTML = '<span class="loading"></span> 查询中...';
+  document.getElementById('extra-area').style.display = 'none';
+  try {
+    const res = await API('/api/query_extra', params);
+    if (res.error) throw new Error(res.error);
+    extraQueryResult = res;
+    document.getElementById('extra-status').innerHTML = '完成 (' + (res.time || 0) + 's)';
+    document.getElementById('extra-area').style.display = 'block';
+    renderExtraSection();
+  } catch (e) {
+    document.getElementById('extra-status').textContent = '错误: ' + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function setExtraMode(mode) {
+  extraMode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+  expandedSkill = null;
+  renderExtraSkills();
+}
+
+function renderExtraSection() {
+  if (!extraQueryResult) return;
+  const r = extraQueryResult;
+  document.getElementById('baseline-box').innerHTML =
+    '<div class="bi"><span class="k">基线伤害:</span> <span class="v">' + (r.baseline_dmg || 0) + '</span></div>' +
+    '<div class="bi"><span class="k">基线会心:</span> <span class="v">' + (r.baseline_wcr || 0) + '%</span></div>' +
+    '<div class="bi"><span class="k">孔位 Lv1/Lv2/Lv3:</span> <span class="v">' +
+      (r.slot_info && r.slot_info.Lv1) + '/' + (r.slot_info && r.slot_info.Lv2) + '/' + (r.slot_info && r.slot_info.Lv3) + '</span></div>';
+  renderExtraSkills();
+  renderAppendBar();
+}
+
+function renderExtraSkills() {
+  if (!extraQueryResult) return;
+  const r = extraQueryResult;
+  const upgrades = r.upgrade_skills || [];
+  const extras = r.extra_skills || [];
+  let items = [];
+  upgrades.forEach(u => items.push({ ...u, _type: 'upgrade' }));
+  extras.forEach(e => items.push({ ...e, _type: 'extra' }));
+
+  // 分类顺序映射（所有模式共用）
+  const catOrder = {};
+  let orderIdx = 0;
+  for (const skills of Object.values(SKILL_CATEGORIES || {})) {
+    for (const s of skills) {
+      if (!(s in catOrder)) { catOrder[s] = orderIdx++; }
+    }
+  }
+
+  // 补全所有 SKILL_CAPS 中的技能（保证收藏/可用技能都能显示）
+  const existingSkills = new Set(items.map(it => it.skill));
+  for (const [skill, cap] of Object.entries(SKILL_CAPS)) {
+    if (existingSkills.has(skill)) continue;
+    if (cap <= 0) continue;
+    const isSel = selectedSkills[skill] > 0;
+    const curLv = isSel ? selectedSkills[skill] : 0;
+    const maxLv = Math.min(cap, isSel ? curLv : cap);
+    items.push({
+      skill: skill,
+      delta: 0,
+      wcr: 0,
+      cap: cap,
+      max_lv: maxLv,
+      current_lv: curLv,
+      _type: isSel ? 'existing' : 'available',
+      _catOrder: catOrder[skill] || 9999
+    });
+  }
+
+  // 按模式过滤
+  if (extraMode === 'favorite') {
+    // 收藏模式：显示所有收藏技能（含可用但未在 upgrade/extra 列表中的）
+    items = items.filter(it => favSkills.has(it.skill));
+  } else if (extraMode === 'disabled') {
+    // 排除禁用模式：显示所有未禁用的技能
+    items = items.filter(it => !disabledSkills.has(it.skill));
+  }
+  // normal 模式：显示全部
+
+  // 统一排序：收藏置顶 → |delta|降序 → 分类顺序
+  items.sort((a, b) => {
+    const fa = favSkills.has(a.skill), fb = favSkills.has(b.skill);
+    if (fa && !fb) return -1;
+    if (!fa && fb) return 1;
+    const da = Math.abs(a.delta || 0), db = Math.abs(b.delta || 0);
+    if (db !== da) return db - da;
+    return (a._catOrder || catOrder[a.skill] || 9999) - (b._catOrder || catOrder[b.skill] || 9999);
+  });
+
+  const el = document.getElementById('extra-skills-list');
+  if (items.length === 0) {
+    el.innerHTML = '<div class="result-empty">该模式下无可用技能</div>';
+    return;
+  }
+  let html = '';
+  items.forEach(it => {
+    const appended = appendSkills[it.skill] > 0;
+    const disabled = disabledSkills.has(it.skill);
+    const cls = appended ? 'extra-skill-item appended' : 'extra-skill-item';
+    const deltaCls = (it.delta || 0) >= 0 ? 'es-delta' : 'es-delta neg';
+    const sign = (it.delta || 0) >= 0 ? '+' : '';
+    const cap = it.cap || SKILL_CAPS[it.skill] || 1;
+    let lvInfo;
+    if (it._type === 'upgrade') {
+      lvInfo = 'Lv' + it.current_lv + '→Lv' + it.max_lv + '/' + it.cap;
+    } else if (it._type === 'extra') {
+      lvInfo = 'Lv' + it.max_lv + '/' + it.cap;
+    } else if (it._type === 'existing') {
+      lvInfo = '已选 Lv' + (it.current_lv || 0) + '/' + cap;
+    } else {
+      lvInfo = 'Lv' + cap + '/' + cap;
+    }
+    const typeLabel = it._type === 'upgrade' ? '升级' : it._type === 'extra' ? '追加' : it._type === 'existing' ? '已选' : '可用';
+    const typeCls = it._type === 'upgrade' ? 'upgrade' : it._type === 'extra' ? 'extra' : it._type === 'existing' ? 'upgrade' : 'extra';
+    html += '<div class="' + cls + '">';
+    html += '<span class="es-type ' + typeCls + '">' + typeLabel + '</span>';
+    html += '<span class="es-name">' + esc(it.skill) + '</span>';
+    html += '<span class="es-info">' + lvInfo + '</span>';
+    if (it.delta != null && it.delta !== 0) {
+      html += '<span class="' + deltaCls + '">' + sign + (it.delta||0).toFixed(1) + ' 伤害</span>';
+    } else {
+      html += '<span class="es-info">--</span>';
+    }
+    if (it.wcr) html += '<span class="es-info">会心 ' + (it.wcr||0) + '%</span>';
+    const fav = favSkills.has(it.skill);
+    html += '<span class="fav-star ' + (fav?'on':'') + '" onclick="toggleFav(\'' + esc(it.skill) + '\')" style="cursor:pointer;">' + (fav?'★':'☆') + '</span>';
+    html += '<button class="btn btn-sm ' + (disabled?'':'btn-danger') + '" onclick="toggleDisabledSkill(\'' + esc(it.skill) + '\')">' + (disabled?'启用':'禁用') + '</button>';
+    html += '<div class="es-levels">';
+    if (expandedSkill && expandedSkill.context === 'extra' && expandedSkill.skill === it.skill) {
+      const maxPick = it._type === 'upgrade' ? it.max_lv : it.cap;
+      for (let i = 1; i <= maxPick; i++) {
+        const act = appendSkills[it.skill] === i;
+        html += '<button class="lv-btn ' + (act?'active':'') + '" onclick="setAppendSkill(\'' + esc(it.skill) + '\',' + i + ')">' + i + '</button>';
+      }
+      html += '<button class="lv-btn cancel" onclick="toggleSkillExpand(\'extra\',null)">取消</button>';
+    } else {
+      const cur = appendSkills[it.skill] || 0;
+      html += '<button class="btn btn-sm" onclick="toggleSkillExpand(\'extra\',\'' + esc(it.skill) + '\')">' +
+        (appended ? '已选 Lv' + cur + ' (改)' : '选择等级') + '</button>';
+      if (appended) {
+        html += '<button class="btn btn-sm btn-danger" onclick="setAppendSkill(\'' + esc(it.skill) + '\',0)">移除</button>';
+      }
+    }
+    html += '</div>';
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function toggleDisabledSkill(skill) {
+  if (disabledSkills.has(skill)) disabledSkills.delete(skill);
+  else disabledSkills.add(skill);
+  saveState();
+  renderExtraSkills();
+}
+
+function setAppendSkill(skill, lv) {
+  if (lv <= 0) delete appendSkills[skill];
+  else appendSkills[skill] = lv;
+  expandedSkill = null;
+  renderExtraSkills();
+  renderAppendBar();
+}
+
+function renderAppendBar() {
+  const bar = document.getElementById('append-bar');
+  const el = document.getElementById('append-skills');
+  const keys = Object.keys(appendSkills).filter(k => appendSkills[k] > 0);
+  if (keys.length === 0) {
+    bar.style.display = 'none';
+    return;
+  }
+  bar.style.display = 'flex';
+  el.innerHTML = keys.map(k =>
+    '<span class="chip chip-append">' + esc(k) + ' Lv' + appendSkills[k] +
+    ' <span class="chip-x" onclick="setAppendSkill(\'' + esc(k) + '\',0)">✕</span></span>'
+  ).join('');
+}
+
+function clearAppendSkills() {
+  appendSkills = {};
+  renderExtraSkills();
+  renderAppendBar();
+}
+
+function appendAndSearch() {
+  const keys = Object.keys(appendSkills).filter(k => appendSkills[k] > 0);
+  if (keys.length === 0) { alert('请先选择要追加的技能'); return; }
+  for (const k of keys) {
+    selectedSkills[k] = Math.max(selectedSkills[k] || 0, appendSkills[k]);
+  }
+  appendSkills = {};
+  saveState();
+  renderSelectedSkills();
+  renderSkillSelection();
+  renderAppendBar();
+  renderExtraSkills();
+  // 滚动到搜索结果
+  document.getElementById('search-results').scrollIntoView({ behavior: 'smooth' });
+  runSearch();
+}
+
+// ==================== 工具 ====================
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// 关闭modal快捷键
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeDetailModal();
+    closeSavedPlansModal();
+  }
+});
+
+// ==================== Tab 切换 ====================
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === tab);
+  });
+  document.querySelectorAll('.tab-content').forEach(c => {
+    c.classList.toggle('active', c.id === 'tab-' + tab);
+  });
+}
+
+// ==================== 方案追加技能 ====================
+function openAppendFromPlan(idx) {
+  if (!lastSearchResults || !lastSearchResults.results[idx]) return;
+  const r = lastSearchResults.results[idx];
+  // 收集方案已有技能
+  const planSkills = {};
+  if (r.core_skills) for (const [k,v] of Object.entries(r.core_skills)) planSkills[k] = v.level;
+  if (r.other_skills) for (const [k,v] of Object.entries(r.other_skills)) planSkills[k] = v.level;
+  if (r.series_check) for (const s of r.series_check) planSkills[s.skill] = s.level;
+
+  // 构建可选技能列表（排除已满级）
+  const catOrder = {};
+  let orderIdx = 0;
+  for (const skills of Object.values(SKILL_CATEGORIES || {})) {
+    for (const s of skills) {
+      if (!(s in catOrder)) catOrder[s] = orderIdx++;
+    }
+  }
+  const candidates = [];
+  for (const [sk, cap] of Object.entries(SKILL_CAPS)) {
+    if (cap <= 0) continue;
+    const curLv = planSkills[sk] || selectedSkills[sk] || 0;
+    if (curLv >= cap) continue;  // 已满级跳过
+    candidates.push({ skill: sk, cap: cap, curLv: curLv, catOrder: catOrder[sk] || 9999 });
+  }
+  candidates.sort((a, b) => {
+    const fa = favSkills.has(a.skill), fb = favSkills.has(b.skill);
+    if (fa && !fb) return -1;
+    if (!fa && fb) return 1;
+    return a.catOrder - b.catOrder;
+  });
+
+  const modal = document.getElementById('detail-modal');
+  const body = document.getElementById('detail-modal-body');
+  modal.classList.add('show');
+  let html = '<div class="card-title">➕ 追加技能并重新搜索</div>';
+  html += '<div class="muted" style="font-size:13px;margin-bottom:14px;">选择要追加的技能（基于方案 #' + (idx+1) + ' 的现有技能），追加后将以新技能组合重新搜索。</div>';
+  if (candidates.length === 0) {
+    html += '<div class="result-empty">所有技能均已满级，无可追加项</div>';
+  } else {
+    html += '<div id="plan-append-list">';
+    candidates.forEach(c => {
+      const fav = favSkills.has(c.skill);
+      html += '<div class="extra-skill-item">' +
+        '<span class="fav-star ' + (fav?'on':'') + '" onclick="toggleFav(\'' + esc(c.skill) + '\');openAppendFromPlan(' + idx + ')" style="cursor:pointer;">' + (fav?'★':'☆') + '</span>' +
+        '<span class="es-name">' + esc(c.skill) + '</span>' +
+        '<span class="es-info">当前 Lv' + c.curLv + '/' + c.cap + '</span>' +
+        '<div class="es-levels" id="pa-' + esc(c.skill) + '"></div>' +
+      '</div>';
+    });
+    html += '</div>';
+    html += '<div class="append-bar" style="position:static;display:flex;margin-top:14px;">' +
+      '<span class="muted" style="font-size:13px;">待追加:</span>' +
+      '<div class="chips" id="plan-append-chips"></div>' +
+      '<button class="btn btn-success" onclick="appendFromPlanAndSearch(' + idx + ')" style="margin-left:auto;">➕ 追加并搜索</button>' +
+      '<button class="btn btn-sm" onclick="clearPlanAppend()">清空</button>' +
+    '</div>';
+  }
+  body.innerHTML = html;
+  window._planAppendSkills = {};
+  window._planAppendIdx = idx;
+  // 渲染等级选择按钮
+  candidates.forEach(c => {
+    const el = document.getElementById('pa-' + c.skill);
+    if (!el) return;
+    let h = '';
+    for (let i = (c.curLv + 1); i <= c.cap; i++) {
+      h += '<button class="lv-btn" onclick="setPlanAppendSkill(\'' + esc(c.skill) + '\',' + i + ',' + idx + ')">' + i + '</button>';
+    }
+    el.innerHTML = h;
+  });
+}
+
+function setPlanAppendSkill(skill, lv, idx) {
+  window._planAppendSkills = window._planAppendSkills || {};
+  window._planAppendSkills[skill] = lv;
+  // 更新按钮高亮
+  const el = document.getElementById('pa-' + skill);
+  if (el) {
+    el.querySelectorAll('.lv-btn').forEach(b => {
+      b.classList.toggle('active', parseInt(b.textContent) === lv);
+    });
+  }
+  // 更新待追加chips
+  const chipsEl = document.getElementById('plan-append-chips');
+  if (chipsEl) {
+    const keys = Object.keys(window._planAppendSkills).filter(k => window._planAppendSkills[k] > 0);
+    chipsEl.innerHTML = keys.map(k =>
+      '<span class="chip chip-append">' + esc(k) + ' Lv' + window._planAppendSkills[k] +
+      ' <span class="chip-x" onclick="setPlanAppendSkill(\'' + esc(k) + '\',0,' + idx + ')">✕</span></span>'
+    ).join('') || '<span class="muted">--</span>';
+  }
+}
+
+function clearPlanAppend() {
+  window._planAppendSkills = {};
+  if (window._planAppendIdx != null) openAppendFromPlan(window._planAppendIdx);
+}
+
+function appendFromPlanAndSearch(idx) {
+  const appends = window._planAppendSkills || {};
+  const keys = Object.keys(appends).filter(k => appends[k] > 0);
+  if (keys.length === 0) { alert('请先选择要追加的技能'); return; }
+  // 将追加技能加入 selectedSkills
+  for (const k of keys) {
+    selectedSkills[k] = Math.max(selectedSkills[k] || 0, appends[k]);
+  }
+  window._planAppendSkills = {};
+  closeDetailModal();
+  saveState();
+  renderSelectedSkills();
+  renderSkillSelection();
+  runSearch();
+}
+
+init().catch(e => console.error(e));
+</script>
+</body>
+</html>

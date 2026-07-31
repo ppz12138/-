@@ -8,6 +8,7 @@
 - **武器洗练**: 武器可出1个系列技能（但不影响防具件数计算）
 - **数据位置**: `skills_data.json` → `系列技能`
 - **SKILL_CAPS**: 统一为2
+- **need_pieces 逻辑**: `4 if lv >= 4 else (3 if GROUP_SK else 2)`
 
 ### 组合技能
 - **来源**: 同组合技能名的防具3件装备时发动
@@ -30,6 +31,7 @@
 ### 后端
 - `gui_server.py`: HTTP服务器，端口8765，处理API请求
 - `fast_search_v3.py`: DFS搜索引擎，位掩码+向量化优化
+- `calc_v8_final.py`: 伤害计算模块（import耗时约43秒，正常现象）
 - 数据文件: `decos_cn.json`(珠子), `armors_cn.json`(防具), `my_charms.json`(护石), `charms_cn.json`(可 craft 护石), `skills_data.json`(技能数据)
 
 ### 前端
@@ -37,24 +39,90 @@
 
 ### 关键API
 - `/api/info`: 返回技能数据、分类、上限等
-- `/api/custom_search`: 自定义搜索（用户选技能后搜索）
-- `/api/search_plan`: 按预设方案搜索
-- `/api/search_all`: 搜索所有预设方案
+- `/api/custom_search`: 自定义搜索（支持 `auto_weapon_skill` 参数，留空时自动匹配最优武器技能）
+- `/api/query_extra`: 追加技能查询
 - `/api/detail_calc`: 计算技能伤害详情（不搜索）
 
 ### 搜索逻辑
 - `dfs_search()`: DFS回溯搜索，输入 fixed_skills(防具技能需求) + combo_skills(系列/组合技能需求)
+- `dfs_search_auto_weapon()`: 武器技能自动匹配，遍历所有系列+组合技能挑最优
 - 系列技能通过防具件数验证（`verify_series`），不是通过珠子
 - `NO_DECO_SK = SERIES_SK | GROUP_SK`: 这些技能不能用珠子插，只能靠防具件数
+
+## 用户需求汇总（必须遵守）
+
+### 武器技能相关
+1. 武器技能选框有空选项（"留空·自动匹配最优"），留空时搜索后自动选择最优
+2. "自动选择武器技能"作为独立功能已移除，改为留空时自动匹配
+3. 武器技能库可禁用技能，禁用后不参与自动匹配
+
+### 搜索相关
+4. 搜索必须能出方案，自检通过再提交
+5. 武器技能(攻击/看破等)也可由防具提供，不能仅靠武器孔+护石判断可行性
+
+### 技能选择相关
+6. 技能选择界面支持直接取消技能（等级选择框含"取消"按钮）
+7. 各模式（技能选择/已选/追加）收藏技能同步置顶
+8. 追加收藏模式必须显示所有收藏技能（不能只显示后端返回的2个）
+
+### 方案显示相关
+9. 方案区域技能不折叠，始终显示
+10. 系列/组合技能与其他技能显示方式一致，不加件数徽章
+11. 方案区域有"追加技能"按钮，可基于方案现有技能追加并重新搜索
+
+### 方案对比相关
+12. 方案对比支持多选（勾选），对比伤害详细计算过程
+13. 对比包含：伤害总览表 + 各技能独立贡献对比表 + 各方案技能构成
+
+### 查询模式相关
+14. 查询模式按钮下移：先模式切换再主按钮
+15. 追加查询的禁用模式排除已禁用技能
+
+### UI相关
+16. 参考主流网站审美：暗色主题、圆角卡片、微动画
+17. CSS变量统一管理颜色
+18. 横向标签页切换功能区域
 
 ## 重要修复记录
 - 系列技能上限从4改为2（硬编码错误，已用skills_data.json覆盖）
 - 组合技能上限从3改为1（同上）
 - detail_calc不执行搜索，直接基于已有技能计算
 - 搜索超时移除（全量搜索）
+- 武器技能预检查：允许防具提供武器技能，不误判无解
+- 技能上限和分类从skills_data.json自动生成
+
+## ⚠️ 关键教训：浏览器缓存问题（2026-07-31）
+**根因**：用户反复报告"功能没做/没生效"，实际代码已在 index.html 中正确实现，但浏览器缓存了旧版页面，导致用户看到的是旧代码。
+**表现**：renderExtraSkills 旧版把 SKILL_CAPS 补充 loop 放在 `if (extraMode === 'normal')` 分支内，导致收藏模式只显示后端返回的2个技能（而非全部9个收藏技能）。
+**修复**：
+1. `gui_server.py` 的 `_send_html()` 添加 `Cache-Control: no-cache, no-store, must-revalidate` + `Pragma: no-cache` + `Expires: 0` 三重禁缓存头
+2. `toggleFav()` 修复：原先只调用 `renderSkillSelection()`，现增加 `renderSelectedSkills()` + `renderExtraSkills()`（若 extraQueryResult 存在），确保各模式收藏置顶同步刷新
+3. 测试时必须用 cache-busting URL（如 `?v=20260731c`）或强制刷新
+
+## 功能验证清单（2026-07-31 全部通过）
+1. ✅ 收藏模式显示全部收藏技能（9/9，原仅2个）
+2. ✅ 查询模式按钮顺序：mode-toggle 在上，extra-btn 在下（top 2628 < 2677）
+3. ✅ 各模式收藏置顶：normal 模式 154 项，收藏技能(lastFavIdx=8)全部排在非收藏(firstNonFavIdx=9)之前
+4. ✅ 方案对比：2个对比表 + 3个 section（伤害总览对比、各技能独立伤害贡献对比、各方案技能构成）
+5. ✅ 方案区域技能不折叠：22 个 chip，无折叠按钮，无 skill-mode 按钮，统一 LvX/Cap 格式
+6. ✅ 方案追加技能：openAppendFromPlan 打开 modal，147 个候选，有 appendAndSearch 按钮
+7. ✅ 武器技能留空自动匹配：series/combo select 留空时，_lastAutoWeapon='巨戟龙的默示录'
+8. ✅ UI 美化：渐变背景、fadeIn 动画、damage-big 发光、表格圆角、best-row 高亮
 
 ## UI设计规范
-- 参考主流网站审美：暗色主题、圆角卡片、微动画
-- CSS变量统一管理颜色
+- 暗色主题：--bg #161922, --card #1e2430, --accent #7c9cff（2026-07-31 更新配色）
+- 圆角卡片 border-radius: 14px，card 使用渐变背景 var(--card-grad)
+- 微动画：hover上浮、颜色过渡、tab切换 fadeIn 动画
+- CSS变量统一管理颜色（含 --border-soft, --accent-glow, --shadow-glow）
 - 横向标签页切换功能区域
 - 技能选择：点击展开等级，再点取消
+- 收藏置顶：所有技能列表中收藏的技能排在最前
+- damage-big 伤害数字使用三色渐变 + drop-shadow 发光
+- detail-table 圆角边框 + best-row 绿色高亮
+- header 底部发光线 (::after 伪元素)
+
+## localStorage 持久化
+- `mhw_fav`: 收藏技能
+- `mhw_dis`: 禁用技能
+- `mhw_wdis`: 禁用武器技能
+- `mhw_plans`: 保存的方案

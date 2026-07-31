@@ -282,6 +282,10 @@ class SearchHandler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header('Content-Type', 'text/html; charset=utf-8')
         self.send_header('Content-Length', str(len(body)))
+        # 禁用浏览器缓存，确保用户始终看到最新代码
+        self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        self.send_header('Pragma', 'no-cache')
+        self.send_header('Expires', '0')
         self.end_headers()
         self.wfile.write(body)
 
@@ -507,6 +511,8 @@ class SearchHandler(BaseHTTPRequestHandler):
         min_rem_armor = int(params.get('min_rem_armor', 0))
         max_results = int(params.get('max_results', 5))
         timeout_s = float(params.get('timeout_s', 99999.0))
+        auto_weapon = params.get('auto_weapon_skill', True)  # 默认开启自动匹配
+        disabled_ws = set(params.get('disabled_weapon_skills', []))
 
         fixed_skills = {k: int(v) for k, v in fixed_skills.items() if int(v) > 0}
         combo_skills = {k: int(v) for k, v in combo_skills.items() if int(v) > 0}
@@ -517,18 +523,32 @@ class SearchHandler(BaseHTTPRequestHandler):
 
         orig_wslots = self._apply_weapon_slots(params)
         t0 = time.time()
+        auto_matched = None
         with _lock:
             try:
-                raw_results = fs.dfs_search(
-                    fs.charm_pool, fixed_skills, combo_skills, min_rem_armor,
-                    max_results=max_results, timeout_s=timeout_s, quiet=False
-                )
+                # 当用户未指定系列/组合技能且开启自动匹配时，遍历所有武器技能挑最优
+                has_user_weapon = any(s in fs.NO_DECO_SK for s in combo_skills)
+                if auto_weapon and not has_user_weapon:
+                    raw_results, auto_matched = fs.dfs_search_auto_weapon(
+                        fs.charm_pool, fixed_skills, combo_skills, min_rem_armor,
+                        max_results=max_results, timeout_s=timeout_s, quiet=False,
+                        disabled_weapon_skills=disabled_ws
+                    )
+                else:
+                    raw_results = fs.dfs_search(
+                        fs.charm_pool, fixed_skills, combo_skills, min_rem_armor,
+                        max_results=max_results, timeout_s=timeout_s, quiet=False
+                    )
             except Exception as e:
                 fs.WSLOTS = orig_wslots
                 self._send_json({'error': f'搜索出错: {e}'}, 500)
                 return
         fs.WSLOTS = orig_wslots
         t_used = time.time() - t0
+
+        # 若自动匹配到武器技能，需将其加入 weapon_skills_dict 以正确展示
+        if auto_matched:
+            weapon_skills_dict[auto_matched] = weapon_skills_dict.get(auto_matched, 0) + 1
 
         results = []
         for r in raw_results[:max_results]:
@@ -540,6 +560,7 @@ class SearchHandler(BaseHTTPRequestHandler):
             'total_time': round(t_used, 2),
             'fixed_skills': fixed_skills,
             'combo_skills': combo_skills,
+            'auto_weapon_skill': auto_matched,
             'results': results
         })
 

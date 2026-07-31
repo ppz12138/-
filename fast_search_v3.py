@@ -1988,6 +1988,87 @@ def dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
     return results
 
 
+def dfs_search_auto_weapon(charm_pool, fixed_skills, combo_skills, min_rem_armor,
+                           max_results=5, timeout_s=99999.0, quiet=True,
+                           disabled_weapon_skills=None):
+    """武器技能自动匹配最优：当用户未指定系列/组合技能时，
+    遍历所有可用的系列+组合技能作为武器技能，挑选伤害最高的方案。
+
+    返回 (results, auto_weapon_skill)：
+      - results: 搜索结果列表
+      - auto_weapon_skill: 自动匹配到的武器技能名 (None 表示无匹配或用户已指定)
+    """
+    # 如果用户已指定系列/组合技能，直接走普通搜索
+    has_user_weapon = any(s in NO_DECO_SK for s in (combo_skills or {}))
+    if has_user_weapon:
+        results = dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
+                             max_results=max_results, timeout_s=timeout_s, quiet=quiet)
+        return results, None
+
+    # 收集候选武器技能：系列技能 + 组合技能，排除被禁用的
+    disabled = disabled_weapon_skills or set()
+    candidates_ws = []
+    for s in SERIES_SK:
+        if s in disabled:
+            continue
+        candidates_ws.append((s, 2))  # 系列技能默认尝试Lv2(4件)
+    for s in GROUP_SK:
+        if s in disabled:
+            continue
+        candidates_ws.append((s, 1))  # 组合技能Lv1(3件)
+
+    if not candidates_ws:
+        # 没有可用武器技能，走普通搜索
+        results = dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
+                             max_results=max_results, timeout_s=timeout_s, quiet=quiet)
+        return results, None
+
+    if not quiet:
+        print(f"  自动匹配武器技能: 候选{len(candidates_ws)}个")
+
+    best_results = []
+    best_weapon_skill = None
+    best_dmg = -1.0
+    per_skill_best = {}  # skill -> (dmg, results)
+
+    for ws_name, ws_lv in candidates_ws:
+        # 构造本次搜索的 combo_skills
+        new_combo = dict(combo_skills) if combo_skills else {}
+        new_combo[ws_name] = ws_lv
+        try:
+            results = dfs_search(charm_pool, fixed_skills, new_combo, min_rem_armor,
+                                 max_results=1, timeout_s=timeout_s, quiet=quiet)
+        except Exception:
+            results = []
+        if not results:
+            continue
+        top = results[0]
+        dmg = top.get('pract', 0)
+        per_skill_best[ws_name] = (dmg, results[0])
+        if dmg > best_dmg:
+            best_dmg = dmg
+            best_weapon_skill = ws_name
+            best_results = results
+
+    if not best_results:
+        # 所有武器技能都搜不到方案，回退到无武器技能搜索
+        results = dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
+                             max_results=max_results, timeout_s=timeout_s, quiet=quiet)
+        return results, None
+
+    # 标记自动匹配的武器技能到结果中
+    for r in best_results:
+        r['_auto_weapon_skill'] = best_weapon_skill
+
+    # 限制返回数量
+    if max_results > 0:
+        best_results = best_results[:max_results]
+
+    if not quiet:
+        print(f"  自动匹配最优武器技能: {best_weapon_skill} (伤害{best_dmg:.1f})")
+    return best_results, best_weapon_skill
+
+
 def _quick_skill_upper_bound(sk, cached_ctx, wslots):
     """快速计算技能sk的理论可追加上界（预筛用）
 

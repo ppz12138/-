@@ -95,6 +95,9 @@ SKILL_CAPS = {
     '海龙的涡雷': 4, '冻峰龙之反叛': 4, '锁刃龙之饥饿': 4, '霸主之魂': 3,
 }
 
+# 从skills_data.json补充缺失的技能上限
+_SKILLS_DATA_FALLBACK = {}
+
 # ==================== 加载数据 ====================
 print("加载数据...", end=' ', flush=True)
 import os
@@ -103,6 +106,19 @@ with open(os.path.join(DATA, 'armors_cn.json'), 'r', encoding='utf-8') as f: arm
 with open(os.path.join(DATA, 'my_charms.json'), 'r', encoding='utf-8') as f: my_charms = json.load(f)
 with open(os.path.join(DATA, 'charms_cn.json'), 'r', encoding='utf-8') as f: craft_charms = json.load(f)
 with open(os.path.join(DATA, 'skills_data.json'), 'r', encoding='utf-8') as f: skills_data = json.load(f)
+
+# 从skills_data.json补充缺失的SKILL_CAPS
+for _cat_key in ['武器技能', '防具技能']:
+    for _sname, _sinfo in skills_data.get(_cat_key, {}).items():
+        _lv = _sinfo.get('max_lv', 0)
+        if _lv > 0 and _sname not in SKILL_CAPS:
+            SKILL_CAPS[_sname] = _lv
+for _sname in skills_data.get('系列技能', {}):
+    if _sname != '说明' and _sname not in SKILL_CAPS:
+        SKILL_CAPS[_sname] = 2
+for _sname in skills_data.get('组合技能', {}):
+    if _sname != '说明' and _sname not in SKILL_CAPS:
+        SKILL_CAPS[_sname] = 1
 
 WEAPON_SK = frozenset(skills_data.get('武器技能', {}).keys())
 

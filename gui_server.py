@@ -37,16 +37,126 @@ def _load_skills_data():
             _SKILLS_DATA = {}
     return _SKILLS_DATA
 
-# 技能分类
-SKILL_CATEGORIES = {
-    '攻击·会心': ['攻击', '看破', '超会心', '弱点特效', '挑战者', '连击', '无伤', '攻击守势', '巧击', '因祸得福', '精神抖擞', '无我之境', '力量解放', '攻势', '逆袭'],
-    '属性·特殊': ['龙属性攻击强化', '火属性攻击强化', '水属性攻击强化', '冰属性攻击强化', '雷属性攻击强化', '会心击【属性】', '属性吸收', '属性变换', '锁刃刺击'],
-    '锋利度': ['匠', '利刃', '刚刃打磨', '心眼', '钝器能手', '达人艺'],
-    '防御·生存': ['格挡性能', '格挡强化', '防御', '精灵加护', '缓冲', '耳塞', '回避性能', '火场怪力'],
-    '广域·辅助': ['广域化', '满足感', '快吃', '减轻胆怯', '体术', '跑者', '强化持续'],
-    '系列技能': ['巨戟龙的默示录', '火龙之力', '凶爪龙之力', '黑蚀龙之力', '泡狐龙之力', '煌雷龙之力', '海龙的涡雷', '冻峰龙之反叛', '锁刃龙之饥饿', '霸主之魂'],
-    '其他': ['破坏王', '怨恨', '适应环境'],
-}
+
+def _build_skill_caps():
+    """从skills_data.json自动生成所有技能的上限等级"""
+    sd = _load_skills_data()
+    caps = {}
+    for category_key in ['武器技能', '防具技能']:
+        for name, info in sd.get(category_key, {}).items():
+            lv = info.get('max_lv', 0)
+            if lv > 0:
+                caps[name] = lv
+    # 系列技能通常2级
+    for name in sd.get('系列技能', {}):
+        if name == '说明':
+            continue
+        caps[name] = 2
+    # 组合技能通常1级
+    for name in sd.get('组合技能', {}):
+        if name == '说明':
+            continue
+        caps[name] = 1
+    return caps
+
+
+def _build_skill_categories():
+    """从skills_data.json自动构建分类"""
+    sd = _load_skills_data()
+    categories = {}
+
+    # 攻击·会心: 直接与伤害/会心相关
+    categories['攻击·会心'] = [
+        '攻击', '看破', '超会心', '弱点特效', '挑战者', '连击', '无伤',
+        '攻击守势', '巧击', '因祸得福', '精神抖擞', '无我之境', '力量解放',
+        '攻势', '逆袭', '急袭', '怨恨', '拔刀术【技】', '拔刀术【力】'
+    ]
+
+    # 属性·特殊: 属性攻击强化及特殊弹
+    categories['属性·特殊'] = [
+        '龙属性攻击强化', '火属性攻击强化', '水属性攻击强化', '冰属性攻击强化',
+        '雷属性攻击强化', '会心击【属性】', '会心击【特殊】',
+        '属性吸收', '属性变换', '锁刃刺击',
+        '蓄力大师', '集中', '夺取耐力', '击晕术',
+        '炮术', '高速变形', '吹笛名人', '飞燕',
+        '通常弹·通常箭强化', '贯穿弹·龙之箭强化', '散弹·刚射强化',
+        '弹道强化', '速射强化', '首发迅击', '强四射击', '特殊射击强化',
+        '炮弹装填', '蓄击强化'
+    ]
+
+    # 锋利度: 武器锋利度相关
+    categories['锋利度'] = [
+        '匠', '利刃', '刚刃打磨', '心眼', '钝器能手', '达人艺', '砥石使用高速化'
+    ]
+
+    # 防御·生存: 防御和生存技能
+    categories['防御·生存'] = [
+        '格挡性能', '格挡强化', '防御', '精灵加护', '缓冲', '耳塞',
+        '回避性能', '回避距离提升', '火场怪力', '纳刀术', '减轻胆怯'
+    ]
+
+    # 辅助·回复: 辅助和回复技能
+    categories['辅助·回复'] = [
+        '广域化', '满足感', '快吃', '体术', '跑者', '强化持续',
+        '体力回复量提升', '回复速度', '耐力急速回复', '饥饿耐性',
+        '整备', '炸弹客', '最爱蘑菇', '道具使用强化', '威吓',
+        '适应环境', '环境利用知识', '植生学', '地质学', '破坏王', '钻研'
+    ]
+
+    # 异常属性·耐性: 属性强化和耐性
+    categories['异常属性·耐性'] = [
+        '毒伤害强化', '毒属性强化', '麻痹属性强化', '睡眠属性强化', '爆破属性强化',
+        '毒瓶追加', '麻痹瓶追加', '睡眠瓶追加', '爆破瓶追加', '减气瓶追加',
+        '火耐性', '水耐性', '雷耐性', '冰耐性', '龙耐性',
+        '毒耐性', '麻痹耐性', '睡眠耐性', '昏厥耐性', '裂伤耐性',
+        '束缚耐性', '爆破异常耐性', '恶臭耐性', '属性异常耐性',
+        '防御力下降耐性', '风压耐性', '耐震', '适应水域·油泥',
+        '闪光强化', '指示随从', '猎人生活'
+    ]
+
+    # 系列技能: 全部系列
+    series_skills = []
+    for name in sd.get('系列技能', {}):
+        if name != '说明':
+            series_skills.append(name)
+    categories['系列技能'] = series_skills
+
+    # 组合技能
+    combo_skills = []
+    for name in sd.get('组合技能', {}):
+        if name != '说明':
+            combo_skills.append(name)
+    categories['组合技能'] = combo_skills
+
+    # 武器技能中的专属技能
+    extra_weapon = ['拔刀术【技】', '拔刀术【力】', '格挡性能', '格挡强化']
+    for s in extra_weapon:
+        if s not in categories.get('防御·生存', []):
+            if s in sd.get('武器技能', {}):
+                # 已在其他分类中
+                pass
+
+    # 破坏王、怨恨等归到攻击类或其他
+    misc = []
+    all_placed = set()
+    for cat_skills in categories.values():
+        all_placed.update(cat_skills)
+
+    for name in sd.get('防具技能', {}):
+        if name != '说明' and name not in all_placed:
+            misc.append(name)
+    for name in sd.get('武器技能', {}):
+        if name != '说明' and name not in all_placed:
+            if name not in ['攻击守势', '拔刀术【技】', '拔刀术【力】']:
+                misc.append(name)
+    categories['其他'] = misc
+
+    return categories
+
+
+# 自动构建技能上限和分类
+SKILL_CAPS = _build_skill_caps()
+SKILL_CATEGORIES = _build_skill_categories()
 
 
 def _plan_result_to_dict(best, plan_cfg, t_used, attempts, verified, sch_t):
@@ -435,76 +545,95 @@ class SearchHandler(BaseHTTPRequestHandler):
         })
 
     def _handle_detail_calc(self, params):
-        """Calculate detailed damage breakdown for given skills"""
+        """Calculate detailed damage breakdown for given skills without re-searching"""
         fixed_skills = params.get('fixed_skills', {})
         combo_skills = params.get('combo_skills', {})
         fixed_skills = {k: int(v) for k, v in fixed_skills.items() if int(v) > 0}
         combo_skills = {k: int(v) for k, v in combo_skills.items() if int(v) > 0}
 
+        # 合并所有技能
+        all_skills = dict(fixed_skills)
+        all_skills.update(combo_skills)
+
         orig_wslots = self._apply_weapon_slots(params)
         t0 = time.time()
-        with _lock:
-            try:
-                raw_results = fs.dfs_search(
-                    fs.charm_pool, fixed_skills, combo_skills, 0,
-                    max_results=1, timeout_s=5.0, quiet=True
-                )
-            except Exception as e:
-                fs.WSLOTS = orig_wslots
-                self._send_json({'error': f'计算出错: {e}'}, 500)
-                return
+
+        # 计算基线伤害(仅固定技能)
+        baseline_dmg = 0
+        baseline_wcr = 0
+        final_dmg = 0
+        final_wcr = 0
+        skill_damages = {}
+
+        try:
+            baseline_dmg = fs.calc_damage(fixed_skills)
+            baseline_wcr = fs.calc_weighted_crit(fixed_skills)
+            final_dmg = fs.calc_damage(all_skills)
+            final_wcr = fs.calc_weighted_crit(all_skills)
+
+            # 计算每个技能的独立贡献
+            for sk, lv in all_skills.items():
+                if lv <= 0:
+                    continue
+                # 移除该技能后的伤害
+                reduced = dict(all_skills)
+                del reduced[sk]
+                reduced_dmg = fs.calc_damage(reduced)
+                delta = final_dmg - reduced_dmg
+                skill_damages[sk] = {
+                    'level': lv,
+                    'cap': fs.SKILL_CAPS.get(sk, lv),
+                    'standalone_dmg': round(delta, 1),
+                }
+        except Exception as e:
+            fs.WSLOTS = orig_wslots
+            self._send_json({'ok': False, 'error': f'伤害计算出错: {e}'}, 500)
+            return
+
         fs.WSLOTS = orig_wslots
         t_used = time.time() - t0
 
-        if not raw_results:
-            self._send_json({'ok': False, 'error': '无可行方案'})
-            return
-
-        best = raw_results[0]
-        weapon_skills_dict = {}
-        for s, lv in combo_skills.items():
-            weapon_skills_dict[s] = weapon_skills_dict.get(s, 0) + 1
-        fake_cfg = ('详情计算', weapon_skills_dict, {})
-        result = _plan_result_to_dict(best, fake_cfg, t_used, 1, 1, t_used)
-
-        # Generate detailed damage breakdown text
-        all_skills = dict(fixed_skills)
-        all_skills.update(combo_skills)
-        if best.get('skills'):
-            for sk, lv in best['skills'].items():
-                if sk not in all_skills:
-                    all_skills[sk] = lv
-
-        baseline_dmg = fs.calc_damage(fixed_skills)
-        final_dmg = best.get('pract', 0)
-        baseline_wcr = fs.calc_weighted_crit(fixed_skills)
-        final_wcr = fs.calc_weighted_crit(best.get('skills', {}))
-
+        # 构建详细伤害计算过程
         detail_lines = []
-        detail_lines.append(f"=== 伤害计算详情 ===")
-        detail_lines.append(f"")
+        detail_lines.append("═══ 伤害计算详情 ═══")
+        detail_lines.append("")
         detail_lines.append(f"【基线】仅固定技能:")
         detail_lines.append(f"  期望伤害: {baseline_dmg:.1f}")
         detail_lines.append(f"  加权会心: {baseline_wcr:.1f}%")
-        detail_lines.append(f"")
-        detail_lines.append(f"【最终方案】")
+        detail_lines.append("")
+        detail_lines.append(f"【最终方案】全部技能:")
         detail_lines.append(f"  期望伤害: {final_dmg:.1f}")
         detail_lines.append(f"  加权会心: {final_wcr:.1f}%")
-        detail_lines.append(f"  伤害提升: +{final_dmg - baseline_dmg:.1f} ({(final_dmg/max(baseline_dmg,1)-1)*100:.1f}%)")
-        detail_lines.append(f"")
-        detail_lines.append(f"【技能构成】")
+        dmg_increase = final_dmg - baseline_dmg
+        pct = (final_dmg / max(baseline_dmg, 1) - 1) * 100
+        detail_lines.append(f"  伤害提升: {dmg_increase:+.1f} ({pct:+.1f}%)")
+        detail_lines.append("")
+        detail_lines.append("【各技能独立贡献】(移除该技能后的伤害降低值)")
+        detail_lines.append("-" * 50)
+        sorted_skills = sorted(skill_damages.items(), key=lambda x: -x[1]['standalone_dmg'])
+        for sk, info in sorted_skills:
+            delta = info['standalone_dmg']
+            sign = '+' if delta >= 0 else ''
+            cap = info['cap']
+            detail_lines.append(f"  {sk:<12s} Lv{info['level']:>2d}/{cap:<2d} → 独立贡献 {sign}{delta:.1f}")
+        detail_lines.append("")
+        detail_lines.append("【技能构成总览】")
         for sk, lv in sorted(all_skills.items()):
             if lv > 0:
                 cap = fs.SKILL_CAPS.get(sk, 99)
-                tag = "满级" if lv >= cap else f"未满级"
+                tag = "满级" if lv >= cap else "未满级"
                 detail_lines.append(f"  {sk}: Lv{lv}/{cap} ({tag})")
 
         self._send_json({
             'ok': True,
-            'result': result,
-            'detail_text': '\n'.join(detail_lines),
             'baseline_dmg': round(baseline_dmg, 1),
+            'baseline_wcr': round(baseline_wcr, 1),
             'final_dmg': round(final_dmg, 1),
+            'final_wcr': round(final_wcr, 1),
+            'dmg_increase': round(dmg_increase, 1),
+            'dmg_increase_pct': round(pct, 1),
+            'skill_damages': skill_damages,
+            'detail_text': '\n'.join(detail_lines),
             'time': round(t_used, 2),
         })
 

@@ -580,6 +580,28 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
   overflow-y: auto;
   margin-top: 12px;
 }
+.detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+  font-size: 13px;
+}
+.detail-table th, .detail-table td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.detail-table th {
+  background: var(--bg2);
+  font-weight: 600;
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.detail-table tr:hover td {
+  background: rgba(255,255,255,0.02);
+}
 
 /* 加载 */
 .loading {
@@ -1144,28 +1166,58 @@ function renderResultCard(r, idx) {
     '<span class="deco-chip">' + esc(k) + ' ×' + v + '</span>').join('') ||
     '<span class="muted">无</span>';
 
-  // 三色chip：已选(蓝)/未选(灰)/满级(绿)
+  // 合并所有技能：core_skills + other_skills + series_check → 统一展示
+  const allSkills = {};
+  if (r.core_skills) {
+    for (const [k, v] of Object.entries(r.core_skills)) {
+      allSkills[k] = { level: v.level, cap: v.cap, _core: true };
+    }
+  }
+  if (r.other_skills) {
+    for (const [k, v] of Object.entries(r.other_skills)) {
+      allSkills[k] = { level: v.level, cap: v.cap, _core: false };
+    }
+  }
+  if (r.series_check) {
+    for (const s of r.series_check) {
+      allSkills[s.skill] = { level: s.level, cap: s.cap || 2, _series: true, _ok: s.ok, _need: s.need_pieces, _actual: s.actual_pieces };
+    }
+  }
+
+  // 排序：收藏置顶 + 按分类中出现顺序
   const selKeys = Object.keys(selectedSkills);
-  const coreHTML = Object.entries(r.core_skills || {}).map(([k,v]) => {
-    const isSel = selKeys.includes(k) || getActiveWeaponSkills().includes(k);
+  const weaponSel = getActiveWeaponSkills();
+
+  // 构建分类顺序映射
+  const catOrder = {};
+  let orderIdx = 0;
+  for (const skills of Object.values(SKILL_CATEGORIES || {})) {
+    for (const s of skills) {
+      if (!(s in catOrder)) { catOrder[s] = orderIdx++; }
+    }
+  }
+
+  const sortedSkillNames = Object.keys(allSkills).sort((a, b) => {
+    const fa = favSkills.has(a), fb = favSkills.has(b);
+    if (fa && !fb) return -1;
+    if (!fa && fb) return 1;
+    const oa = catOrder[a] || 9999;
+    const ob = catOrder[b] || 9999;
+    return oa - ob;
+  });
+
+  const skillsHTML = sortedSkillNames.map(k => {
+    const v = allSkills[k];
+    const isSel = selKeys.includes(k) || weaponSel.includes(k);
     const full = v.level >= v.cap;
     let cls = full ? 'chip-full' : (isSel ? 'chip-selected' : 'chip-unselected');
-    return '<span class="chip ' + cls + '">' + esc(k) + ' Lv' + v.level + '/' + v.cap + '</span>';
+    let extra = '';
+    if (v._series) {
+      const seriesCls = v._ok ? 'ok-badge' : 'err-badge';
+      extra = ' <span class="' + seriesCls + '" style="font-size:10px;">(' + (v._ok?'✓':'✗') + ' 需' + v._need + '件/实' + v._actual + '件)</span>';
+    }
+    return '<span class="chip ' + cls + '">' + esc(k) + ' Lv' + v.level + '/' + v.cap + extra + '</span>';
   }).join('');
-
-  const otherHTML = Object.entries(r.other_skills || {}).map(([k,v]) => {
-    const isSel = selKeys.includes(k);
-    const full = v.level >= v.cap;
-    let cls = full ? 'chip-full' : (isSel ? 'chip-selected' : 'chip-unselected');
-    return '<span class="chip ' + cls + '">' + esc(k) + ' Lv' + v.level + '/' + v.cap + '</span>';
-  }).join('');
-
-  const seriesHTML = (r.series_check || []).map(s => {
-    const cls = s.ok ? 'ok-badge' : 'err-badge';
-    const icon = s.ok ? '✓' : '✗';
-    return '<span class="' + cls + '">' + icon + ' ' + esc(s.skill) + ' Lv' + s.level +
-      '(需' + s.need_pieces + '件: 武器' + s.weapon_provided + '+防具' + s.armor_pieces + '=' + s.actual_pieces + ')</span>';
-  }).join(' ');
 
   const remA = (r.remaining_slots && r.remaining_slots.armor) || [];
   const remW = (r.remaining_slots && r.remaining_slots.weapon) || [];
@@ -1192,10 +1244,8 @@ function renderResultCard(r, idx) {
     '</div>' +
     '<div class="section-title">装备组合</div>' +
     '<div class="armor-grid">' + armorsHTML + charmHTML + '</div>' +
-    (seriesHTML ? '<div class="section-title">系列技能验证</div><div>' + seriesHTML + '</div>' : '') +
     '<div class="section-title">装饰品</div><div class="deco-list">' + decoHTML + '</div>' +
-    (coreHTML ? '<div class="section-title">核心伤害技能</div><div class="chips">' + coreHTML + '</div>' : '') +
-    (otherHTML ? '<div class="section-title">其他技能</div><div class="chips">' + otherHTML + '</div>' : '') +
+    (sortedSkillNames.length > 0 ? '<div class="section-title">方案技能</div><div class="chips">' + skillsHTML + '</div>' : '') +
   '</div>';
 }
 
@@ -1229,15 +1279,49 @@ async function showDetailModal(idx) {
       fixed_skills: fixed, combo_skills: combo, weapon_slots: weaponSlotLevels.slice()
     });
     let html = '<div class="card-title">方案详情</div>';
-    if (detail.ok && detail.result) {
-      html += renderResultCard(detail.result, idx);
-      html += '<div class="section-title">伤害计算详情</div>';
-      html += '<div class="detail-text">' + esc(detail.detail_text || '') + '</div>';
+    if (detail.ok) {
+      // 基础数据
       html += '<div class="info-row mt8">' +
         '<div class="info-item"><span class="k">基线伤害:</span><span class="v">' + (detail.baseline_dmg || 0) + '</span></div>' +
+        '<div class="info-item"><span class="k">基线会心:</span><span class="v">' + (detail.baseline_wcr || 0) + '%</span></div>' +
         '<div class="info-item"><span class="k">最终伤害:</span><span class="v" style="color:var(--accent2);">' + (detail.final_dmg || 0) + '</span></div>' +
-        '<div class="info-item"><span class="k">提升:</span><span class="v">+' + (((detail.final_dmg||0)-(detail.baseline_dmg||0)).toFixed(1)) + '</span></div>' +
-        '</div>';
+        '<div class="info-item"><span class="k">最终会心:</span><span class="v">' + (detail.final_wcr || 0) + '%</span></div>' +
+        '<div class="info-item"><span class="k">提升:</span><span class="v">+' + (detail.dmg_increase || 0) + ' (' + (detail.dmg_increase_pct || 0) + '%)</span></div>' +
+      '</div>';
+
+      // 技能独立贡献表格
+      const sd = detail.skill_damages || {};
+      const sortedSd = Object.entries(sd).sort((a, b) => b[1].standalone_dmg - a[1].standalone_dmg);
+      if (sortedSd.length > 0) {
+        html += '<div class="section-title">各技能独立贡献</div>';
+        html += '<table class="detail-table"><thead><tr>' +
+          '<th>技能</th><th>等级</th><th>独立伤害贡献</th><th>状态</th>' +
+        '</tr></thead><tbody>';
+        for (const [sk, info] of sortedSd) {
+          const delta = info.standalone_dmg;
+          const sign = delta >= 0 ? '+' : '';
+          const color = delta >= 0 ? 'var(--accent2)' : 'var(--danger)';
+          const full = info.level >= info.cap;
+          const status = full ? '<span style="color:var(--success);">满级</span>' : '<span style="color:var(--muted);">未满级</span>';
+          html += '<tr>' +
+            '<td>' + esc(sk) + '</td>' +
+            '<td>Lv' + info.level + '/' + info.cap + '</td>' +
+            '<td style="color:' + color + ';' + 'font-weight:700;">' + sign + delta.toFixed(1) + '</td>' +
+            '<td>' + status + '</td>' +
+          '</tr>';
+        }
+        html += '</tbody></table>';
+      }
+
+      // 原始方案展示
+      html += '<div class="section-title">方案配置</div>';
+      html += renderResultCard(r, idx);
+
+      // 完整计算过程文本
+      html += '<div class="section-title">完整计算过程</div>';
+      html += '<div class="detail-text">' + esc(detail.detail_text || '') + '</div>';
+
+      html += '<div class="info-row mt8"><div class="muted">计算耗时: ' + (detail.time || 0) + 's</div></div>';
     } else {
       html += '<div class="result-empty">' + esc(detail.error || '计算失败') + '</div>';
       html += renderResultCard(r, idx);

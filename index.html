@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MHWilds 配装搜索器</title>
+<style>
+:root {
+  --bg: #1a1d23;
+  --bg2: #22262f;
+  --bg3: #2a2f3a;
+  --border: #3a3f4d;
+  --text: #e4e6ea;
+  --muted: #9a9fae;
+  --accent: #6c8cff;
+  --accent2: #4ade80;
+  --danger: #ef4444;
+  --warn: #f59e0b;
+  --card: #262b36;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+.header {
+  background: linear-gradient(135deg, #2d3748, #1e3a5f);
+  padding: 20px 32px;
+  border-bottom: 1px solid var(--border);
+}
+.header h1 {
+  font-size: 22px;
+  font-weight: 600;
+  color: #fff;
+}
+.header p { color: var(--muted); font-size: 13px; margin-top: 4px; }
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 32px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+}
+.tab {
+  padding: 12px 20px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+  user-select: none;
+}
+.tab:hover { color: var(--text); }
+.tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+.content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px 32px;
+}
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-title::before {
+  content: '';
+  width: 4px;
+  height: 16px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+}
+.btn:hover { border-color: var(--accent); background: #343b4a; }
+.btn:active { transform: translateY(1px); }
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), #8fa8ff);
+  border-color: transparent;
+  color: #fff;
+  font-weight: 600;
+}
+.btn-primary:hover { filter: brightness(1.08); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-success {
+  background: linear-gradient(135deg, var(--accent2), #22c55e);
+  border-color: transparent;
+  color: #003b1f;
+  font-weight: 600;
+}
+.grid { display: grid; gap: 16px; }
+.grid-2 { grid-template-columns: repeat(2, 1fr); }
+.grid-3 { grid-template-columns: repeat(3, 1fr); }
+.grid-4 { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 1000px) {
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+}
+label {
+  font-size: 12px;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+input[type="text"], input[type="number"], select {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 14px;
+  transition: border 0.15s;
+}
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.skill-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+.skill-row select:first-child { flex: 1; }
+.skill-row input { width: 80px; }
+.skill-row .btn { padding: 6px 10px; }
+.plan-list { display: flex; flex-direction: column; gap: 10px; }
+.plan-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: border 0.15s;
+}
+.plan-item:hover { border-color: var(--accent); }
+.plan-info .plan-label { font-weight: 600; font-size: 14px; }
+.plan-info .plan-sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  margin-right: 4px;
+}
+.tag-series { background: rgba(108, 140, 255, 0.15); color: #8fa8ff; }
+.tag-extra { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+.result-panel {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.result-empty {
+  text-align: center;
+  padding: 40px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.loading {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+  padding: 30px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.summary-table th, .summary-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.summary-table th {
+  background: var(--bg);
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.summary-table tr:hover td { background: var(--bg3); }
+.dmg-high { color: var(--accent2); font-weight: 600; }
+.dmg-mid { color: var(--warn); }
+.ok-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(74, 222, 128, 0.12);
+  color: var(--accent2);
+  font-size: 11px;
+}
+.err-badge {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--danger);
+}
+.armor-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  margin: 16px 0;
+}
+.armor-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+}
+.armor-part {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.armor-name {
+  font-weight: 600;
+  font-size: 14px;
+  margin: 4px 0;
+}
+.slots {
+  display: flex;
+  gap: 4px;
+  margin: 6px 0;
+}
+.slot {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+.slot-1 { background: #3b5998; color: #fff; }
+.slot-2 { background: #68a357; color: #fff; }
+.slot-3 { background: #c44d4d; color: #fff; }
+.slot-0 { background: #3a3f4d; color: var(--muted); }
+.skill-list { font-size: 12px; color: var(--muted); }
+.skill-list span { color: #c7ccd6; }
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  margin: 16px 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.deco-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.deco-chip {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 4px 12px;
+  font-size: 12px;
+}
+.skill-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.skill-chip {
+  background: rgba(108, 140, 255, 0.1);
+  border: 1px solid rgba(108, 140, 255, 0.35);
+  color: #a6b8ff;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+.skill-chip.full { border-color: rgba(74, 222, 128, 0.4); color: var(--accent2); background: rgba(74, 222, 128, 0.08); }
+.damage-big {
+  font-size: 36px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #6c8cff, #4ade80);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.info-row {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin: 8px 0;
+}
+.info-item { font-size: 13px; }
+.info-item .k { color: var(--muted); margin-right: 6px; }
+.info-item .v { color: var(--text); font-weight: 500; }
+.extra-result {
+  background: var(--bg);
+  border-radius: 6px;
+  padding: 16px;
+  font-family: "SF Mono", Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  max-height: 500px;
+  overflow-y: auto;
+}
+.add-btn {
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--muted);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.add-btn:hover { border-color: var(--accent); color: var(--accent); }
+.compare-mode {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.mode-group { display: flex; gap: 6px; }
+input[type="radio"] { margin-right: 4px; }
+hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 20px 0;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>⚔️ MHWilds 配装搜索器</h1>
+  <p>怪物猎人荒野 · 自动配装搜索 · 基于向量化DFS算法</p>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="plans">预设方案</div>
+  <div class="tab" data-tab="compare">巨戟vs霸主</div>
+  <div class="tab" data-tab="custom">自定义搜索</div>
+  <div class="tab" data-tab="extra">追加技能查询</div>
+</div>
+
+<div class="content">
+
+  <!-- 预设方案面板 -->
+  <div class="tab-panel active" id="panel-plans">
+    <div class="card">
+      <div class="card-title">6种武器技能组合方案</div>
+      <div class="compare-mode">
+        <div>
+          <label>额外固定技能（全局生效）</label>
+          <div id="plan-extra-skills"></div>
+          <button class="btn" onclick="addSkillRow('plan-extra-skills', 'fixed')">+ 添加固定技能</button>
+        </div>
+      </div>
+      <div class="plan-list" id="plan-list"></div>
+    </div>
+    <div id="plan-results"></div>
+  </div>
+
+  <!-- 对比面板 -->
+  <div class="tab-panel" id="panel-compare">
+    <div class="card">
+      <div class="card-title">固定巨戟龙的默示录4 vs 霸主之魂3</div>
+      <div style="display:flex;gap:16px;align-items:center;">
+        <button class="btn-primary btn" id="btn-compare" onclick="runCompare()">🚀 运行对比搜索</button>
+        <span id="compare-status" style="color:var(--muted);font-size:13px;"></span>
+      </div>
+    </div>
+    <div id="compare-results"></div>
+  </div>
+
+  <!-- 自定义搜索面板 -->
+  <div class="tab-panel" id="panel-custom">
+    <div class="card">
+      <div class="card-title">自定义搜索参数</div>
+      <div class="grid grid-2">
+        <div>
+          <label>固定技能（必须达到指定等级）</label>
+          <div id="custom-fixed"></div>
+          <button class="add-btn" onclick="addSkillRow('custom-fixed', 'fixed')">+ 添加固定技能</button>
+        </div>
+        <div>
+          <label>武器组合/系列技能（武器洗练技能）</label>
+          <div id="custom-combo"></div>
+          <button class="add-btn" onclick="addSkillRow('custom-combo', 'combo')">+ 添加武器技能</button>
+        </div>
+      </div>
+      <div class="grid grid-3" style="margin-top:16px;">
+        <div>
+          <label>防具最少预留孔位数</label>
+          <input type="number" id="custom-minarmor" value="0" min="0" max="9">
+        </div>
+        <div>
+          <label>返回结果数量</label>
+          <input type="number" id="custom-maxresults" value="5" min="1" max="50">
+        </div>
+        <div>
+          <label>搜索超时(秒)</label>
+          <input type="number" id="custom-timeout" value="3" min="1" step="0.5">
+        </div>
+      </div>
+      <div style="margin-top:16px;">
+        <button class="btn btn-primary" onclick="runCustomSearch()">🔍 开始搜索</button>
+        <span id="custom-status" style="margin-left:12px;color:var(--muted);font-size:13px;"></span>
+      </div>
+    </div>
+    <div id="custom-results"></div>
+  </div>
+
+  <!-- 追加技能面板 -->
+  <div class="tab-panel" id="panel-extra">
+    <div class="card">
+      <div class="card-title">追加技能查询（每个技能可追加上限）</div>
+      <div class="grid grid-2">
+      <div>
+        <label>固定技能</label>
+        <div id="extra-fixed"></div>
+        <button class="add-btn" onclick="addSkillRow('extra-fixed', 'fixed')">+ 添加固定技能</button>
+      </div>
+      <div>
+        <label>武器组合/系列技能</label>
+        <div id="extra-combo"></div>
+        <button class="add-btn" onclick="addSkillRow('extra-combo', 'combo')">+ 添加武器技能</button>
+      </div>
+      </div>
+      <div style="margin-top:16px;">
+        <button class="btn btn-primary" onclick="runQueryExtra()">📊 查询追加技能空间</button>
+        <span id="extra-status" style="margin-left:12px;color:var(--muted);font-size:13px;"></span>
+      </div>
+    </div>
+    <div id="extra-results"></div>
+  </div>
+
+</div>
+
+<script>
+let SKILL_OPTIONS = [];
+let SKILL_CAPS = {};
+let PLAN_CFGS = [];
+let BASE_FIXED = {};
+
+const API = (path, body = null) => {
+  const opts = { headers: { 'Content-Type': 'application/json' } };
+  if (body) { opts.method = 'POST'; opts.body = JSON.stringify(body); }
+  return fetch(path, opts).then(r => r.json());
+};
+
+async function init() {
+  const info = await API('/api/info');
+  SKILL_CAPS = info.skill_caps;
+  PLAN_CFGS = info.plan_cfgs;
+  BASE_FIXED = info.base_fixed_min;
+  SKILL_OPTIONS = Object.keys(SKILL_CAPS).sort();
+  renderPlans();
+}
+
+function skillSelectHTML(selected = '') {
+  const opts = SKILL_OPTIONS.map(s => {
+    const v = SKILL_CAPS[s];
+    return `<option value="${s}" ${s===selected?'selected':''}>${s} (上限${v})</option>`;
+  }).join('');
+  return `<select><option value="">-- 选择技能 --</option>${opts}</select>`;
+}
+
+function addSkillRow(containerId, type) {
+  const el = document.getElementById(containerId);
+  const wrap = document.createElement('div');
+  wrap.className = 'skill-row';
+  wrap.innerHTML = `
+    ${skillSelectHTML()}
+    <input type="number" min="0" value="1" placeholder="等级">
+    <button class="btn" onclick="this.parentElement.remove()">✕</button>
+  `;
+  el.appendChild(wrap);
+}
+
+function collectSkills(containerId) {
+  const out = {};
+  document.querySelectorAll(`#${containerId} > .skill-row`).forEach(row => {
+    const sel = row.querySelector('select');
+    const inp = row.querySelector('input');
+    if (sel.value) out[sel.value] = parseInt(inp.value) || 0;
+  });
+  return out;
+}
+
+function renderPlans() {
+  const list = document.getElementById('plan-list');
+  list.innerHTML = PLAN_CFGS.map((cfg, i) => {
+    const weaponTags = Object.entries(cfg.weapon_sk).map(([k,v]) => `<span class="tag tag-series">${k}×${v}</span>`).join('');
+    const extraTags = Object.entries(cfg.extra_fixed).map(([k,v]) => `<span class="tag tag-extra">${k}Lv${v}</span>`).join('');
+    return `<div class="plan-item">
+      <div class="plan-info">
+        <div class="plan-label">${cfg.label}</div>
+        <div class="plan-sub">${weaponTags}${extraTags}</div>
+      </div>
+      <button class="btn btn-primary" onclick="runPlan(${i})">搜索</button>
+    </div>`;
+  }).join('');
+}
+
+function showLoading(target, text = '搜索中...') {
+  target.innerHTML = `<div class="card"><div class="spinner-wrap"><div class="loading"></div><span>${text}</span></div></div>`;
+}
+
+async function runPlan(idx) {
+  const extra = collectSkills('plan-extra-skills');
+  const resultDiv = document.getElementById('plan-results');
+  showLoading(resultDiv);
+  try {
+    const res = await API('/api/search_plan', { plan_idx: idx, extra_fixed: extra });
+    renderPlanResult(resultDiv, res);
+  } catch (e) {
+    resultDiv.innerHTML = `<div class="card"><div class="result-empty">错误: ${e.message}</div></div>`;
+  }
+}
+
+function renderPlanResult(container, res) {
+  if (!res.ok) {
+    container.innerHTML = `<div class="card"><div class="result-empty">❌ 无可行方案 (${res.label})</div></div>`;
+    return;
+  }
+  container.innerHTML = `<div class="card">${renderResultDetail(res.result, res.label, res)}</div>`;
+}
+
+function renderResultDetail(r, label, meta) {
+  const armorsHTML = r.armors.map(a => {
+    const slotHTML = (a.slots || []).map(s => `<div class="slot slot-${s||0}">${s||'·'}</div>`).join('');
+    const skillHTML = Object.entries(a.skills).map(([k,v]) => `<div>${k}<span> Lv${v}</span></div>`).join('');
+    return `<div class="armor-card">
+      <div class="armor-part">${a.part}</div>
+      <div class="armor-name">${a.name}</div>
+      <div class="slots">${slotHTML}</div>
+      <div class="skill-list">${skillHTML}</div>
+    </div>`;
+  }).join('');
+
+  const charmHTML = r.charm ? (() => {
+    const a = r.charm;
+    const as = (a.armor_slots||[]).map(s=>`<div class="slot slot-${s||0}">${s||'·'}</div>`).join('');
+    const ws = (a.weapon_slots||[]).map(s=>`<div class="slot slot-${s||0}">${s||'·'}</div>`).join('');
+    const sk = Object.entries(a.skills).map(([k,v]) => `<div>${k}<span> Lv${v}</span></div>`).join('');
+    return `<div class="armor-card">
+      <div class="armor-part">护石</div>
+      <div class="armor-name">${a.name}</div>
+      <div style="font-size:11px;color:var(--muted);margin:4px 0;">防具孔 / 武器孔</div>
+      <div class="slots">${as} / ${ws}</div>
+      <div class="skill-list">${sk}</div>
+    </div>`;
+  })() : '';
+
+  const decoHTML = Object.entries(r.decorations).map(([k,v]) => `<span class="deco-chip">${k} ×${v}</span>`).join('') || '<span style="color:var(--muted);">无</span>';
+
+  const coreHTML = Object.entries(r.core_skills).map(([k,v]) => {
+    const full = v.level >= v.cap;
+    return `<span class="skill-chip ${full?'full':''}">${k} Lv${v.level}/${v.cap}</span>`;
+  }).join('');
+
+  const otherHTML = Object.entries(r.other_skills).map(([k,v]) => {
+    const full = v.level >= v.cap;
+    return `<span class="skill-chip ${full?'full':''}">${k} Lv${v.level}/${v.cap}</span>`;
+  }).join('');
+
+  const seriesHTML = r.series_check.map(s => {
+    const cls = s.ok ? 'ok-badge' : 'err-badge';
+    const icon = s.ok ? '✓' : '✗';
+    return `<span class="${cls}">${icon} ${s.skill} Lv${s.level}(需${s.need_pieces}件: 武器${s.weapon_provided}+防具${s.armor_pieces}=${s.actual_pieces})</span>`;
+  }).join(' ');
+
+  const remA = r.remaining_slots.armor.filter(s=>s>0).length;
+  const remW = r.remaining_slots.weapon.filter(s=>s>0).length;
+  const remASum = r.remaining_slots.armor.reduce((a,b)=>a+b,0);
+  const remWsum = r.remaining_slots.weapon.reduce((a,b)=>a+b,0);
+
+  return `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;">
+      <div>
+        <div style="font-size:13px;color:var(--muted);">${label || '结果'}</div>
+        <div class="damage-big">${r.damage.toFixed(1)}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;">期望伤害</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="info-row">
+          <div class="info-item"><span class="k">防性:</span><span class="v">Lv${r.cfg.guard_lv||'-'}</span></div>
+          <div class="info-item"><span class="k">精神:</span><span class="v">Lv${r.cfg.spirit_lv||0}</span></div>
+          <div class="info-item"><span class="k">尝试:</span><span class="v">${r.timing.attempts}</span></div>
+          <div class="info-item"><span class="k">验证通过:</span><span class="v">${r.timing.verified}</span></div>
+        </div>
+        <div class="info-row">
+          <div class="info-item"><span class="k">搜索耗时:</span><span class="v">${r.timing.search_time}s</span></div>
+          <div class="info-item"><span class="k">总耗时:</span><span class="v">${r.timing.total_time}s</span></div>
+          <div class="info-item"><span class="k">剩余孔位(防/武):</span><span class="v">${remA}个(${remASum}级) / ${remW}个(${remWSum}级)</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="section-title">装备组合</div>
+    <div class="armor-grid">${armorsHTML}${charmHTML}</div>
+    ${seriesHTML ? `<div class="section-title">系列技能验证</div><div>${seriesHTML}</div>` : ''}
+    <div class="section-title">装饰品</div>
+    <div class="deco-list">${decoHTML}</div>
+    <div class="section-title">核心伤害技能</div>
+    <div class="skill-chips">${coreHTML}</div>
+    ${otherHTML ? `<div class="section-title">其他技能</div><div class="skill-chips">${otherHTML}</div>` : ''}
+  `;
+}
+
+async function runCompare() {
+  const div = document.getElementById('compare-results');
+  document.getElementById('compare-status').innerHTML = '<span class="loading"></span> 对比搜索中...';
+  showLoading(div, '对比搜索中 (巨戟4 vs 霸主3)...');
+  try {
+    const [resA, resB] = await Promise.all([
+      API('/api/search_all', { extra_fixed_skill: {'巨戟龙的默示录': 4}, extra_name: '固定巨戟4' }),
+      API('/api/search_all', { extra_fixed_skill: {'霸主之魂': 3}, extra_name: '固定霸主3' })
+    ]);
+    document.getElementById('compare-status').innerHTML = `完成！巨戟4总伤${resA.total_damage} vs 霸主3总伤${resB.total_damage}`;
+    div.innerHTML = renderCompareResult(resA, resB);
+  } catch (e) {
+    div.innerHTML = `<div class="card"><div class="result-empty">错误: ${e.message}</div></div>`;
+  }
+}
+
+function renderCompareResult(resA, resB) {
+  const rowA = resA.summary, rowB = resB.summary;
+  const diff = resA.total_damage - resB.total_damage;
+  const winner = diff > 0 ? '巨戟4' : '霸主3';
+  return `
+  <div class="card">
+    <div class="card-title">对比结论</div>
+    <div class="info-row">
+      <div class="info-item"><span class="k">固定巨戟4 6方案总伤害:</span><span class="v damage-big" style="font-size:22px;">${resA.total_damage}</span></div>
+      <div class="info-item"><span class="k">固定霸主3 6方案总伤害:</span><span class="v damage-big" style="font-size:22px;">${resB.total_damage}</span></div>
+    </div>
+    <div style="margin-top:12px;padding:12px;border-radius:8px;background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.25);">
+      🏆 结论: <b>${winner}</b> 更优，${diff > 0 ? '巨戟4高出 ' + diff.toFixed(1) : '霸主3高出 ' + (-diff).toFixed(1)}
+    </div>
+    <div style="margin-top:8px;color:var(--muted);font-size:13px;">
+      方案A耗时 ${resA.total_time}s · 方案B耗时 ${resB.total_time}s
+    </div>
+  </div>
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-title">A: 固定巨戟4 (各方案)</div>
+      ${renderCompareSummary(rowA, resA.best_label, resA.best_detail)}
+    </div>
+    <div class="card">
+      <div class="card-title">B: 固定霸主3 (各方案)</div>
+      ${renderCompareSummary(rowB, resB.best_label, resB.best_detail)}
+    </div>
+  </div>
+  `;
+}
+
+function renderCompareSummary(rows, bestLabel, bestDetail) {
+  const header = `<table class="summary-table">
+    <thead><tr>
+      <th>方案</th><th>防性</th><th>伤害</th><th>广域</th><th>黑蚀</th><th>霸主</th><th>火龙</th><th>巨戟</th>
+    </tr></thead><tbody>
+    ${rows.map(r => `<tr>
+      <td>${r.label.replace(/方案[一二三四五六]:/,'')}</td>
+      <td>${r.guard_lv ?? '-'}</td>
+      <td class="${r.damage ? 'dmg-high':''}">${r.damage ?? '无解'}</td>
+      <td>${r.wide ? '✓': '-'}</td>
+      <td>${r.heishi || '-'}</td>
+      <td>${r.bahar || '-'}</td>
+      <td>${r.huolong || '-'}</td>
+      <td>${r.juji || '-'}</td>
+    </tr>`).join('')}
+  </tbody></table>`;
+  const detail = bestDetail ? `
+    <hr>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">🏆 最优: ${bestLabel}</div>
+    ${renderResultDetail(bestDetail, bestLabel)}
+  ` : '';
+  return header + detail;
+}
+
+async function runCustomSearch() {
+  const fixed = collectSkills('custom-fixed');
+  const combo = collectSkills('custom-combo');
+  const minArmor = parseInt(document.getElementById('custom-minarmor').value) || 0;
+  const maxResults = parseInt(document.getElementById('custom-maxresults').value) || 5;
+  const timeout = parseFloat(document.getElementById('custom-timeout').value) || 3;
+  const div = document.getElementById('custom-results');
+  document.getElementById('custom-status').innerHTML = '<span class="loading"></span> 搜索中...';
+  showLoading(div);
+  try {
+    const res = await API('/api/custom_search', {
+      fixed_skills: fixed, combo_skills: combo,
+      min_rem_armor: minArmor, max_results: maxResults, timeout_s: timeout
+    });
+    document.getElementById('custom-status').innerHTML = `找到 ${res.count} 个方案 (${res.total_time}s)`;
+    div.innerHTML = res.results.length ?
+      `<div class="card">${res.results.map((r, i) => `
+        <div style="margin-bottom:${i < res.results.length-1 ? '24px;padding-bottom:24px;border-bottom:1px solid var(--border);' : ''}">
+          ${renderResultDetail(r, `方案 #${i+1}`)}
+        </div>`).join('')}
+      </div>` :
+      `<div class="card"><div class="result-empty">❌ 无满足条件的方案</div></div>`;
+  } catch (e) {
+    div.innerHTML = `<div class="card"><div class="result-empty">错误: ${e.message}</div></div>`;
+  }
+}
+
+async function runQueryExtra() {
+  const fixed = collectSkills('extra-fixed');
+  const combo = collectSkills('extra-combo');
+  const div = document.getElementById('extra-results');
+  document.getElementById('extra-status').innerHTML = '<span class="loading"></span> 查询中...';
+  showLoading(div, '追加技能分析中（请稍候...');
+  try {
+    const res = await API('/api/query_extra', { fixed_skills: fixed, combo_skills: combo, min_rem_armor: 0 });
+    document.getElementById('extra-status').innerHTML = `完成 (${res.time}s)`;
+    div.innerHTML = `<div class="card"><div class="extra-result">${res.result_text}</div></div>`;
+  } catch (e) {
+    div.innerHTML = `<div class="card"><div class="result-empty">错误: ${e.message}</div></div>`;
+  }
+}
+
+// 初始化标签切换
+document.querySelectorAll('.tab').forEach(t => {
+  t.onclick = () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('panel-' + t.dataset.tab).classList.add('active');
+  };
+});
+
+init().catch(e => console.error(e));
+</script>
+</body>
+</html>

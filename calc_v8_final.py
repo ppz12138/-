@@ -283,7 +283,7 @@ def print_detail(best, plan_cfg):
             need_p = 4 if v >= 4 else (3 if k in fs.GROUP_SK else 2)
             wprov = 1 if k in weapon_sk else 0
             actual_p = series_actual.get(k, 0) + wprov
-            ok = "✓" if actual_p >= need_p else "✗"
+            ok = "[OK]" if actual_p >= need_p else "[NO]"
             print(f"    {k}: Lv{v} 需{need_p}件(武器{wprov}+防具{series_actual.get(k,0)})={actual_p} {ok}")
 
     # 装饰品

@@ -197,7 +197,7 @@ def _plan_result_to_dict(best, plan_cfg, t_used, attempts, verified, sch_t):
     sk = {k: v for k, v in best['skills'].items() if v > 0}
     for k, v in sk.items():
         if k in fs.NO_DECO_SK:
-            need_p = 4 if v >= 4 else (3 if k in fs.GROUP_SK else 2)
+            need_p = 3 if k in fs.GROUP_SK else (4 if v >= 2 else 2)
             wprov = 1 if k in weapon_sk else 0
             actual_p = series_actual.get(k, 0) + wprov
             series_check.append({
@@ -474,6 +474,9 @@ class SearchHandler(BaseHTTPRequestHandler):
         fixed_skills = params.get('fixed_skills', {})
         combo_skills = params.get('combo_skills', {})
         min_rem_armor = int(params.get('min_rem_armor', 0))
+        mode = params.get('mode', 'normal')
+        fav_skills = set(params.get('favorite_skills', []))
+        dis_skills = set(params.get('disabled_skills', []))
         fixed_skills = {k: int(v) for k, v in fixed_skills.items() if int(v) > 0}
         combo_skills = {k: int(v) for k, v in combo_skills.items() if int(v) > 0}
 
@@ -481,7 +484,7 @@ class SearchHandler(BaseHTTPRequestHandler):
         t0 = time.time()
         with _lock:
             try:
-                result = fs.query_extra(fixed_skills, combo_skills, min_rem_armor, fs.charm_pool)
+                result = fs.query_extra(fixed_skills, combo_skills, min_rem_armor, fs.charm_pool, mode=mode, fav_skills=fav_skills, dis_skills=dis_skills)
             except Exception as e:
                 fs.WSLOTS = orig_wslots
                 self._send_json({'error': f'查询出错: {e}'}, 500)

@@ -6,22 +6,24 @@
 <title>MHWilds 配装搜索器</title>
 <style>
 :root {
-  --bg: #1a1d23;
-  --bg2: #22262f;
-  --bg3: #2a2f3a;
-  --border: #3a3f4d;
-  --text: #e4e6ea;
-  --muted: #9a9fae;
+  --bg: #1b1e26;
+  --bg2: #232833;
+  --bg3: #2d3340;
+  --border: #3c4352;
+  --text: #e9ebf0;
+  --muted: #9ba3b2;
   --accent: #6c8cff;
   --accent2: #4ade80;
   --danger: #ef4444;
   --warn: #f59e0b;
-  --card: #262b36;
+  --card: #272d39;
   --armor-slot: #4682b4;
   --weapon-slot: #d4a017;
   --chip-blue: #6c8cff;
   --chip-gray: #6b7280;
   --chip-orange: #f59e0b;
+  --shadow: 0 2px 8px rgba(0,0,0,0.18);
+  --shadow-lg: 0 6px 20px rgba(0,0,0,0.25);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -32,12 +34,13 @@ body {
   min-height: 100vh;
 }
 .header {
-  background: linear-gradient(135deg, #2d3748, #1e3a5f);
-  padding: 20px 32px;
+  background: linear-gradient(135deg, #2a3a5c 0%, #1e2a47 55%, #1a2233 100%);
+  padding: 22px 32px;
   border-bottom: 1px solid var(--border);
+  box-shadow: 0 4px 18px rgba(0,0,0,0.3);
 }
-.header h1 { font-size: 22px; font-weight: 600; color: #fff; }
-.header p { color: var(--muted); font-size: 13px; margin-top: 4px; }
+.header h1 { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: 0.3px; }
+.header p { color: #aeb8cc; font-size: 13px; margin-top: 4px; }
 .content {
   max-width: 1400px;
   margin: 0 auto;
@@ -46,9 +49,11 @@ body {
 .card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 20px;
+  border-radius: 12px;
+  padding: 22px;
   margin-bottom: 20px;
+  box-shadow: var(--shadow);
+  transition: box-shadow 0.2s ease;
 }
 .card-title {
   font-size: 16px;
@@ -72,32 +77,35 @@ body {
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  border-radius: 6px;
+  border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--bg3);
   color: var(--text);
   cursor: pointer;
   font-size: 13px;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
   font-family: inherit;
 }
-.btn:hover { border-color: var(--accent); background: #343b4a; }
+.btn:hover { border-color: var(--accent); background: #343b4a; box-shadow: 0 2px 6px rgba(108,140,255,0.15); }
 .btn:active { transform: translateY(1px); }
 .btn-primary {
   background: linear-gradient(135deg, var(--accent), #8fa8ff);
   border-color: transparent;
   color: #fff;
   font-weight: 600;
+  box-shadow: 0 2px 8px rgba(108,140,255,0.3);
 }
-.btn-primary:hover { filter: brightness(1.08); }
-.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; filter: none; }
+.btn-primary:hover { filter: brightness(1.1); box-shadow: 0 4px 14px rgba(108,140,255,0.4); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; filter: none; box-shadow: none; }
 .btn-success {
   background: linear-gradient(135deg, var(--accent2), #22c55e);
   border-color: transparent;
   color: #003b1f;
   font-weight: 600;
+  box-shadow: 0 2px 8px rgba(74,222,128,0.25);
 }
-.btn-danger { color: var(--danger); border-color: rgba(239,68,68,0.4); }
+.btn-success:hover { filter: brightness(1.08); box-shadow: 0 4px 14px rgba(74,222,128,0.35); }
+.btn-danger { color: var(--danger); border-color: rgba(239,68,68,0.4); transition: all 0.2s ease; }
 .btn-danger:hover { background: rgba(239,68,68,0.12); border-color: var(--danger); }
 .btn-sm { padding: 5px 10px; font-size: 12px; }
 label {
@@ -112,13 +120,13 @@ input[type="text"], input[type="number"], select {
   padding: 8px 12px;
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   color: var(--text);
   font-size: 14px;
-  transition: border 0.15s;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
   font-family: inherit;
 }
-input:focus, select:focus { outline: none; border-color: var(--accent); }
+input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(108,140,255,0.18); }
 
 /* 武器配置 */
 .weapon-config { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
@@ -127,21 +135,22 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
 .seg-btns { display: flex; gap: 4px; }
 .seg-btn {
   width: 34px; height: 34px;
-  border-radius: 6px;
+  border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--muted);
   cursor: pointer;
   font-size: 14px;
   font-weight: 600;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
   font-family: inherit;
 }
-.seg-btn:hover { border-color: var(--weapon-slot); color: var(--text); }
+.seg-btn:hover { border-color: var(--weapon-slot); color: var(--text); transform: translateY(-1px); }
 .seg-btn.active {
   background: var(--weapon-slot);
   border-color: var(--weapon-slot);
   color: #1a1d23;
+  box-shadow: 0 2px 8px rgba(212,160,23,0.35);
 }
 .weapon-total {
   display: inline-flex;
@@ -155,29 +164,27 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
   font-size: 13px;
   font-weight: 600;
 }
-.auto-skills { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
-.auto-label { font-size: 12px; color: var(--muted); }
 .skill-library {
   margin-top: 14px;
   padding: 14px;
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
 }
 .skill-library-title { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
 .lib-grid { display: flex; flex-wrap: wrap; gap: 6px; }
 .lib-btn {
-  padding: 5px 12px;
-  border-radius: 14px;
+  padding: 6px 13px;
+  border-radius: 16px;
   border: 1px solid rgba(108,140,255,0.3);
   background: rgba(108,140,255,0.08);
   color: #a6b8ff;
   cursor: pointer;
   font-size: 12px;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
   font-family: inherit;
 }
-.lib-btn:hover { border-color: var(--accent); }
+.lib-btn:hover { border-color: var(--accent); background: rgba(108,140,255,0.16); transform: translateY(-1px); }
 .lib-btn.disabled {
   background: var(--bg3);
   border-color: var(--border);
@@ -208,41 +215,42 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
-  border-radius: 18px;
+  padding: 7px 14px;
+  border-radius: 20px;
   border: 1px solid var(--border);
   background: var(--bg3);
   color: var(--muted);
   cursor: pointer;
   font-size: 13px;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
   font-family: inherit;
 }
-.skill-btn:hover { border-color: var(--accent); color: var(--text); transform: translateY(-1px); }
+.skill-btn:hover { border-color: var(--accent); color: var(--text); transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,0.18); }
 .skill-btn.selected {
-  background: rgba(108,140,255,0.15);
+  background: rgba(108,140,255,0.18);
   border-color: var(--accent);
   color: #a6b8ff;
   font-weight: 600;
+  box-shadow: 0 2px 8px rgba(108,140,255,0.2);
 }
 .fav-star {
   font-size: 14px;
   color: #4a4f5d;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
   user-select: none;
   font-style: normal;
 }
-.fav-star:hover { color: var(--warn); }
+.fav-star:hover { color: var(--warn); transform: scale(1.15); }
 .fav-star.on { color: var(--warn); text-shadow: 0 0 6px rgba(245,158,11,0.5); font-weight: bold; }
 .level-dots { display: inline-flex; gap: 3px; align-items: center; }
 .dot {
   width: 7px; height: 7px;
   border-radius: 50%;
   background: #3a3f4d;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
 }
-.dot.on { background: var(--accent); box-shadow: 0 0 4px rgba(108,140,255,0.6); }
+.dot.on { background: var(--accent); box-shadow: 0 0 5px rgba(108,140,255,0.7); }
 
 /* 等级选择框（展开） */
 .level-selector {
@@ -251,31 +259,33 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 10px 14px;
+  padding: 11px 14px;
   margin: 2px 0 4px;
   background: var(--bg);
   border: 1px solid var(--accent);
-  border-radius: 8px;
+  border-radius: 10px;
   flex-wrap: wrap;
+  box-shadow: 0 2px 10px rgba(108,140,255,0.12);
 }
 .ls-label { font-size: 12px; color: var(--muted); margin-right: 4px; }
 .lv-btn {
   width: 30px; height: 30px;
-  border-radius: 6px;
+  border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--bg3);
   color: var(--text);
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
   font-family: inherit;
 }
-.lv-btn:hover { border-color: var(--accent); }
+.lv-btn:hover { border-color: var(--accent); background: rgba(108,140,255,0.1); }
 .lv-btn.active {
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
+  box-shadow: 0 2px 8px rgba(108,140,255,0.4);
 }
 .lv-btn.cancel {
   width: auto;
@@ -292,11 +302,11 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  border-radius: 16px;
-  padding: 5px 12px;
+  border-radius: 18px;
+  padding: 6px 13px;
   font-size: 12px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
   border: 1px solid transparent;
   font-family: inherit;
 }
@@ -306,7 +316,7 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
   color: #a6b8ff;
   font-weight: 600;
 }
-.chip-selected:hover { background: rgba(108,140,255,0.25); }
+.chip-selected:hover { background: rgba(108,140,255,0.25); transform: translateY(-1px); }
 .chip-unselected {
   background: var(--bg3);
   border-color: var(--border);
@@ -319,7 +329,7 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
   color: #fbbf24;
   font-weight: 600;
 }
-.chip-append:hover { background: rgba(245,158,11,0.25); }
+.chip-append:hover { background: rgba(245,158,11,0.25); transform: translateY(-1px); }
 .chip-disabled {
   background: var(--bg3);
   border-color: var(--border);
@@ -332,6 +342,7 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
   border-color: rgba(74,222,128,0.5);
   color: var(--accent2);
   background: rgba(74,222,128,0.1);
+  box-shadow: 0 0 8px rgba(74,222,128,0.15);
 }
 .chip .chip-x {
   font-size: 11px;
@@ -359,10 +370,13 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
 .result-card {
   background: var(--bg2);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 18px;
   margin-bottom: 16px;
+  box-shadow: var(--shadow);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
+.result-card:hover { box-shadow: var(--shadow-lg); }
 .result-head {
   display: flex;
   justify-content: space-between;
@@ -374,7 +388,7 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
 .damage-big {
   font-size: 34px;
   font-weight: 700;
-  background: linear-gradient(135deg, #6c8cff, #4ade80);
+  background: linear-gradient(135deg, #8fa8ff, #5eead4);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -410,9 +424,11 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
 .armor-card {
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 10px;
+  transition: border 0.2s ease;
 }
+.armor-card:hover { border-color: var(--accent); }
 .armor-card.charm-card { border-color: rgba(212,160,23,0.3); }
 .armor-part {
   font-size: 10px;
@@ -429,7 +445,7 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
 .slots { display: flex; gap: 4px; margin: 6px 0; flex-wrap: wrap; }
 .slot {
   width: 22px; height: 22px;
-  border-radius: 4px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -446,16 +462,18 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
 .deco-chip {
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 4px 11px;
+  border-radius: 16px;
+  padding: 5px 12px;
   font-size: 12px;
+  transition: border 0.2s ease;
 }
+.deco-chip:hover { border-color: var(--accent); }
 .ok-badge, .err-badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   padding: 3px 10px;
-  border-radius: 12px;
+  border-radius: 14px;
   font-size: 11px;
   margin: 2px;
 }
@@ -466,30 +484,30 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
 .mode-toggle { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
 .mode-btn {
   padding: 7px 16px;
-  border-radius: 6px;
+  border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--bg3);
   color: var(--muted);
   cursor: pointer;
   font-size: 13px;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
   font-family: inherit;
 }
-.mode-btn:hover { color: var(--text); }
-.mode-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.mode-btn:hover { color: var(--text); border-color: var(--accent); }
+.mode-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; box-shadow: 0 2px 8px rgba(108,140,255,0.3); }
 .extra-skill-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 14px;
+  padding: 11px 14px;
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   margin-bottom: 8px;
   flex-wrap: wrap;
-  transition: border 0.15s;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
 }
-.extra-skill-item:hover { border-color: var(--accent); }
+.extra-skill-item:hover { border-color: var(--accent); box-shadow: var(--shadow); }
 .extra-skill-item.appended { border-color: rgba(245,158,11,0.5); background: rgba(245,158,11,0.06); }
 .es-name { font-weight: 600; font-size: 14px; min-width: 100px; }
 .es-delta { color: var(--accent2); font-weight: 600; font-size: 13px; }
@@ -505,14 +523,15 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
 .es-type.extra { background: rgba(245,158,11,0.15); color: #fbbf24; }
 .es-levels { display: flex; gap: 4px; flex-wrap: wrap; margin-left: auto; }
 .baseline-box {
-  padding: 12px 16px;
+  padding: 14px 18px;
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   margin-bottom: 14px;
   display: flex;
   gap: 24px;
   flex-wrap: wrap;
+  box-shadow: var(--shadow);
 }
 .baseline-box .bi { font-size: 13px; }
 .baseline-box .bi .k { color: var(--muted); }
@@ -522,13 +541,14 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
   bottom: 0;
   background: var(--card);
   border: 1px solid rgba(245,158,11,0.4);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 12px 16px;
   margin-top: 14px;
   display: flex;
   gap: 12px;
   align-items: center;
   flex-wrap: wrap;
+  box-shadow: 0 -4px 14px rgba(0,0,0,0.2);
 }
 
 /* Modal */
@@ -536,22 +556,24 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.65);
+  background: rgba(0,0,0,0.7);
   z-index: 1000;
   justify-content: center;
   align-items: flex-start;
   padding: 40px 20px;
   overflow-y: auto;
+  backdrop-filter: blur(2px);
 }
 .modal-overlay.show { display: flex; }
 .modal-content {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 14px;
   max-width: 1000px;
   width: 100%;
   padding: 24px;
   position: relative;
+  box-shadow: var(--shadow-lg);
 }
 .modal-close {
   position: absolute;
@@ -566,12 +588,13 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.2s ease;
 }
-.modal-close:hover { color: var(--danger); border-color: var(--danger); }
+.modal-close:hover { color: var(--danger); border-color: var(--danger); background: rgba(239,68,68,0.1); transform: rotate(90deg); }
 .detail-text {
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 16px;
   font-family: "SF Mono", Consolas, monospace;
   font-size: 12.5px;
@@ -633,21 +656,23 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
+  padding: 13px 16px;
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   margin-bottom: 8px;
   flex-wrap: wrap;
   gap: 10px;
+  transition: border 0.2s ease;
 }
+.saved-plan-item:hover { border-color: var(--accent); }
 .saved-plan-item .sp-label { font-weight: 600; font-size: 14px; }
 .saved-plan-item .sp-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
 hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 .tag {
   display: inline-block;
   padding: 2px 8px;
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 11px;
   font-weight: 500;
   margin-right: 4px;
@@ -667,8 +692,10 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
   padding: 14px;
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
+  transition: border 0.2s ease;
 }
+.weapon-series-box:hover, .weapon-combo-box:hover { border-color: var(--accent); }
 .weapon-skill-box-title {
   font-size: 13px;
   font-weight: 600;
@@ -683,13 +710,14 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
   padding: 8px 12px;
   background: var(--bg2);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   color: var(--text);
   font-size: 13px;
   cursor: pointer;
   font-family: inherit;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
 }
-.weapon-skill-select:focus { outline: none; border-color: var(--accent); }
+.weapon-skill-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(108,140,255,0.18); }
 .weapon-skill-selected {
   margin-top: 10px;
   display: flex;
@@ -717,7 +745,7 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 
 /* Tabs */
 .tab-bar { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
-.tab-btn { padding: 8px 18px; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px; border-bottom: 2px solid transparent; transition: all 0.15s; }
+.tab-btn { padding: 9px 18px; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px; border-bottom: 2px solid transparent; transition: color 0.2s ease, border-color 0.2s ease; }
 .tab-btn:hover { color: var(--text); }
 .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
 .tab-content { display: none; }
@@ -758,7 +786,7 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 
   <!-- 武器配置区 -->
   <div class="card">
-    <div class="card-title">武器配置 <span class="sub">配置武器插槽，自动选择最佳武器技能</span></div>
+    <div class="card-title">武器配置 <span class="sub">配置武器插槽与武器技能</span></div>
     <div class="weapon-config">
       <div>
         <label>武器插槽（3个，1-3级）</label>
@@ -773,28 +801,27 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
       <div class="weapon-series-box" id="weapon-series-box">
         <div class="weapon-skill-box-title">📜 系列技能</div>
         <select class="weapon-skill-select" id="series-skill-select" onchange="onSeriesSkillChange()">
-          <option value="">-- 自动选择最佳 --</option>
+          <option value="">-- 不带武器技能 --</option>
         </select>
         <div class="weapon-skill-selected" id="series-skill-selected">
-          <span class="weapon-skill-empty">未选择，将自动选取最佳伤害技能</span>
+          <span class="weapon-skill-empty">不带武器技能</span>
         </div>
       </div>
       <div class="weapon-combo-box" id="weapon-combo-box">
         <div class="weapon-skill-box-title">⚡ 组合技能</div>
         <select class="weapon-skill-select" id="combo-skill-select" onchange="onComboSkillChange()">
-          <option value="">-- 自动选择最佳 --</option>
+          <option value="">-- 不带武器技能 --</option>
         </select>
         <div class="weapon-skill-selected" id="combo-skill-selected">
-          <span class="weapon-skill-empty">未选择，将自动选取最佳伤害技能</span>
+          <span class="weapon-skill-empty">不带武器技能</span>
         </div>
       </div>
     </div>
-    <div class="auto-skills" id="auto-skills"></div>
     <div class="mt8">
       <button class="btn btn-sm" onclick="toggleSkillLibrary()">⚙ 管理技能库</button>
     </div>
     <div class="skill-library" id="skill-library" style="display:none;">
-      <div class="skill-library-title">武器技能库（点击启用/禁用，禁用后不会被自动选择）</div>
+      <div class="skill-library-title">武器技能库（点击启用/禁用）</div>
       <div class="lib-grid" id="lib-grid"></div>
     </div>
   </div>
@@ -906,8 +933,6 @@ let SERIES_NAMES = [];
 
 let selectedSkills = {};
 let weaponSlotLevels = [3, 3, 3];
-let autoWeaponSkills = [];
-let autoWeaponLevels = {};
 let disabledWeaponSkills = new Set();
 let favSkills = new Set();
 let disabledSkills = new Set();
@@ -968,7 +993,6 @@ async function init() {
     return;
   }
   loadState();
-  autoPickWeaponSkills();
   renderAll();
   updateSavedCount();
 }
@@ -977,79 +1001,7 @@ function isComboSkill(skill) {
   return WEAPON_SKILL_LIST.includes(skill) || SERIES_NAMES.includes(skill) || COMBO_SKILLS.includes(skill);
 }
 
-// ==================== 武器技能自动选择 ====================
-const DAMAGE_SKILLS_LIST = ['攻击','看破','超会心','弱点特效','挑战者','连击','无伤','攻击守势','巧击','因祸得福','精神抖擞','无我之境','力量解放','攻势','龙属性攻击强化','火属性攻击强化','水属性攻击强化','冰属性攻击强化','雷属性攻击强化'];
-
-function autoPickWeaponSkills() {
-  const totalLevels = weaponSlotLevels.reduce((a, b) => a + b, 0);
-  autoWeaponLevels = {};
-  if (totalLevels === 0) { autoWeaponSkills = []; return; }
-  const availablePool = WEAPON_SKILL_LIST.filter(s => SKILL_CAPS[s]);
-  const scored = availablePool.map(s => {
-    const cap = SKILL_CAPS[s] || 3;
-    const dmgBonus = DAMAGE_SKILLS_LIST.includes(s) ? 100 : 0;
-    return { s, cap, score: dmgBonus * 1000 + cap * 10 };
-  }).sort((a, b) => b.score - a.score);
-  let remaining = totalLevels;
-  const picked = [];
-  const pickedSet = new Set();
-  for (const item of scored) {
-    if (remaining <= 0) break;
-    if (disabledWeaponSkills.has(item.s)) continue;
-    if (pickedSet.has(item.s)) continue;
-    const lv = Math.min(item.cap, remaining);
-    if (lv <= 0) continue;
-    picked.push(item.s);
-    pickedSet.add(item.s);
-    autoWeaponLevels[item.s] = lv;
-    remaining -= lv;
-  }
-  autoWeaponSkills = picked;
-
-  if (!selectedSeriesSkill || disabledWeaponSkills.has(selectedSeriesSkill)) {
-    selectedSeriesSkill = null;
-    selectedSeriesLevel = 0;
-    pickBestSeriesSkill();
-  }
-  if (!selectedComboSkill || disabledWeaponSkills.has(selectedComboSkill)) {
-    selectedComboSkill = null;
-    selectedComboLevel = 0;
-    pickBestComboSkill();
-  }
-}
-
-function pickBestSeriesSkill() {
-  if (SERIES_NAMES.length === 0) return;
-  const available = SERIES_NAMES.filter(s => SKILL_CAPS[s] && !disabledWeaponSkills.has(s));
-  if (available.length === 0) return;
-  const scored = available.map(s => {
-    const cap = SKILL_CAPS[s] || 2;
-    const dmgBonus = DAMAGE_SKILLS_LIST.includes(s) ? 100 : 0;
-    return { s, cap, score: dmgBonus * 1000 + cap * 10 };
-  }).sort((a, b) => b.score - a.score);
-  const best = scored[0];
-  if (best) {
-    selectedSeriesSkill = best.s;
-    selectedSeriesLevel = best.cap;
-  }
-}
-
-function pickBestComboSkill() {
-  if (COMBO_SKILLS.length === 0) return;
-  const available = COMBO_SKILLS.filter(s => SKILL_CAPS[s] && !disabledWeaponSkills.has(s));
-  if (available.length === 0) return;
-  const scored = available.map(s => {
-    const cap = SKILL_CAPS[s] || 3;
-    const dmgBonus = DAMAGE_SKILLS_LIST.includes(s) ? 100 : 0;
-    return { s, cap, score: dmgBonus * 1000 + cap * 10 };
-  }).sort((a, b) => b.score - a.score);
-  const best = scored[0];
-  if (best) {
-    selectedComboSkill = best.s;
-    selectedComboLevel = best.cap;
-  }
-}
-
+// ==================== 武器技能选择 ====================
 function selectSeriesSkill(name, level) {
   if (!name) {
     clearSeriesSkill();
@@ -1073,14 +1025,12 @@ function selectComboSkill(name, level) {
 function clearSeriesSkill() {
   selectedSeriesSkill = null;
   selectedSeriesLevel = 0;
-  pickBestSeriesSkill();
   renderWeaponSkillBoxes();
 }
 
 function clearComboSkill() {
   selectedComboSkill = null;
   selectedComboLevel = 0;
-  pickBestComboSkill();
   renderWeaponSkillBoxes();
 }
 
@@ -1111,7 +1061,7 @@ function renderWeaponSkillBoxes() {
   const comboSel = document.getElementById('combo-skill-select');
 
   if (seriesSel) {
-    let sHtml = '<option value="">-- 自动选择最佳 --</option>';
+    let sHtml = '<option value="">-- 不带武器技能 --</option>';
     SERIES_NAMES.forEach(s => {
       const cap = SKILL_CAPS[s] || 1;
       const sel = selectedSeriesSkill === s ? ' selected' : '';
@@ -1121,7 +1071,7 @@ function renderWeaponSkillBoxes() {
   }
 
   if (comboSel) {
-    let cHtml = '<option value="">-- 自动选择最佳 --</option>';
+    let cHtml = '<option value="">-- 不带武器技能 --</option>';
     COMBO_SKILLS.forEach(s => {
       const cap = SKILL_CAPS[s] || 1;
       const sel = selectedComboSkill === s ? ' selected' : '';
@@ -1138,7 +1088,7 @@ function renderWeaponSkillBoxes() {
         esc(selectedSeriesSkill) + ' Lv' + lv + '</span>' +
         '<button class="weapon-skill-clear" onclick="clearSeriesSkill()">✕ 清除</button>';
     } else {
-      seriesSelected.innerHTML = '<span class="weapon-skill-empty">未选择，将自动选取最佳伤害技能</span>';
+      seriesSelected.innerHTML = '<span class="weapon-skill-empty">不带武器技能</span>';
     }
   }
 
@@ -1150,23 +1100,9 @@ function renderWeaponSkillBoxes() {
         esc(selectedComboSkill) + ' Lv' + lv + '</span>' +
         '<button class="weapon-skill-clear" onclick="clearComboSkill()">✕ 清除</button>';
     } else {
-      comboSelected.innerHTML = '<span class="weapon-skill-empty">未选择，将自动选取最佳伤害技能</span>';
+      comboSelected.innerHTML = '<span class="weapon-skill-empty">不带武器技能</span>';
     }
   }
-}
-
-function getActiveWeaponSkills() {
-  const skills = [];
-  if (selectedSeriesSkill && !disabledWeaponSkills.has(selectedSeriesSkill)) {
-    skills.push(selectedSeriesSkill);
-  }
-  if (selectedComboSkill && !disabledWeaponSkills.has(selectedComboSkill)) {
-    skills.push(selectedComboSkill);
-  }
-  autoWeaponSkills.filter(s => !disabledWeaponSkills.has(s)).forEach(s => {
-    if (!skills.includes(s)) skills.push(s);
-  });
-  return skills;
 }
 
 // ==================== 渲染 ====================
@@ -1191,24 +1127,6 @@ function renderWeaponConfig() {
   const total = weaponSlotLevels.reduce((a,b)=>a+b,0);
   document.getElementById('weapon-total').textContent = '总等级: ' + total;
 
-  const autoEl = document.getElementById('auto-skills');
-  const active = getActiveWeaponSkills();
-  const disabled = autoWeaponSkills.filter(s => disabledWeaponSkills.has(s));
-  let html = '<span class="auto-label">自动选择武器技能:</span>';
-  if (active.length === 0 && disabled.length === 0) {
-    html += '<span class="muted" style="font-size:12px;">无可选技能</span>';
-  }
-  active.forEach(s => {
-    const lv = autoWeaponLevels[s] || SKILL_CAPS[s] || 1;
-    html += '<span class="chip chip-selected" onclick="toggleWeaponSkillDisabled(\'' + esc(s) + '\')" title="点击禁用">' +
-      esc(s) + ' Lv' + lv + '</span>';
-  });
-  disabled.forEach(s => {
-    html += '<span class="chip chip-disabled" onclick="toggleWeaponSkillDisabled(\'' + esc(s) + '\')" title="点击启用">' +
-      esc(s) + ' (禁用)</span>';
-  });
-  autoEl.innerHTML = html;
-
   if (libOpen) renderSkillLibrary();
   renderWeaponSkillBoxes();
 }
@@ -1231,14 +1149,12 @@ function toggleSkillLibrary() {
 
 function setWeaponSlot(idx, lv) {
   weaponSlotLevels[idx] = lv;
-  autoPickWeaponSkills();
   renderWeaponConfig();
 }
 
 function toggleWeaponSkillDisabled(skill) {
   if (disabledWeaponSkills.has(skill)) disabledWeaponSkills.delete(skill);
   else disabledWeaponSkills.add(skill);
-  autoPickWeaponSkills();
   saveState();
   renderWeaponConfig();
 }
@@ -1293,7 +1209,7 @@ function renderLevelSelector(skill, context, curLv) {
   for (let i = 1; i <= cap; i++) {
     html += '<button class="lv-btn ' + (i===curLv?'active':'') + '" onclick="setSkillLevel(\'' + esc(skill) + '\',' + i + ',\'' + context + '\')">' + i + '</button>';
   }
-  html += '<button class="lv-btn cancel" onclick="toggleSkillExpand(\'' + context + '\',null)">取消</button>';
+  html += '<button class="lv-btn cancel" onclick="cancelSkill(\'' + esc(skill) + '\',\'' + context + '\')">取消</button>';
   html += '</div>';
   return html;
 }
@@ -1322,6 +1238,15 @@ function setSkillLevel(skill, lv, context) {
   saveState();
   if (context === 'select') { renderSkillSelection(); renderSelectedSkills(); }
   else if (context === 'selected') { renderSelectedSkills(); renderSkillSelection(); }
+}
+
+function cancelSkill(skill, context) {
+  selectedSkills[skill] = 0;
+  expandedSkill = null;
+  saveState();
+  if (context === 'select') { renderSkillSelection(); renderSelectedSkills(); }
+  else if (context === 'selected') { renderSelectedSkills(); renderSkillSelection(); }
+  else if (context === 'extra') renderExtraSkills();
 }
 
 // 已选技能区
@@ -1392,9 +1317,7 @@ async function runSearch() {
     const lv = selectedComboLevel || SKILL_CAPS[selectedComboSkill] || 1;
     combo[selectedComboSkill] = lv;
   }
-  for (const sk of autoWeaponSkills) {
-    if (!(sk in combo)) combo[sk] = autoWeaponLevels[sk] || SKILL_CAPS[sk] || 1;
-  }
+  // 武器技能仅当用户显式选择时加入
   const maxResults = parseInt(document.getElementById('max-results').value) || 5;
   const params = {
     fixed_skills: fixed, combo_skills: combo,
@@ -1477,7 +1400,9 @@ function renderResultCard(r, idx) {
 
   // 排序：收藏置顶 + 按分类中出现顺序
   const selKeys = Object.keys(selectedSkills);
-  const weaponSel = getActiveWeaponSkills();
+  const weaponSel = [];
+  if (selectedSeriesSkill && !disabledWeaponSkills.has(selectedSeriesSkill)) weaponSel.push(selectedSeriesSkill);
+  if (selectedComboSkill && !disabledWeaponSkills.has(selectedComboSkill)) weaponSel.push(selectedComboSkill);
 
   // 构建分类顺序映射
   const catOrder = {};
@@ -1575,9 +1500,7 @@ async function showDetailModal(idx) {
     const lv = selectedComboLevel || SKILL_CAPS[selectedComboSkill] || 1;
     combo[selectedComboSkill] = lv;
   }
-  for (const sk of autoWeaponSkills) {
-    if (!(sk in combo)) combo[sk] = autoWeaponLevels[sk] || SKILL_CAPS[sk] || 1;
-  }
+  // 武器技能仅当用户显式选择时加入
   try {
     const detail = await API('/api/detail_calc', {
       fixed_skills: fixed, combo_skills: combo, weapon_slots: weaponSlotLevels.slice()
@@ -1714,9 +1637,7 @@ async function runExtraQuery() {
     const lv = selectedComboLevel || SKILL_CAPS[selectedComboSkill] || 1;
     combo[selectedComboSkill] = lv;
   }
-  for (const sk of autoWeaponSkills) {
-    if (!(sk in combo)) combo[sk] = autoWeaponLevels[sk] || SKILL_CAPS[sk] || 1;
-  }
+  // 武器技能仅当用户显式选择时加入
   const params = {
     fixed_skills: fixed, combo_skills: combo,
     weapon_slots: weaponSlotLevels.slice(), min_rem_armor: 0

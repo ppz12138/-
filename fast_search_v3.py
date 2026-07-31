@@ -747,7 +747,9 @@ def _build_candidates(charm_pool, fixed_skills, combo_skills, quiet=False, extra
         for sk in combo_skills:
             weapon_skills[sk] = weapon_skills.get(sk, 0) + 1
 
-    armor_fixed = {s: r for s, r in fixed_skills.items() if s not in WEAPON_SK}
+    # 武器技能也可以由防具和护石提供，所以不将它们从armor_fixed中排除
+    # weapon_fixed仅用于武器孔位填充优化，不影响候选预过滤
+    armor_fixed = dict(fixed_skills)  # 所有技能都参与防具候选筛选
     weapon_fixed = {s: r for s, r in fixed_skills.items() if s in WEAPON_SK}
 
     all_skill_names = set(fixed_skills.keys())
@@ -874,61 +876,11 @@ def _build_candidates(charm_pool, fixed_skills, combo_skills, quiet=False, extra
 
     candidates.sort(key=_sort_key)
 
-    # 护石可行性过滤（优化版：基线快速路径 + _fill_weapon_slots_smart缓存）
+    # 护石可行性过滤：跳过武器技能赤字检查
+    # 武器技能(攻击/看破等)也可以由防具提供，不能仅靠武器孔+护石判断可行性
     charm_cands = [c for c in candidates if c['part_idx'] == 5]
     armor_cands = [c for c in candidates if c['part_idx'] != 5]
-    w_deficit_set = set(s for s, d in fixed_skills.items() if s in WEAPON_SK and d > 0)
-    if w_deficit_set:
-        w_deficit_init = {}
-        for s, need in weapon_fixed.items():
-            if s.startswith('Lv') and s.endswith('插槽'): continue
-            if s in NO_DECO_SK: continue
-            h = weapon_skills.get(s, 0)
-            if h < need:
-                w_deficit_init[s] = need - h
-        if combo_skills:
-            for s, need in combo_skills.items():
-                if s in NO_DECO_SK: continue
-                if s not in WEAPON_SK: continue
-                h = max(0, weapon_skills.get(s, 0) - weapon_skills.get(s, 0))
-                if h < need:
-                    w_deficit_init[s] = w_deficit_init.get(s, 0) + (need - h)
-        if w_deficit_init:
-            # 快速路径：先检查基线（无护石贡献）能否满足武器赤字
-            _base_fs = dict(weapon_skills)
-            _base_fixed = {}
-            for s, d in w_deficit_init.items():
-                _base_fixed[s] = _base_fs.get(s, 0) + d
-            _base_ok = _fill_weapon_slots_smart(_base_fs, list(WSLOTS), _base_fixed) is not None
-            if not _base_ok:
-                # 基线不可行 → 逐组检查（按武器技能贡献分组，复用缓存）
-                _charm_by_wsk = {}
-                for cc in charm_cands:
-                    wsk_key = frozenset((s, lv) for s, lv in cc['skills'].items()
-                               if s in w_deficit_init and lv > 0)
-                    _charm_by_wsk.setdefault(wsk_key, []).append(cc)
-                _viable_charms = []
-                for _wsk_key, _cc_list in _charm_by_wsk.items():
-                    _test_fs = dict(weapon_skills)
-                    if _wsk_key:
-                        for s, lv in _wsk_key:
-                            _test_fs[s] = _test_fs.get(s, 0) + lv
-                    _test_fixed = {}
-                    for s, d in w_deficit_init.items():
-                        rem = d - (_test_fs.get(s, 0) - weapon_skills.get(s, 0))
-                        if rem > 0:
-                            _test_fixed[s] = _test_fs.get(s, 0) + rem
-                    if not _test_fixed:
-                        _viable_charms.extend(_cc_list)
-                        continue
-                    result = _fill_weapon_slots_smart(_test_fs, list(WSLOTS), _test_fixed)
-                    if result is not None:
-                        _viable_charms.extend(_cc_list)
-                charm_cands = _viable_charms
-        charm_cands.sort(key=lambda c: (
-            -sum(1 for s in c['skills'] if s in w_deficit_set),
-            -c['score']
-        ))
+    charm_cands.sort(key=lambda c: (-c['score']))
     candidates = charm_cands + armor_cands
     if not quiet:
         orig_count = sum(len(parts[p]) for p in part_names) + len(charm_pool)
@@ -1174,95 +1126,20 @@ def dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
             print(f"  预检查: 初始赤字{init_def_score}>{max_possible_cap}→无解")
         return []
 
-    # 武器技能赤字检查（复用_fill_weapon_slots_smart缓存）
+    # 武器技能赤字检查：只检查完全没有珠子且护石也没有的技能
+    # 注意：武器技能也可以由防具提供，所以不能仅检查武器孔
     w_deficit = {tracked_skills[i]: init_deficit[i] for i in range(n_skills)
                  if init_deficit[i] > 0 and tracked_skills[i] in WEAPON_SK}
     if w_deficit:
-        w_def_score = sum(w_deficit.values())
         for s, d in w_deficit.items():
             pool = deco_idx.get((s, 'weapon'), [])
             best_charm_lv = max((c.get('skills', {}).get(s, 0) for c in charm_pool), default=0)
-            if not pool and best_charm_lv < d:
+            # 只在珠子和护石都没有该技能时才判定无解
+            has_armor_source = any(a.get('skills', {}).get(s, 0) > 0 for a in armors)
+            if not pool and best_charm_lv < d and not has_armor_source:
                 if not quiet:
-                    print(f"  预检查: {s}无珠子且护石最高Lv{best_charm_lv}<需{d}→无解")
+                    print(f"  预检查: {s}无珠子且护石最高Lv{best_charm_lv}<需{d}且防具也无→无解")
                 return []
-        # 快速上界检查（精确版：考虑组合珠多技能贡献+实际孔位数）
-        # 1. 计算每个武器珠对赤字技能的总贡献，找最大值
-        w_deficit_set = set(w_deficit.keys())
-        max_total_pts_per_deco = 0
-        _seen_dn = set()
-        for s in w_deficit:
-            pool = deco_idx.get((s, 'weapon'), [])
-            for sr, pts, dn in pool:
-                if dn in _seen_dn:
-                    continue
-                _seen_dn.add(dn)
-                deco_skills = deco_skill_map.get(dn, [])
-                total_pts = sum(min(p, w_deficit.get(sk, 0)) for sk, p in deco_skills if sk in w_deficit_set)
-                if total_pts > max_total_pts_per_deco:
-                    max_total_pts_per_deco = total_pts
-        # 2. 武器孔位数（非总等级）+ 防具武器孔上限
-        w_num_slots = len(WSLOTS)
-        max_armor_wslots = 0
-        for _pi in range(5):
-            _cands = candidates_by_part.get(_pi, [])
-            if _cands:
-                _part_max = max(len(c.get('weapon_slots', [])) for c in _cands)
-                max_armor_wslots += _part_max
-        total_w_slots = w_num_slots + max_armor_wslots
-        # 3. 最佳护石武器技能贡献
-        best_charm_w_total = 0
-        if charm_pool:
-            for c in charm_pool:
-                wsk_sum = sum(min(lv, w_deficit.get(s, 0)) for s, lv in c.get('skills', {}).items()
-                             if s in w_deficit and lv > 0)
-                best_charm_w_total = max(best_charm_w_total, wsk_sum)
-        # 4. 上界 = 总孔位数 × 每珠最大贡献 + 护石贡献
-        max_fillable = total_w_slots * max_total_pts_per_deco + best_charm_w_total if max_total_pts_per_deco > 0 else best_charm_w_total
-        if w_def_score > max_fillable:
-            if not quiet:
-                print(f"  预检查: 武器赤字{w_def_score}>{max_fillable}(精确上界)→无解")
-            return []
-        # 精确检查：用_fill_weapon_slots_smart验证（有缓存，O(1)命中）
-        w_test_fs = dict(weapon_skills)
-        w_test_fixed = {}
-        for s, d in w_deficit.items():
-            w_test_fixed[s] = weapon_skills.get(s, 0) + d
-        # 检查每个含武器技能的护石选项
-        charm_wsk_seen = set()
-        charm_wsk_options = [None]
-        if charm_pool:
-            for c in charm_pool:
-                wsk_in_charm = {s: lv for s, lv in c.get('skills', {}).items()
-                               if s in w_deficit and lv > 0}
-                if wsk_in_charm:
-                    key = frozenset(wsk_in_charm.items())
-                    if key not in charm_wsk_seen:
-                        charm_wsk_seen.add(key)
-                        charm_wsk_options.append(wsk_in_charm)
-        any_viable = False
-        for charm_wsk in charm_wsk_options:
-            test_fs = dict(w_test_fs)
-            if charm_wsk:
-                for s, lv in charm_wsk.items():
-                    test_fs[s] = test_fs.get(s, 0) + lv
-            # 检查剩余赤字
-            rem_deficit = {s: max(0, d - (test_fs.get(s, 0) - w_test_fs.get(s, 0)))
-                          for s, d in w_deficit.items()}
-            rem_deficit = {s: d for s, d in rem_deficit.items() if d > 0}
-            if not rem_deficit:
-                any_viable = True
-                break
-            # 用_fill_weapon_slots_smart检查
-            test_w_fixed = {s: test_fs.get(s, 0) + d for s, d in rem_deficit.items()}
-            result = _fill_weapon_slots_smart(test_fs, list(WSLOTS), test_w_fixed)
-            if result is not None:
-                any_viable = True
-                break
-        if not any_viable:
-            if not quiet:
-                print(f"  预检查: 武器技能赤字{w_deficit}无法满足→无解")
-            return []
 
     # ===== 搜索状态 =====
     results = []

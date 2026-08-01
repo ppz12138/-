@@ -140,3 +140,28 @@
 - 详情 Modal 和方案对比的 detail_calc 调用改为使用方案完整技能，而非用户选择技能
 - fast_search_v3.py 数据路径从硬编码 /workspace 改为相对路径
 - calc_v8_final.py 系列技能验证打印字符改为 [OK]/[NO] 避免 Windows GBK 控制台编码错误
+
+## 2026-08-01 修复（流式追加查询 + 方案追加交互 + 预留孔位）
+
+### 根因诊断
+1. **追加查询报错 `upstream r...`**：反向代理超时。query_extra 对 147 个技能逐个搜索，累计耗时长，代理切断连接返回错误页，前端 `r.json()` 解析失败。
+2. **保存方案/对比报错**：runCompare 用 Promise.all 并发调 detail_calc，单个失败拖垮全部；localStorage 可能超配额。
+3. **预留孔位丢失**：min_rem_armor 被硬编码为 0，控件缺失。
+4. **方案追加交互不符意图**：底部独立大区域列出所有未选技能，用户想直接点方案技能 chip。
+
+### 修复内容
+- **fast_search_v3.py**: `query_extra` → `query_extra_stream` 生成器，yield start/progress/done，每个技能完成即推送进度。
+- **gui_server.py**: `_handle_query_extra` 改为流式 NDJSON 响应（`Content-Type: application/x-ndjson` + `X-Accel-Buffering: no`），逐行 flush，保持连接活跃避免代理超时。
+- **index.html API 函数**: 改为 async，先 `r.text()` 再 `JSON.parse`，非 JSON 响应截取前 80 字符抛友好错误（不再出现 "Unexpected token" 不可读报错）。
+- **index.html runExtraQuery**: 用 `fetch + response.body.getReader()` 流式读取 NDJSON，进度条按 `done/total*100%` 真实增长，状态文字实时显示当前技能；增量收集结果避免 done 前空白。
+- **index.html 方案追加**: 移除底部 `plan-append-levels` 大区域；方案技能 chip 可点击 toggle 选中态（chip-unselected↔chip-append 橙色）；追加栏新增"➕ 追加"按钮（只追加不搜索）+ "🔍 追加并搜索"。
+- **index.html 预留孔位**: 搜索栏新增"预留孔位（防具空孔等级和）"输入框，runSearch 与 runExtraQuery 读取并传 min_rem_armor。
+- **index.html 保存方案**: saveState 返回 boolean，配额超限时回滚并提示；runCompare 用 Promise.allSettled 容错，单个失败跳过。
+
+### 验证结果（2026-08-01 curl 全通过）
+1. ✅ /api/info: 154 技能, 9 分类
+2. ✅ /api/custom_search: 自动匹配"巨戟龙的默示录", 伤害 878.03, 0.83s
+3. ✅ /api/query_extra 流式: start(total=147) → 147×progress → done(upgrade=2,extra=145)，149 行 NDJSON
+4. ✅ /api/detail_calc: base 756.8 → final 796.5, 6 技能明细
+5. ✅ 预留孔位 min_rem_armor=3: 方案剩余防具孔 [1,1,1] 总和=3 生效
+6. ✅ node --check index.html 内嵌 JS 语法通过

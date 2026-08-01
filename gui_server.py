@@ -482,31 +482,34 @@ class SearchHandler(BaseHTTPRequestHandler):
 
         orig_wslots = self._apply_weapon_slots(params)
         t0 = time.time()
+
+        # 流式 NDJSON 响应：逐条推送进度，避免反向代理超时
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/x-ndjson; charset=utf-8')
+        self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        self.send_header('X-Accel-Buffering', 'no')  # nginx 不缓冲
+        self.end_headers()
+
+        def _write_chunk(obj):
+            self.wfile.write((json.dumps(obj, ensure_ascii=False) + '\n').encode('utf-8'))
+            self.wfile.flush()
+
         with _lock:
             try:
-                result = fs.query_extra(fixed_skills, combo_skills, min_rem_armor, fs.charm_pool, mode=mode, fav_skills=fav_skills, dis_skills=dis_skills)
+                for chunk in fs.query_extra_stream(
+                    fixed_skills, combo_skills, min_rem_armor, fs.charm_pool,
+                    mode=mode, fav_skills=fav_skills, dis_skills=dis_skills
+                ):
+                    _write_chunk(chunk)
             except Exception as e:
                 fs.WSLOTS = orig_wslots
-                self._send_json({'error': f'查询出错: {e}'}, 500)
+                fs._FEASIBILITY_ONLY = False
+                try:
+                    _write_chunk({'type': 'error', 'error': f'查询出错: {e}'})
+                except Exception:
+                    pass
                 return
         fs.WSLOTS = orig_wslots
-        dt = round(time.time() - t0, 2)
-
-        # query_extra now returns a dict with structured data
-        if isinstance(result, dict):
-            self._send_json({
-                'result_text': result.get('result_text', ''),
-                'baseline_dmg': result.get('baseline_dmg', 0),
-                'baseline_wcr': result.get('baseline_wcr', 0),
-                'upgrade_skills': result.get('upgrade_skills', []),
-                'extra_skills': result.get('extra_skills', []),
-                'slot_info': result.get('slot_info', {}),
-                'slot_max': result.get('slot_max', {}),
-                'time': dt,
-            })
-        else:
-            # Fallback for old string return
-            self._send_json({'result_text': str(result), 'time': dt})
 
     def _handle_custom_search(self, params):
         fixed_skills = params.get('fixed_skills', {})

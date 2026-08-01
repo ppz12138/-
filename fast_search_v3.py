@@ -2110,14 +2110,13 @@ def _quick_skill_upper_bound(sk, cached_ctx, wslots):
 
 
 # ==================== 追加技能查询（v3优化版）====================
-def query_extra(fixed_skills, combo_skills, min_rem_armor, charm_pool, mode='normal', fav_skills=None, dis_skills=None):
-    """逐技能扫描：每个技能从最高级降级搜索，找到1条方案即记录
+def query_extra_stream(fixed_skills, combo_skills, min_rem_armor, charm_pool, mode='normal', fav_skills=None, dis_skills=None):
+    """逐技能扫描生成器：流式 yield 进度，避免长查询被代理超时切断。
 
-    v3优化：
-    1. 复用cached_ctx避免重复构建候选
-    2. 系列技能预过滤大幅加速搜索
-    3. 快速上界预筛：先计算理论上限，从上限开始降级，避免无效搜索
-    4. 缩短超时：追加搜索0.1s、孔位二分0.1s、系列搜索0.1s
+    yield 顺序：
+      {'type':'start', 'total', 'baseline_dmg', 'baseline_wcr', 'slot_info', 'slot_max'}
+      {'type':'progress', 'done', 'total', 'skill', 'lv', 'cap', 'delta', 'tag', 'wcr', 'cur_lv'(?)}
+      {'type':'done', 'result': {...完整结果...}}
     """
     series_names = ['巨戟龙的默示录', '火龙之力', '凶爪龙之力', '黑蚀龙之力',
                     '泡狐龙之力', '煌雷龙之力', '海龙的涡雷',
@@ -2224,6 +2223,14 @@ def query_extra(fixed_skills, combo_skills, min_rem_armor, charm_pool, mode='nor
     total = len(final_output) + len(under_max)
     done = 0
 
+    # 流式：推送起始信息（含基线数据与孔位）
+    yield {
+        'type': 'start', 'total': total,
+        'baseline_dmg': round(baseline_dmg, 1),
+        'baseline_wcr': round(baseline_wcr, 1),
+        'slot_info': slot_info, 'slot_max': slot_max,
+    }
+
     # === 追加技能查询使用快速模式（跳过fill_slots优化循环）===
     global _FEASIBILITY_ONLY
     _FEASIBILITY_ONLY = True
@@ -2248,6 +2255,9 @@ def query_extra(fixed_skills, combo_skills, min_rem_armor, charm_pool, mode='nor
         skill_max[sk] = (best, cap, best_dmg, best_dmg - baseline_dmg, 'upgrade', best_wcr)
         dt = time.time() - t0
         print(f"  [{done}/{total}] {sk}(升级{cur_lv}→{cap}): Lv{best} ({dt:.2f}s)")
+        yield {'type': 'progress', 'done': done, 'total': total, 'skill': sk,
+               'lv': best, 'cap': cap, 'delta': round(best_dmg - baseline_dmg, 1),
+               'tag': 'upgrade', 'wcr': round(best_wcr, 1), 'cur_lv': cur_lv}
 
     # 追加技能
     for sk in final_output:
@@ -2288,6 +2298,9 @@ def query_extra(fixed_skills, combo_skills, min_rem_armor, charm_pool, mode='nor
             skill_max[sk] = (best, actual_cap, best_dmg, best_dmg - baseline_dmg, 'extra', best_wcr)
             dt = time.time() - t0
             print(f"  [{done}/{total}] {sk}: Lv{best}/{actual_cap} ({dt:.2f}s)")
+            yield {'type': 'progress', 'done': done, 'total': total, 'skill': sk,
+                   'lv': best, 'cap': actual_cap, 'delta': round(best_dmg - baseline_dmg, 1),
+                   'tag': 'extra', 'wcr': round(best_wcr, 1)}
             continue
 
         # === 快速上界预筛 ===
@@ -2333,6 +2346,9 @@ def query_extra(fixed_skills, combo_skills, min_rem_armor, charm_pool, mode='nor
         dt = time.time() - t0
         status = f"上限{upper}" if start_lv < cap else ""
         print(f"  [{done}/{total}] {sk}: Lv{best}/{cap} {status}({dt:.2f}s)")
+        yield {'type': 'progress', 'done': done, 'total': total, 'skill': sk,
+               'lv': best, 'cap': cap, 'delta': round(best_dmg - baseline_dmg, 1),
+               'tag': 'extra', 'wcr': round(best_wcr, 1)}
 
     # 恢复完整模式
     _FEASIBILITY_ONLY = False
@@ -2386,12 +2402,15 @@ def query_extra(fixed_skills, combo_skills, min_rem_armor, charm_pool, mode='nor
     lines.append(f"  Lv3插槽: 基线{slot_info['Lv3']}个 → 最大化{slot_max['Lv3']}个")
 
     result_text = '\n'.join(lines)
-    return {
-        'result_text': result_text,
-        'baseline_dmg': round(baseline_dmg, 1),
-        'baseline_wcr': round(baseline_wcr, 1),
-        'upgrade_skills': upgrade_skills,
-        'extra_skills': extra_skills,
-        'slot_info': slot_info,
-        'slot_max': slot_max,
+    yield {
+        'type': 'done',
+        'result': {
+            'result_text': result_text,
+            'baseline_dmg': round(baseline_dmg, 1),
+            'baseline_wcr': round(baseline_wcr, 1),
+            'upgrade_skills': upgrade_skills,
+            'extra_skills': extra_skills,
+            'slot_info': slot_info,
+            'slot_max': slot_max,
+        }
     }

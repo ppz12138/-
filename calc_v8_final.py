@@ -24,9 +24,11 @@ PERM_ATK: 护符+6 + 猫饭+5 = 11 (技能加区，不计入面板)
   黑蚀≥2 + 无我之境3 → 60%覆盖
   黑蚀≥2 无无我之境 → 50%覆盖
 """
-import time, itertools
+import time, itertools, sys
 from collections import Counter
 import fast_search_v3 as fs
+
+sys.stdout.reconfigure(encoding='utf-8')
 
 STATE_CN = {
     'rage':'愤怒','rengeki':'连击','mukizu':'无伤','weak':'弱点','furue':'精神抖擞',

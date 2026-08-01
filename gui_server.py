@@ -509,7 +509,9 @@ class SearchHandler(BaseHTTPRequestHandler):
                 except Exception:
                     pass
                 return
-        fs.WSLOTS = orig_wslots
+            finally:
+                fs.WSLOTS = orig_wslots
+                fs._FEASIBILITY_ONLY = False
 
     def _handle_custom_search(self, params):
         fixed_skills = params.get('fixed_skills', {})
@@ -590,11 +592,13 @@ class SearchHandler(BaseHTTPRequestHandler):
         final_dmg = 0
         final_wcr = 0
         skill_damages = {}
+        baseline_detail = {}
+        final_detail = {}
 
         try:
-            baseline_dmg = fs.calc_damage(fixed_skills)
+            baseline_dmg, baseline_detail = fs.calc_damage_detail(fixed_skills)
             baseline_wcr = fs.calc_weighted_crit(fixed_skills)
-            final_dmg = fs.calc_damage(all_skills)
+            final_dmg, final_detail = fs.calc_damage_detail(all_skills)
             final_wcr = fs.calc_weighted_crit(all_skills)
 
             # 计算每个技能的独立贡献
@@ -604,7 +608,7 @@ class SearchHandler(BaseHTTPRequestHandler):
                 # 移除该技能后的伤害
                 reduced = dict(all_skills)
                 del reduced[sk]
-                reduced_dmg = fs.calc_damage(reduced)
+                reduced_dmg, _ = fs.calc_damage_detail(reduced)
                 delta = final_dmg - reduced_dmg
                 skill_damages[sk] = {
                     'level': lv,
@@ -660,6 +664,8 @@ class SearchHandler(BaseHTTPRequestHandler):
             'dmg_increase_pct': round(pct, 1),
             'skill_damages': skill_damages,
             'detail_text': '\n'.join(detail_lines),
+            'baseline_detail': baseline_detail,
+            'final_detail': final_detail,
             'time': round(t_used, 2),
         })
 

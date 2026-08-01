@@ -7,7 +7,7 @@
 3. 精确赤字向量，逐技能检查可行性
 4. 分数上限剪枝+技能可行性剪枝
 """
-import json, time, itertools, sys, os
+import json, time, itertools, sys, os, functools
 
 DATA = os.path.dirname(os.path.abspath(__file__))
 
@@ -76,6 +76,12 @@ WP = 1.32; WE = 1.15
 PC_R = WP*0.45*(TMV/100)
 EC_R = WE*0.20*(TEM/10)
 UR=0.70; URE=0.85; UM=0.50; UKZ=0.60; URK=0.50; UW=0.80; UF=0.90; UCOU=0.40; UCSG=0.30
+
+STATE_CN = {
+    'rage':'愤怒','rengeki':'连击','mukizu':'无伤','weak':'弱点','furue':'精神抖擞',
+    'oguard':'攻守','counter':'逆袭','rikikai':'力量解放',
+    'kuroshoku':'黑蚀','kuroshoku_migo':'黑蚀+无我','none':'无'
+}
 
 SKILL_CAPS = {
     '利刃': 3, '格挡性能': 3, '快吃': 3, '减轻胆怯': 3, '缓冲': 1, '耳塞': 3,
@@ -194,7 +200,12 @@ for c in all_charms:
 print(f"珠子:{len(decos)} 防具:{sum(len(v) for v in parts.values())} 护石:{len(charm_pool)}")
 
 # ==================== 伤害计算（与v2完全一致） ====================
-def calc_damage(skl):
+def _skills_to_tuple(skl):
+    return tuple(sorted(skl.items()))
+
+@functools.lru_cache(maxsize=8192)
+def _calc_damage_cached(skills_tuple):
+    skl = dict(skills_tuple)
     def cl(sk, cap): return min(skl.get(sk, 0), cap)
     chal=cl('挑战者',5); burst=cl('连击',5); muzu=cl('无伤',5)
     weak=cl('弱点特效',5); furue=cl('精神抖擞',3); rikikai=cl('力量解放',5)
@@ -238,6 +249,7 @@ def calc_damage(skl):
     if oguard > 0: states.append(('oguard', OGUARD_COV))
     if not states: states.append(('none', 1.0))
     wr = er = 0.0
+    state_details = []
     for combo in itertools.product(*([[True, False]] * len(states))):
         pr = 1.0
         add_atk = PERM_ATK
@@ -288,11 +300,74 @@ def calc_damage(skl):
         cr = ec / 100.0
         crit_phys = cr * scb + (1 - cr)
         crit_elem = cr * ecb + (1 - cr)
-        wr += pr * ea * PC_R * crit_phys
-        er += pr * be * EC_R * crit_elem
-    return wr + er + FIRE_DRAGON_DMG.get(fire_dragon, 0)
+        phys = pr * ea * PC_R * crit_phys
+        elem = pr * be * EC_R * crit_elem
+        wr += phys
+        er += elem
+        if pr > 0.005:
+            state_names = []
+            for (nm, up), act in zip(states, combo):
+                if act:
+                    state_names.append(STATE_CN.get(nm, nm))
+            state_details.append({
+                'states': ' + '.join(state_names) if state_names else '无',
+                'prob': pr,
+                'ea': ea,
+                'ec': ec,
+                'be': be,
+                'phys': phys,
+                'elem': elem,
+                'total': phys + elem
+            })
+    total = wr + er + FIRE_DRAGON_DMG.get(fire_dragon, 0)
+    detail = {
+        'base_stats': {
+            'W_ATK': W_ATK, 'W_CRT': W_CRT, 'W_ELE': W_ELE, 'PERM_ATK': PERM_ATK
+        },
+        'multipliers': {
+            'atk_mul': atk_mul, 'd_mul': d_mul, 'bahar_mul': bahar_mul,
+            'geki_mul': geki_mul, 'coal_expect': coal_expect, 'og_act': og_act
+        },
+        'additive': {
+            'add_atk': add_atk, 'add_crt': add_crt, 'add_ele': add_ele,
+            'd_add': d_add, 'geki_add': geki_add, 'absorb_add': absorb_add,
+            'kyozou_atk': kyozou_atk
+        },
+        'skill_levels': {
+            '挑战者': chal, '连击': burst, '无伤': muzu, '弱点特效': weak,
+            '精神抖擞': furue, '力量解放': rikikai, '超会心': super_lv,
+            '会心击【属性】': ecrit, '无我之境': migo, '逆袭': counter,
+            '攻击': atk, '看破': kanken, '龙属性攻击强化': dragon,
+            '攻击守势': oguard, '因祸得福': coal, '攻势': foray,
+            '属性吸收': absorb, '火龙之力': fire_dragon, '霸主之魂': bahar,
+            '巨戟龙的默示录': geki, '冻峰龙之反叛': touhou,
+            '锁刃龙之饥饿': kizuna, '黑蚀龙之力': kuroshoku,
+            '凶爪龙之力': kyozou
+        },
+        'coefficients': {
+            'PC_R': PC_R, 'EC_R': EC_R,
+            'UR': UR, 'URE': URE, 'UM': UM, 'UKZ': UKZ, 'URK': URK, 'UW': UW, 'UF': UF,
+            'UCOU': UCOU, 'UCSG': UCSG, 'OGUARD_COV': OGUARD_COV
+        },
+        'states': state_details,
+        'summary': {
+            'phys': wr, 'elem': er, 'fixed': FIRE_DRAGON_DMG.get(fire_dragon, 0),
+            'total': total, 'scb': scb, 'ecb': ecb
+        }
+    }
+    return total, detail
 
-def calc_weighted_crit(skl):
+def calc_damage(skl):
+    total, _ = _calc_damage_cached(_skills_to_tuple(skl))
+    return total
+
+def calc_damage_detail(skl):
+    total, detail = _calc_damage_cached(_skills_to_tuple(skl))
+    return total, detail
+
+@functools.lru_cache(maxsize=8192)
+def _calc_weighted_crit_cached(skills_tuple):
+    skl = dict(skills_tuple)
     def cl(sk, cap): return min(skl.get(sk, 0), cap)
     chal=cl('挑战者',5); burst=cl('连击',5); muzu=cl('无伤',5)
     weak=cl('弱点特效',5); furue=cl('精神抖擞',3); rikikai=cl('力量解放',5)
@@ -332,8 +407,8 @@ def calc_weighted_crit(skl):
         wcr += pr * ec
     return wcr
 
-# ==================== 珠子填充（与v2一致） ====================
-import functools
+def calc_weighted_crit(skl):
+    return _calc_weighted_crit_cached(_skills_to_tuple(skl))
 
 @functools.lru_cache(maxsize=65536)
 def gain(sk, old, add):
@@ -1732,7 +1807,6 @@ def dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
                 _bs = best_deco_slot[_i]
                 if is_weapon_deco[_i]:
                     # 用增量维护的slot计数替代遍历
-                    cur_w_cnt = _w_slot_cnt[_bs] + _w_slot_cnt[_bs+1 if _bs < 3 else 3] + _w_slot_cnt[3] if _bs < 3 else _w_slot_cnt[3]
                     # 简化：统计>=_bs的slot数
                     cur_w_cnt = sum(_w_slot_cnt[_bs:4])
                     rem_w = rsl[3] + rsl[4] + rsl[5]
@@ -2028,8 +2102,9 @@ def dfs_search_auto_weapon(charm_pool, fixed_skills, combo_skills, min_rem_armor
 
     best_results = []
     best_weapon_skill = None
+    best_weapon_lv = 1
     best_dmg = -1.0
-    per_skill_best = {}  # skill -> (dmg, results)
+    per_skill_best = {}  # skill -> (dmg, lv, result)
 
     for ws_name, ws_lv in candidates_ws:
         # 构造本次搜索的 combo_skills
@@ -2044,10 +2119,11 @@ def dfs_search_auto_weapon(charm_pool, fixed_skills, combo_skills, min_rem_armor
             continue
         top = results[0]
         dmg = top.get('pract', 0)
-        per_skill_best[ws_name] = (dmg, results[0])
+        per_skill_best[ws_name] = (dmg, ws_lv, top)
         if dmg > best_dmg:
             best_dmg = dmg
             best_weapon_skill = ws_name
+            best_weapon_lv = ws_lv
             best_results = results
 
     if not best_results:
@@ -2055,6 +2131,15 @@ def dfs_search_auto_weapon(charm_pool, fixed_skills, combo_skills, min_rem_armor
         results = dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
                              max_results=max_results, timeout_s=timeout_s, quiet=quiet)
         return results, None
+
+    # 用最优武器技能重新搜索，返回完整结果数
+    best_combo = dict(combo_skills) if combo_skills else {}
+    best_combo[best_weapon_skill] = best_weapon_lv
+    try:
+        best_results = dfs_search(charm_pool, fixed_skills, best_combo, min_rem_armor,
+                                  max_results=max_results, timeout_s=timeout_s, quiet=quiet)
+    except Exception:
+        best_results = [per_skill_best[best_weapon_skill][2]]
 
     # 标记自动匹配的武器技能到结果中
     for r in best_results:
@@ -2065,7 +2150,7 @@ def dfs_search_auto_weapon(charm_pool, fixed_skills, combo_skills, min_rem_armor
         best_results = best_results[:max_results]
 
     if not quiet:
-        print(f"  自动匹配最优武器技能: {best_weapon_skill} (伤害{best_dmg:.1f})")
+        print(f"  自动匹配最优武器技能: {best_weapon_skill} Lv{best_weapon_lv} (伤害{best_dmg:.1f})，返回{len(best_results)}方案")
     return best_results, best_weapon_skill
 
 
@@ -2137,14 +2222,27 @@ def query_extra_stream(fixed_skills, combo_skills, min_rem_armor, charm_pool, mo
             return sk not in dis_skills
         return True
 
-    # 查询所有可能的技能（排除已选中的）
+    # 真实可追加技能池：只保留确实能在装备/珠子/护石中出现的技能
+    # 这一步避免追加模式把整套 SKILL_CAPS 全量扫描一遍，导致长时间无效查询。
+    available_skill_pool = set()
+    for p in ['head', 'body', 'arms', 'waist', 'legs']:
+        for armor in parts[p]:
+            available_skill_pool.update(armor.get('skills', {}).keys())
+    for charm in charm_pool:
+        available_skill_pool.update(charm.get('skills', {}).keys())
+    for (sk, dtype), decos in deco_idx.items():
+        if decos:
+            available_skill_pool.add(sk)
+
     output_skills = []
-    for sk, cap in SKILL_CAPS.items():
+    for sk in sorted(available_skill_pool):
         if sk.startswith('Lv') and sk.endswith('插槽'):
             continue
         if sk in fixed_set:
             continue
         if sk in SERIES_SK or sk in GROUP_SK:
+            continue
+        if sk not in SKILL_CAPS:
             continue
         if not _pass(sk):
             continue
@@ -2308,11 +2406,23 @@ def query_extra_stream(fixed_skills, combo_skills, min_rem_armor, charm_pool, mo
         start_lv = min(cap, upper)
 
         best = 0
-        # 预检查：技能是否有珠子或装备能提供
+        # 预检查：技能是否有珠子或装备能提供；若在候选池里完全没有来源，直接跳过。
         has_deco = bool(deco_idx.get((sk, 'armor'), []) or deco_idx.get((sk, 'weapon'), []))
         has_in_gear = any(sk in a.get('skills', {}) for p in ['head','body','arms','waist','legs'] for a in parts[p])
         has_in_charm = any(sk in c.get('skills', {}) for c in charm_pool)
-        if (has_deco or has_in_gear or has_in_charm) and start_lv > 0:
+        if not (has_deco or has_in_gear or has_in_charm):
+            test_s = dict(baseline_skills)
+            test_s[sk] = best
+            best_dmg = calc_damage(test_s)
+            best_wcr = calc_weighted_crit(test_s)
+            skill_max[sk] = (best, cap, best_dmg, best_dmg - baseline_dmg, 'extra', best_wcr)
+            dt = time.time() - t0
+            print(f"  [{done}/{total}] {sk}: 直接跳过（无来源）({dt:.2f}s)")
+            yield {'type': 'progress', 'done': done, 'total': total, 'skill': sk,
+                   'lv': best, 'cap': cap, 'delta': round(best_dmg - baseline_dmg, 1),
+                   'tag': 'extra', 'wcr': round(best_wcr, 1)}
+            continue
+        if start_lv > 0:
             # cap>3用二分搜索减少降级次数，cap<=3用线性降级（更快）
             if start_lv > 3:
                 lo, hi = 1, start_lv

@@ -165,3 +165,15 @@
 4. ✅ /api/detail_calc: base 756.8 → final 796.5, 6 技能明细
 5. ✅ 预留孔位 min_rem_armor=3: 方案剩余防具孔 [1,1,1] 总和=3 生效
 6. ✅ node --check index.html 内嵌 JS 语法通过
+
+## 2026-08-01 性能优化（接管项目时实施）
+
+### 优化内容
+1. **calc_damage / calc_weighted_crit 缓存**：添加 `@functools.lru_cache(maxsize=8192)`，将技能dict转为sorted tuple作为cache key。实测缓存命中时1.4M calls/s，未命中时673K calls/s，大幅减少DFS中的重复计算。
+2. **移除死代码**：fast_search_v3.py 第1735-1736行存在被第1737行覆盖的冗余slot计数代码，已清理。
+3. **Windows GBK编码修复**：calc_v8_final.py 添加 `sys.stdout.reconfigure(encoding='utf-8')`，避免控制台打印中文字符时出现编码错误。
+
+### 性能基准
+- calc_damage 缓存命中: ~1,400,000 calls/s
+- calc_damage 缓存未命中: ~670,000 calls/s
+- 单方案搜索（6方案全搜）: ~5.7s（含详细伤害计算输出）

@@ -882,10 +882,6 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
         <label>武器插槽（3个，1-3级）</label>
         <div class="weapon-slots-wrap" id="weapon-slots"></div>
       </div>
-      <div>
-        <label>插槽总等级</label>
-        <div class="weapon-total" id="weapon-total">总等级: 9</div>
-      </div>
     </div>
     <div class="weapon-skills-row">
       <div class="weapon-series-box" id="weapon-series-box">
@@ -946,7 +942,7 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
       <div class="search-bar">
         <div class="param-group">
           <label>返回结果数量</label>
-          <input type="number" id="max-results" value="5" min="1" max="50">
+          <input type="number" id="max-results" value="100" min="1" max="500">
         </div>
         <div class="param-group">
           <label>预留孔位（防具空孔等级和）</label>
@@ -954,6 +950,14 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
         </div>
         <button class="btn btn-primary" id="search-btn" onclick="runSearch()">🔍 开始搜索</button>
         <span id="search-status" class="muted" style="font-size:13px;"></span>
+      </div>
+      <div class="flex-row mt8" style="gap:8px;align-items:center;">
+        <span class="muted" style="font-size:12px;">技能组:</span>
+        <select id="skill-group-select" onchange="loadSkillGroup(this.value)" style="background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;">
+          <option value="">-- 选择加载 --</option>
+        </select>
+        <button class="btn btn-sm" onclick="saveSkillGroup()">💾 保存当前技能组</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteSkillGroup()">🗑 删除选中</button>
       </div>
     </div>
     <div id="search-results">
@@ -1031,6 +1035,7 @@ let WEAPON_SKILL_LIST = [];
 let SKILLS_DATA = {};
 let DAMAGE_SKILLS = [];
 let SERIES_NAMES = [];
+let SKILL_CATEGORIES_ORDER = {};
 
 let selectedSkills = {};
 let weaponSlotLevels = [3, 3, 3];
@@ -1106,6 +1111,13 @@ async function init() {
     DAMAGE_SKILLS = info.damage_skills || [];
     SERIES_NAMES = info.series_names || [];
     COMBO_SKILLS = info.combo_skill_list || [];
+    SKILL_CATEGORIES_ORDER = {};
+    let _ord = 0;
+    for (const skills of Object.values(SKILL_CATEGORIES || {})) {
+      for (const s of skills) {
+        if (!(s in SKILL_CATEGORIES_ORDER)) SKILL_CATEGORIES_ORDER[s] = _ord++;
+      }
+    }
   } catch (e) {
     document.getElementById('search-results').innerHTML =
       '<div class="card"><div class="result-empty">无法连接后端 API: ' + e.message + '</div></div>';
@@ -1114,6 +1126,7 @@ async function init() {
   loadState();
   renderAll();
   updateSavedCount();
+  refreshSkillGroupSelect();
 }
 
 function isComboSkill(skill) {
@@ -1144,12 +1157,18 @@ function selectComboSkill(name, level) {
 function clearSeriesSkill() {
   selectedSeriesSkill = null;
   selectedSeriesLevel = 0;
+  if (window._lastAutoWeapon && SERIES_NAMES.includes(window._lastAutoWeapon)) {
+    window._lastAutoWeapon = null;
+  }
   renderWeaponSkillBoxes();
 }
 
 function clearComboSkill() {
   selectedComboSkill = null;
   selectedComboLevel = 0;
+  if (window._lastAutoWeapon && COMBO_SKILLS.includes(window._lastAutoWeapon)) {
+    window._lastAutoWeapon = null;
+  }
   renderWeaponSkillBoxes();
 }
 
@@ -1219,6 +1238,11 @@ function renderWeaponSkillBoxes() {
       seriesSelected.innerHTML = '<span class="chip chip-selected">' +
         esc(selectedSeriesSkill) + ' Lv' + lv + '</span>' +
         '<button class="weapon-skill-clear" onclick="clearSeriesSkill()">✕ 清除</button>';
+    } else if (window._lastAutoWeapon && SERIES_NAMES.includes(window._lastAutoWeapon)) {
+      const lv = SKILL_CAPS[window._lastAutoWeapon] || 1;
+      seriesSelected.innerHTML = '<span class="chip chip-selected">' +
+        esc(window._lastAutoWeapon) + ' Lv' + lv + ' <span style="font-size:11px;color:var(--muted);">(自动匹配)</span></span>' +
+        '<button class="weapon-skill-clear" onclick="clearSeriesSkill()">✕ 清除</button>';
     } else {
       seriesSelected.innerHTML = '<span class="weapon-skill-empty">留空 · 搜索时自动匹配最优</span>';
     }
@@ -1233,6 +1257,11 @@ function renderWeaponSkillBoxes() {
       const lv = selectedComboLevel || SKILL_CAPS[selectedComboSkill] || 1;
       comboSelected.innerHTML = '<span class="chip chip-selected">' +
         esc(selectedComboSkill) + ' Lv' + lv + '</span>' +
+        '<button class="weapon-skill-clear" onclick="clearComboSkill()">✕ 清除</button>';
+    } else if (window._lastAutoWeapon && COMBO_SKILLS.includes(window._lastAutoWeapon)) {
+      const lv = SKILL_CAPS[window._lastAutoWeapon] || 1;
+      comboSelected.innerHTML = '<span class="chip chip-selected">' +
+        esc(window._lastAutoWeapon) + ' Lv' + lv + ' <span style="font-size:11px;color:var(--muted);">(自动匹配)</span></span>' +
         '<button class="weapon-skill-clear" onclick="clearComboSkill()">✕ 清除</button>';
     } else {
       comboSelected.innerHTML = '<span class="weapon-skill-empty">留空 · 搜索时自动匹配最优</span>';
@@ -1259,9 +1288,6 @@ function renderWeaponConfig() {
       '</div>' +
     '</div>'
   ).join('');
-  const total = weaponSlotLevels.reduce((a,b)=>a+b,0);
-  document.getElementById('weapon-total').textContent = '总等级: ' + total;
-
   if (libOpen) renderSkillLibrary();
   renderWeaponSkillBoxes();
 }
@@ -1526,22 +1552,32 @@ function renderResultCard(r, idx) {
     '<span class="deco-chip">' + esc(k) + ' ×' + v + '</span>').join('') ||
     '<span class="muted">无</span>';
 
-  // 合并所有技能：core_skills + other_skills + series_check → 统一展示（不区别对待）
+  // 系列/组合技能单独展示（件数制），其余技能统一展示
+  const seriesComboSet = new Set();
+  const seriesComboInfo = {};
   const allSkills = {};
   if (r.core_skills) {
     for (const [k, v] of Object.entries(r.core_skills)) {
-      allSkills[k] = { level: v.level, cap: v.cap };
+      const cap = v.cap || SKILL_CAPS[k] || 1;
+      allSkills[k] = { level: Math.min(v.level || 0, cap), cap: cap };
     }
   }
   if (r.other_skills) {
     for (const [k, v] of Object.entries(r.other_skills)) {
-      allSkills[k] = { level: v.level, cap: v.cap };
+      const cap = v.cap || SKILL_CAPS[k] || 1;
+      allSkills[k] = { level: Math.min(v.level || 0, cap), cap: cap };
     }
   }
   if (r.series_check) {
     for (const s of r.series_check) {
-      // 系列/组合技能与其他技能同样显示 LvX/Cap，不加件数徽章
-      allSkills[s.skill] = { level: s.level, cap: SKILL_CAPS[s.skill] || 1 };
+      const cap = SKILL_CAPS[s.skill] || 1;
+      seriesComboSet.add(s.skill);
+      seriesComboInfo[s.skill] = {
+        actual_pieces: s.actual_pieces || 0,
+        need_pieces: s.need_pieces || (s.skill in GROUP_SK ? 3 : (cap >= 4 ? 4 : 2)),
+        ok: s.ok
+      };
+      allSkills[s.skill] = { level: Math.min(s.level || 0, cap), cap: cap };
     }
   }
 
@@ -1575,8 +1611,22 @@ function renderResultCard(r, idx) {
   const planAppends = planAppendSkills[idx] || {};
   const skillsHTML = sortedSkillNames.map(k => {
     const v = allSkills[k];
+    const isSeriesCombo = seriesComboSet.has(k);
+    const scInfo = seriesComboInfo[k];
+    let displayText, tooltipText;
+    if (isSeriesCombo && scInfo) {
+      const pieces = scInfo.actual_pieces;
+      const need = scInfo.need_pieces;
+      displayText = esc(k) + ' ' + pieces + '件/' + need + '件';
+      tooltipText = scInfo.ok ? '✓ 已激活' : '✕ 未激活';
+    } else {
+      const displayLv = Math.min(v.level || 0, v.cap || SKILL_CAPS[k] || 1);
+      const displayCap = v.cap || SKILL_CAPS[k] || 1;
+      displayText = esc(k) + ' Lv' + displayLv + '/' + displayCap;
+      tooltipText = '';
+    }
     const isSel = selKeys.includes(k) || weaponSel.includes(k);
-    const full = v.level >= v.cap;
+    const full = !isSeriesCombo && (Math.min(v.level || 0, v.cap || SKILL_CAPS[k] || 1) >= v.cap);
     const isPending = planAppends[k] > 0;
     let cls, click = '', style = '';
     if (full) {
@@ -1592,7 +1642,8 @@ function renderResultCard(r, idx) {
       click = ' onclick="togglePlanAppendSkill(' + idx + ',\'' + esc(k) + '\')"';
       style = ' style="cursor:pointer;"';
     }
-    return '<span class="chip ' + cls + '"' + click + style + '>' + esc(k) + ' Lv' + v.level + '/' + v.cap + '</span>';
+    const titleAttr = tooltipText ? ' title="' + esc(tooltipText) + '"' : '';
+    return '<span class="chip ' + cls + '"' + click + style + titleAttr + '>' + displayText + '</span>';
   }).join('');
 
   // 追加技能栏：紧凑显示待追加 + 追加按钮 + 追加并搜索按钮
@@ -1686,6 +1737,9 @@ async function showDetailModal(idx) {
         '<div class="info-item"><span class="k">提升:</span><span class="v">+' + (detail.dmg_increase || 0) + ' (' + (detail.dmg_increase_pct || 0) + '%)</span></div>' +
       '</div>';
 
+      // 详细计算过程（面板/乘区/加区/系数）
+      html += renderCalcDetail(detail.final_detail, '方案详情');
+
       // 技能独立贡献表格
       const sd = detail.skill_damages || {};
       const sortedSd = Object.entries(sd).sort((a, b) => b[1].standalone_dmg - a[1].standalone_dmg);
@@ -1714,10 +1768,6 @@ async function showDetailModal(idx) {
       html += '<div class="section-title">方案配置</div>';
       html += renderResultCard(r, idx);
 
-      // 完整计算过程文本
-      html += '<div class="section-title">完整计算过程</div>';
-      html += '<div class="detail-text">' + esc(detail.detail_text || '') + '</div>';
-
       html += '<div class="info-row mt8"><div class="muted">计算耗时: ' + (detail.time || 0) + 's</div></div>';
     } else {
       html += '<div class="result-empty">' + esc(detail.error || '计算失败') + '</div>';
@@ -1730,6 +1780,73 @@ async function showDetailModal(idx) {
 }
 function closeDetailModal() {
   document.getElementById('detail-modal').classList.remove('show');
+}
+
+// ==================== 技能组 ====================
+function getSkillGroups() {
+  try {
+    return JSON.parse(localStorage.getItem('mhw_skill_groups') || '[]');
+  } catch (e) {
+    return [];
+  }
+}
+function saveSkillGroups(groups) {
+  localStorage.setItem('mhw_skill_groups', JSON.stringify(groups));
+}
+function refreshSkillGroupSelect() {
+  const sel = document.getElementById('skill-group-select');
+  if (!sel) return;
+  const groups = getSkillGroups();
+  sel.innerHTML = '<option value="">-- 选择加载 --</option>' +
+    groups.map((g, i) => '<option value="' + i + '">' + esc(g.name) + '</option>').join('');
+}
+function saveSkillGroup() {
+  const name = prompt('输入技能组名称:');
+  if (!name) return;
+  const group = {
+    name: name,
+    selectedSkills: { ...selectedSkills },
+    selectedSeriesSkill: selectedSeriesSkill,
+    selectedSeriesLevel: selectedSeriesLevel,
+    selectedComboSkill: selectedComboSkill,
+    selectedComboLevel: selectedComboLevel,
+    weaponSlots: weaponSlotLevels.slice(),
+    favSkills: [...favSkills],
+    disabledSkills: [...disabledSkills],
+    time: new Date().toLocaleString('zh-CN')
+  };
+  const groups = getSkillGroups();
+  groups.push(group);
+  saveSkillGroups(groups);
+  refreshSkillGroupSelect();
+  alert('技能组已保存: ' + name);
+}
+function loadSkillGroup(idx) {
+  if (idx === '' || idx === null || idx === undefined) return;
+  const groups = getSkillGroups();
+  const g = groups[parseInt(idx)];
+  if (!g) return;
+  selectedSkills = { ...g.selectedSkills };
+  selectedSeriesSkill = g.selectedSeriesSkill;
+  selectedSeriesLevel = g.selectedSeriesLevel || 0;
+  selectedComboSkill = g.selectedComboSkill;
+  selectedComboLevel = g.selectedComboLevel || 0;
+  weaponSlotLevels = (g.weaponSlots && g.weaponSlots.length === 3) ? g.weaponSlots.slice() : [3, 3, 3];
+  if (g.favSkills) { favSkills = new Set(g.favSkills); }
+  if (g.disabledSkills) { disabledSkills = new Set(g.disabledSkills); }
+  renderAll();
+  alert('已加载技能组: ' + g.name);
+}
+function deleteSkillGroup() {
+  const sel = document.getElementById('skill-group-select');
+  if (!sel || sel.value === '') return;
+  const idx = parseInt(sel.value);
+  const groups = getSkillGroups();
+  const name = groups[idx] && groups[idx].name;
+  if (!confirm('确定删除技能组: ' + name + ' ?')) return;
+  groups.splice(idx, 1);
+  saveSkillGroups(groups);
+  refreshSkillGroupSelect();
 }
 
 // ==================== 保存方案 ====================
@@ -1762,7 +1879,8 @@ function savePlan(idx) {
   }
 }
 function updateSavedCount() {
-  document.getElementById('saved-count').textContent = savedPlans.length;
+  const el = document.getElementById('saved-count');
+  if (el) el.textContent = savedPlans.length;
   renderInlineSavedPlans();
 }
 function renderInlineSavedPlans() {
@@ -1975,34 +2093,156 @@ function renderCompareResult(details) {
   });
   html += '</tbody></table>';
 
-  // 3. 伤害计算过程对比
-  html += '<div class="section-title">伤害计算过程对比</div>';
-  html += '<table class="detail-table compare-table"><thead><tr>' +
-    '<th>方案</th><th>基线伤害</th><th>基线会心</th><th>最终伤害</th><th>最终会心</th><th>伤害提升</th><th>提升比例</th>' +
-  '</tr></thead><tbody>';
-  details.forEach((d, i) => {
-    const det = d.detail;
-    const finalDmg = det.final_dmg || d.plan.damage || 0;
-    const baseDmg = det.baseline_dmg || 0;
-    const baseWcr = det.baseline_wcr || 0;
-    const finalWcr = det.final_wcr || 0;
-    const inc = det.dmg_increase || 0;
-    const pct = det.dmg_increase_pct || 0;
-    const isBest = finalDmg >= bestDmg - 0.01;
-    html += '<tr' + (isBest ? ' class="best-row"' : '') + '>' +
-      '<td>' + esc(d.plan.name) + '</td>' +
-      '<td>' + baseDmg.toFixed(1) + '</td>' +
-      '<td>' + baseWcr.toFixed(1) + '%</td>' +
-      '<td style="color:var(--accent2);font-weight:700;">' + finalDmg.toFixed(1) + '</td>' +
-      '<td>' + finalWcr.toFixed(1) + '%</td>' +
-      '<td>+' + inc.toFixed(1) + '</td>' +
-      '<td>' + pct + '%</td>' +
-    '</tr>';
+  // 3. 伤害计算过程对比（面板/乘区/加区/系数）
+  html += '<div class="section-title">伤害计算过程对比（面板 / 乘区 / 加区 / 系数）</div>';
+
+  const CN_LABELS = {
+    'W_ATK':'武器攻击力','W_CRT':'武器会心率','W_ELE':'武器属性值','PERM_ATK':'常驻攻击力',
+    'atk_mul':'攻击乘区','d_mul':'会心乘区','bahar_mul':'霸浣乘区','geki_mul':'激战乘区',
+    'coal_expect':'煤炭期望','og_act':'OG发动',
+    'add_atk':'加算攻击','add_crt':'加算会心','add_ele':'加算属性',
+    'd_add':'会心加算','geki_add':'激战加算','absorb_add':'属性吸收加算','kyozou_atk':'狂龙攻击加算',
+    'PC_R':'物理会心率','EC_R':'属性会心率',
+    'scb':'超会心系数','ecb':'属会系数','cr':'会心率'
+  };
+
+  function _cmpRow(key, sourcePath) {
+    const label = CN_LABELS[key] || key;
+    const vals = details.map(d => {
+      let v = 0;
+      if (sourcePath === 'base') v = (d.detail.final_detail && d.detail.final_detail.base_stats && d.detail.final_detail.base_stats[key]) || 0;
+      else if (sourcePath === 'mul') v = (d.detail.final_detail && d.detail.final_detail.multipliers && d.detail.final_detail.multipliers[key]) || 0;
+      else if (sourcePath === 'add') v = (d.detail.final_detail && d.detail.final_detail.additive && d.detail.final_detail.additive[key]) || 0;
+      else if (sourcePath === 'coef') {
+        if (key === 'scb' || key === 'ecb') v = (d.detail.final_detail && d.detail.final_detail.summary && d.detail.final_detail.summary[key]) || 0;
+        else v = (d.detail.final_detail && d.detail.final_detail.coefficients && d.detail.final_detail.coefficients[key]) || 0;
+      }
+      return v;
+    });
+    const hasAny = vals.some(v => v !== 0 && v !== null && v !== undefined);
+    if (!hasAny) return '';
+    let row = '<tr><td>' + esc(label) + '</td>';
+    vals.forEach(v => {
+      const num = typeof v === 'number' ? (Number.isInteger(v) ? v : v.toFixed(v < 10 ? 3 : 1)) : v;
+      row += '<td style="text-align:right;font-weight:600;">' + num + '</td>';
+    });
+    row += '</tr>';
+    return row;
+  }
+
+  // 3a. 面板对比
+  html += '<div style="font-size:12px;font-weight:600;color:var(--accent);margin:10px 0 6px;">面板</div>';
+  html += '<table class="detail-table compare-table"><thead><tr><th>参数</th>';
+  details.forEach(d => { html += '<th>' + esc(d.plan.name) + '</th>'; });
+  html += '</tr></thead><tbody>';
+  const baseKeys = ['W_ATK','W_CRT','W_ELE','PERM_ATK'];
+  baseKeys.forEach(k => {
+    const row = _cmpRow(k, 'base');
+    if (row) html += row;
   });
   html += '</tbody></table>';
 
-  // 4. 各方案技能构成 + 完整计算过程
-  html += '<div class="section-title">各方案技能构成与计算过程</div>';
+  // 3b. 乘区对比
+  html += '<div style="font-size:12px;font-weight:600;color:var(--accent);margin:10px 0 6px;">乘区</div>';
+  html += '<table class="detail-table compare-table"><thead><tr><th>参数</th>';
+  details.forEach(d => { html += '<th>' + esc(d.plan.name) + '</th>'; });
+  html += '</tr></thead><tbody>';
+  const mulKeys = ['atk_mul','d_mul','bahar_mul','geki_mul','coal_expect','og_act'];
+  mulKeys.forEach(k => {
+    const row = _cmpRow(k, 'mul');
+    if (row) html += row;
+  });
+  html += '</tbody></table>';
+
+  // 3c. 加区对比
+  html += '<div style="font-size:12px;font-weight:600;color:var(--accent);margin:10px 0 6px;">加区</div>';
+  html += '<table class="detail-table compare-table"><thead><tr><th>参数</th>';
+  details.forEach(d => { html += '<th>' + esc(d.plan.name) + '</th>'; });
+  html += '</tr></thead><tbody>';
+  const addKeys = ['add_atk','add_crt','add_ele','d_add','geki_add','absorb_add','kyozou_atk'];
+  addKeys.forEach(k => {
+    const row = _cmpRow(k, 'add');
+    if (row) html += row;
+  });
+  html += '</tbody></table>';
+
+  // 3d. 系数对比
+  html += '<div style="font-size:12px;font-weight:600;color:var(--accent);margin:10px 0 6px;">系数</div>';
+  html += '<table class="detail-table compare-table"><thead><tr><th>参数</th>';
+  details.forEach(d => { html += '<th>' + esc(d.plan.name) + '</th>'; });
+  html += '</tr></thead><tbody>';
+  const coefRows = [
+    ['PC_R', 'PC_R'],
+    ['EC_R', 'EC_R'],
+    ['scb', '超会心系数'],
+    ['ecb', '属会系数']
+  ];
+  coefRows.forEach(([k, label]) => {
+    const row = _cmpRow(k, 'coef');
+    if (row) html += row;
+  });
+  html += '</tbody></table>';
+
+  // 3e. 各技能等级对比
+  html += '<div style="font-size:12px;font-weight:600;color:var(--accent);margin:10px 0 6px;">各技能等级</div>';
+  const allSkillSet = new Set();
+  details.forEach(d => {
+    const sl = d.detail.final_detail && d.detail.final_detail.skill_levels;
+    if (sl) Object.keys(sl).forEach(s => allSkillSet.add(s));
+  });
+  const allSkillKeys = [...allSkillSet].sort((a, b) => (SKILL_CATEGORIES_ORDER[a]||99) - (SKILL_CATEGORIES_ORDER[b]||99));
+  if (allSkillKeys.length > 0) {
+    html += '<table class="detail-table compare-table"><thead><tr><th>技能</th>';
+    details.forEach(d => { html += '<th>' + esc(d.plan.name) + '</th>'; });
+    html += '</tr></thead><tbody>';
+    allSkillKeys.forEach(sk => {
+      html += '<tr><td>' + esc(sk) + '</td>';
+      details.forEach(d => {
+        const sl = d.detail.final_detail && d.detail.final_detail.skill_levels;
+        const lv = sl ? (sl[sk] || 0) : 0;
+        html += '<td style="text-align:center;font-weight:600;">' + (lv > 0 ? 'Lv' + lv : '—') + '</td>';
+      });
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+  }
+
+  // 3f. 状态贡献对比
+  html += '<div style="font-size:12px;font-weight:600;color:var(--accent);margin:10px 0 6px;">Top 状态贡献对比</div>';
+  html += '<table class="detail-table compare-table"><thead><tr><th>状态</th><th>概率</th>';
+  details.forEach(d => { html += '<th>' + esc(d.plan.name) + ' 合计</th>'; });
+  html += '</tr></thead><tbody>';
+  // 收集所有方案的状态
+  const allStatesMap = new Map();
+  details.forEach((d, i) => {
+    const states = (d.detail.final_detail && d.detail.final_detail.states) || [];
+    states.forEach(s => {
+      const key = s.states;
+      if (!allStatesMap.has(key)) allStatesMap.set(key, {});
+      allStatesMap.get(key)[i] = s;
+    });
+  });
+  const sortedStates = [...allStatesMap.entries()].sort((a, b) => {
+    const maxProbA = Math.max(...Object.values(a[1]).map(s => s.prob || 0));
+    const maxProbB = Math.max(...Object.values(b[1]).map(s => s.prob || 0));
+    return maxProbB - maxProbA;
+  });
+  sortedStates.forEach(([stateName, planStates]) => {
+    const maxProb = Math.max(...Object.values(planStates).map(s => s.prob || 0));
+    if (maxProb < 0.01) return;
+    html += '<tr><td>' + esc(stateName) + '</td>';
+    html += '<td>' + (maxProb * 100).toFixed(1) + '%</td>';
+    details.forEach((d, i) => {
+      const ps = planStates[i];
+      const total = ps ? ps.total : 0;
+      html += '<td style="text-align:right;font-weight:600;">' + (total > 0 ? total.toFixed(2) : '—') + '</td>';
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+
+  // 4. 各方案技能构成 + 详细计算过程
+  html += '<div class="section-title">各方案技能构成与详细计算过程</div>';
   html += '<div class="compare-skills-grid">';
   details.forEach(d => {
     const det = d.detail;
@@ -2019,9 +2259,13 @@ function renderCompareResult(details) {
       html += '<span class="chip ' + cls + '">' + (fav ? '★ ' : '') + esc(sk) + ' Lv' + info.level + '/' + info.cap + '</span>';
     });
     html += '</div>';
-    // 完整计算过程（直接展示，不折叠）
+    // 详细计算过程（面板/乘区/加区/系数）
+    if (det.final_detail) {
+      html += renderCalcDetail(det.final_detail, '');
+    }
+    // 完整计算过程文本
     if (det.detail_text) {
-      html += '<div class="section-title" style="font-size:12px;margin-top:12px;">完整计算过程</div>';
+      html += '<div class="section-title" style="font-size:12px;margin-top:12px;">完整计算过程文本</div>';
       html += '<div class="detail-text">' + esc(det.detail_text) + '</div>';
     }
     html += '</div>';
@@ -2033,6 +2277,7 @@ function renderCompareResult(details) {
 
 // ==================== 追加查询 ====================
 async function runExtraQuery() {
+  extraQueryResult = null;
   const fixed = {};
   const combo = {};
   for (const [sk, lv] of Object.entries(selectedSkills)) {
@@ -2132,11 +2377,16 @@ async function runExtraQuery() {
       }
     }
     if (!finalResult) {
-      // 流提前结束但无 done，用已收集的增量数据兜底
       finalResult = extraQueryResult;
     }
+    if (!finalResult) {
+      statusEl.textContent = '查询完成，但未收到有效数据';
+      progBar.style.display = 'none';
+      document.getElementById('extra-area').style.display = 'block';
+      return;
+    }
     extraQueryResult = finalResult;
-    statusEl.textContent = '完成 · 共 ' + (finalResult.upgrade_skills.length + finalResult.extra_skills.length) + ' 项';
+    statusEl.textContent = '完成 · 共 ' + ((finalResult.upgrade_skills && finalResult.upgrade_skills.length) + (finalResult.extra_skills && finalResult.extra_skills.length)) + ' 项';
     progBar.style.display = 'none';
     document.getElementById('extra-area').style.display = 'block';
     renderExtraSection();
@@ -2187,35 +2437,51 @@ function renderExtraSkills() {
     }
   }
 
-  // 补全所有 SKILL_CAPS 中的技能（保证收藏/可用技能都能显示）
   const existingSkills = new Set(items.map(it => it.skill));
-  for (const [skill, cap] of Object.entries(SKILL_CAPS)) {
-    if (existingSkills.has(skill)) continue;
-    if (cap <= 0) continue;
-    const isSel = selectedSkills[skill] > 0;
-    const curLv = isSel ? selectedSkills[skill] : 0;
-    const maxLv = Math.min(cap, isSel ? curLv : cap);
-    items.push({
-      skill: skill,
-      delta: 0,
-      wcr: 0,
-      cap: cap,
-      max_lv: maxLv,
-      current_lv: curLv,
-      _type: isSel ? 'existing' : 'available',
-      _catOrder: catOrder[skill] || 9999
-    });
-  }
 
-  // 按模式过滤
+  // normal 模式只展示“已确认可提升/可追加”的真实候选；
+  // 收藏/排除禁用模式再补齐收藏或未禁用技能，保证 UI 不丢项。
   if (extraMode === 'favorite') {
-    // 收藏模式：显示所有收藏技能（含可用但未在 upgrade/extra 列表中的）
+    for (const [skill, cap] of Object.entries(SKILL_CAPS)) {
+      if (!favSkills.has(skill) || existingSkills.has(skill) || cap <= 0) continue;
+      const isSel = selectedSkills[skill] > 0;
+      const curLv = isSel ? selectedSkills[skill] : 0;
+      items.push({
+        skill: skill,
+        delta: 0,
+        wcr: 0,
+        cap: cap,
+        max_lv: Math.min(cap, isSel ? curLv : cap),
+        current_lv: curLv,
+        _type: isSel ? 'existing' : 'available',
+        _catOrder: catOrder[skill] || 9999
+      });
+    }
     items = items.filter(it => favSkills.has(it.skill));
   } else if (extraMode === 'disabled') {
-    // 排除禁用模式：显示所有未禁用的技能
+    for (const [skill, cap] of Object.entries(SKILL_CAPS)) {
+      if (disabledSkills.has(skill) || existingSkills.has(skill) || cap <= 0) continue;
+      const isSel = selectedSkills[skill] > 0;
+      const curLv = isSel ? selectedSkills[skill] : 0;
+      items.push({
+        skill: skill,
+        delta: 0,
+        wcr: 0,
+        cap: cap,
+        max_lv: Math.min(cap, isSel ? curLv : cap),
+        current_lv: curLv,
+        _type: isSel ? 'existing' : 'available',
+        _catOrder: catOrder[skill] || 9999
+      });
+    }
     items = items.filter(it => !disabledSkills.has(it.skill));
+  } else {
+    // 普通模式：只保留真实返回的可提升/可追加候选，避免全部理论候选混杂造成“找不到追加节点”
+    items = items.filter(it => {
+      const delta = Number(it.delta || 0);
+      return it._type === 'upgrade' || it._type === 'extra' || delta > 0;
+    });
   }
-  // normal 模式：显示全部
 
   // 统一排序：收藏置顶 → |delta|降序 → 分类顺序
   items.sort((a, b) => {
@@ -2347,6 +2613,118 @@ function esc(s) {
     .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
+function renderCalcDetail(detail, planName) {
+  if (!detail) return '';
+  const d = detail;
+  const bs = d.base_stats || {};
+  const ml = d.multipliers || {};
+  const ad = d.additive || {};
+  const cf = d.coefficients || {};
+  const sl = d.skill_levels || {};
+  const sm = d.summary || {};
+  const states = (d.states || []).slice(0, 12);
+
+  let html = '';
+  if (planName) {
+    html += '<div class="section-title">' + esc(planName) + ' · 伤害计算过程</div>';
+  }
+
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:10px;">';
+
+  // 面板
+  html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;">';
+  html += '<div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:8px;">面板</div>';
+  html += '<table style="width:100%;font-size:12px;"><tbody>';
+  html += '<tr><td class="muted">W_ATK</td><td style="text-align:right;font-weight:600;">' + (bs.W_ATK||0) + '</td></tr>';
+  html += '<tr><td class="muted">W_CRT</td><td style="text-align:right;font-weight:600;">' + (bs.W_CRT||0) + '%</td></tr>';
+  html += '<tr><td class="muted">W_ELE</td><td style="text-align:right;font-weight:600;">' + (bs.W_ELE||0) + '</td></tr>';
+  html += '<tr><td class="muted">PERM_ATK</td><td style="text-align:right;font-weight:600;">+' + (bs.PERM_ATK||0) + '</td></tr>';
+  html += '</tbody></table></div>';
+
+  // 乘区
+  html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;">';
+  html += '<div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:8px;">乘区</div>';
+  html += '<table style="width:100%;font-size:12px;"><tbody>';
+  html += '<tr><td class="muted">atk_mul</td><td style="text-align:right;font-weight:600;">' + (ml.atk_mul||1).toFixed(2) + '</td></tr>';
+  html += '<tr><td class="muted">d_mul</td><td style="text-align:right;font-weight:600;">' + (ml.d_mul||1).toFixed(2) + '</td></tr>';
+  html += '<tr><td class="muted">bahar_mul</td><td style="text-align:right;font-weight:600;">' + (ml.bahar_mul||1).toFixed(2) + '</td></tr>';
+  html += '<tr><td class="muted">geki_mul</td><td style="text-align:right;font-weight:600;">' + (ml.geki_mul||1).toFixed(2) + '</td></tr>';
+  html += '<tr><td class="muted">coal_expect</td><td style="text-align:right;font-weight:600;">' + (ml.coal_expect||1).toFixed(3) + '</td></tr>';
+  html += '<tr><td class="muted">og_act</td><td style="text-align:right;font-weight:600;">' + (ml.og_act||1).toFixed(2) + '</td></tr>';
+  html += '</tbody></table></div>';
+
+  // 加区
+  html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;">';
+  html += '<div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:8px;">加区</div>';
+  html += '<table style="width:100%;font-size:12px;"><tbody>';
+  html += '<tr><td class="muted">add_atk</td><td style="text-align:right;font-weight:600;">+' + (ad.add_atk||0) + '</td></tr>';
+  html += '<tr><td class="muted">add_crt</td><td style="text-align:right;font-weight:600;">+' + (ad.add_crt||0) + '%</td></tr>';
+  html += '<tr><td class="muted">add_ele</td><td style="text-align:right;font-weight:600;">+' + (ad.add_ele||0).toFixed(1) + '</td></tr>';
+  html += '<tr><td class="muted">d_add</td><td style="text-align:right;font-weight:600;">+' + (ad.d_add||0) + '</td></tr>';
+  html += '<tr><td class="muted">geki_add</td><td style="text-align:right;font-weight:600;">+' + (ad.geki_add||0) + '</td></tr>';
+  html += '<tr><td class="muted">absorb_add</td><td style="text-align:right;font-weight:600;">+' + (ad.absorb_add||0).toFixed(1) + '</td></tr>';
+  html += '<tr><td class="muted">kyozou_atk</td><td style="text-align:right;font-weight:600;">+' + (ad.kyozou_atk||0) + '</td></tr>';
+  html += '</tbody></table></div>';
+
+  // 系数
+  html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;">';
+  html += '<div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:8px;">系数</div>';
+  html += '<table style="width:100%;font-size:12px;"><tbody>';
+  html += '<tr><td class="muted">PC_R</td><td style="text-align:right;font-weight:600;">' + (cf.PC_R||0).toFixed(4) + '</td></tr>';
+  html += '<tr><td class="muted">EC_R</td><td style="text-align:right;font-weight:600;">' + (cf.EC_R||0).toFixed(4) + '</td></tr>';
+  html += '<tr><td class="muted">scb (超心)</td><td style="text-align:right;font-weight:600;">' + (sm.scb||1).toFixed(2) + '</td></tr>';
+  html += '<tr><td class="muted">ecb (属会)</td><td style="text-align:right;font-weight:600;">' + (sm.ecb||1).toFixed(2) + '</td></tr>';
+  html += '<tr><td class="muted">cr (会心率)</td><td style="text-align:right;font-weight:600;">' + (sm.cr||0).toFixed(3) + '</td></tr>';
+  html += '</tbody></table></div>';
+
+  // 各技能等级
+  html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;">';
+  html += '<div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:8px;">各技能等级</div>';
+  html += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
+  const sortedSl = Object.entries(sl).sort((a,b) => (SKILL_CATEGORIES_ORDER[a[0]]||99) - (SKILL_CATEGORIES_ORDER[b[0]]||99));
+  for (const [sk, lv] of sortedSl) {
+    if (lv > 0) {
+      html += '<span class="chip chip-selected">' + esc(sk) + ' Lv' + lv + '</span>';
+    }
+  }
+  html += '</div></div>';
+
+  // 汇总
+  html += '<div style="background:var(--bg);border:1px solid var(--border-soft);border-radius:10px;padding:14px;">';
+  html += '<div style="font-size:12px;font-weight:600;color:var(--accent2);margin-bottom:8px;">汇总</div>';
+  html += '<table style="width:100%;font-size:12px;"><tbody>';
+  html += '<tr><td class="muted">物理</td><td style="text-align:right;font-weight:600;">' + (sm.phys||0).toFixed(1) + '</td></tr>';
+  html += '<tr><td class="muted">属性</td><td style="text-align:right;font-weight:600;">' + (sm.elem||0).toFixed(1) + '</td></tr>';
+  html += '<tr><td class="muted">固定</td><td style="text-align:right;font-weight:600;">' + (sm.fixed||0).toFixed(1) + '</td></tr>';
+  html += '<tr style="border-top:1px solid var(--border);"><td style="font-weight:700;">总计</td><td style="text-align:right;font-weight:700;color:var(--accent2);">' + (sm.total||0).toFixed(1) + '</td></tr>';
+  html += '</tbody></table></div>';
+
+  html += '</div>';
+
+  // 状态贡献表
+  if (states.length > 0) {
+    html += '<div class="section-title" style="margin-top:14px;">状态贡献明细 (概率>0.5%)</div>';
+    html += '<table class="detail-table"><thead><tr>' +
+      '<th>状态</th><th>概率</th><th>物攻ea</th><th>会心ec</th><th>属攻be</th><th>物理期望</th><th>属性期望</th><th>合计</th>' +
+    '</tr></thead><tbody>';
+    states.forEach(s => {
+      html += '<tr>' +
+        '<td>' + esc(s.states) + '</td>' +
+        '<td>' + (s.prob*100).toFixed(2) + '%</td>' +
+        '<td>' + s.ea.toFixed(1) + '</td>' +
+        '<td>' + s.ec.toFixed(0) + '%</td>' +
+        '<td>' + s.be.toFixed(1) + '</td>' +
+        '<td>' + s.phys.toFixed(2) + '</td>' +
+        '<td>' + s.elem.toFixed(2) + '</td>' +
+        '<td style="font-weight:700;">' + s.total.toFixed(2) + '</td>' +
+      '</tr>';
+    });
+    html += '</tbody></table>';
+  }
+
+  return html;
+}
+
 // 关闭modal快捷键
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
@@ -2379,14 +2757,15 @@ function togglePlanAppendSkill(planIdx, skill) {
   } else {
     // 取方案中该技能的等级作为追加等级
     let lv = 0;
+    const cap = SKILL_CAPS[skill] || 1;
     if (r.core_skills && r.core_skills[skill]) lv = r.core_skills[skill].level;
     else if (r.other_skills && r.other_skills[skill]) lv = r.other_skills[skill].level;
     else if (r.series_check) {
       const s = r.series_check.find(s => s.skill === skill);
       if (s) lv = s.level;
     }
-    if (lv <= 0) lv = SKILL_CAPS[skill] || 1;
-    planSkills[skill] = lv;
+    if (lv <= 0) lv = cap;
+    planSkills[skill] = Math.min(lv, cap);
   }
   planAppendSkills[planIdx] = planSkills;
   // 仅重渲染该方案卡片以反映 chip 选中态变化

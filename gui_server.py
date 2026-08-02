@@ -518,7 +518,7 @@ class SearchHandler(BaseHTTPRequestHandler):
         combo_skills = params.get('combo_skills', {})
         min_rem_armor = int(params.get('min_rem_armor', 0))
         max_results = int(params.get('max_results', 5))
-        timeout_s = float(params.get('timeout_s', 99999.0))
+        timeout_s = float(params.get('timeout_s', 15.0))
         auto_weapon = params.get('auto_weapon_skill', True)  # 默认开启自动匹配
         disabled_ws = set(params.get('disabled_weapon_skills', []))
 
@@ -527,7 +527,7 @@ class SearchHandler(BaseHTTPRequestHandler):
 
         weapon_skills_dict = {}
         for s, lv in combo_skills.items():
-            weapon_skills_dict[s] = weapon_skills_dict.get(s, 0) + 1
+            weapon_skills_dict[s] = lv
 
         orig_wslots = self._apply_weapon_slots(params)
         t0 = time.time()
@@ -671,13 +671,13 @@ class SearchHandler(BaseHTTPRequestHandler):
 
 
 def main():
-    port = 8765
+    port = 8766
     if len(sys.argv) > 1:
         try:
             port = int(sys.argv[1])
         except ValueError:
             pass
-    server = HTTPServer(('0.0.0.0', port), SearchHandler)
+    server = HTTPServer(('127.0.0.1', port), SearchHandler)
     print(f'MHWilds 配装搜索 GUI 已启动: http://localhost:{port}')
     print(f'按 Ctrl+C 停止服务器')
     try:

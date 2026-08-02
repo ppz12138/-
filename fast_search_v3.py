@@ -819,8 +819,8 @@ def _build_candidates(charm_pool, fixed_skills, combo_skills, quiet=False, extra
     """
     weapon_skills = {}
     if combo_skills:
-        for sk in combo_skills:
-            weapon_skills[sk] = weapon_skills.get(sk, 0) + 1
+        for sk, lv in combo_skills.items():
+            weapon_skills[sk] = lv
 
     # 武器技能也可以由防具和护石提供，所以不将它们从armor_fixed中排除
     # weapon_fixed仅用于武器孔位填充优化，不影响候选预过滤
@@ -905,11 +905,10 @@ def _build_candidates(charm_pool, fixed_skills, combo_skills, quiet=False, extra
     candidates = list(merged.values())
     merged_count = len(candidates)
 
-    # 预过滤
-    relevant_skills = set(all_skill_names)
+    # 预过滤：保留有孔位或包含需求技能的装备
     filtered = []
     for c in candidates:
-        has_skill = any(s in relevant_skills for s in c['skills'])
+        has_skill = any(s in merged_needs for s in c['skills'])
         has_slot = (c['slot_sum'] + c['w_slot_sum']) > 0
         if has_skill or has_slot:
             filtered.append(c)
@@ -929,7 +928,7 @@ def _build_candidates(charm_pool, fixed_skills, combo_skills, quiet=False, extra
         for item in grp:
             dominated = False
             for dom in kept:
-                if _dominated_check(item, dom, all_skill_names):
+                if _dominated_check(item, dom, merged_needs):
                     dominated = True
                     break
             if not dominated:
@@ -2063,15 +2062,14 @@ def dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
 
 
 def dfs_search_auto_weapon(charm_pool, fixed_skills, combo_skills, min_rem_armor,
-                           max_results=5, timeout_s=99999.0, quiet=True,
-                           disabled_weapon_skills=None):
+                           max_results=5, timeout_s=10.0, quiet=True,
+                           disabled_weapon_skills=None, total_timeout=30.0):
     """武器技能自动匹配最优：当用户未指定系列/组合技能时，
     遍历所有可用的系列+组合技能作为武器技能，挑选伤害最高的方案。
 
-    返回 (results, auto_weapon_skill)：
-      - results: 搜索结果列表
-      - auto_weapon_skill: 自动匹配到的武器技能名 (None 表示无匹配或用户已指定)
+    total_timeout: 整个自动匹配过程的超时秒数，防止候选过多时卡住。
     """
+    start_time = time.time()
     # 如果用户已指定系列/组合技能，直接走普通搜索
     has_user_weapon = any(s in NO_DECO_SK for s in (combo_skills or {}))
     if has_user_weapon:
@@ -2107,6 +2105,10 @@ def dfs_search_auto_weapon(charm_pool, fixed_skills, combo_skills, min_rem_armor
     per_skill_best = {}  # skill -> (dmg, lv, result)
 
     for ws_name, ws_lv in candidates_ws:
+        if time.time() - start_time > total_timeout:
+            if not quiet:
+                print(f"  自动匹配武器技能: 总超时({total_timeout}s)，返回当前最优")
+            break
         # 构造本次搜索的 combo_skills
         new_combo = dict(combo_skills) if combo_skills else {}
         new_combo[ws_name] = ws_lv
@@ -2265,6 +2267,13 @@ def query_extra_stream(fixed_skills, combo_skills, min_rem_armor, charm_pool, mo
         cap = SKILL_CAPS.get(sk, 99)
         if lv < cap:
             under_max.append((sk, lv, cap))
+    if combo_skills:
+        for sk, lv in combo_skills.items():
+            if sk.startswith('Lv') and sk.endswith('插槽'):
+                continue
+            cap = SKILL_CAPS.get(sk, 99)
+            if lv < cap and sk not in [s for s, _, _ in under_max]:
+                under_max.append((sk, lv, cap))
 
     seen = set()
     final_output = []
@@ -2311,6 +2320,15 @@ def query_extra_stream(fixed_skills, combo_skills, min_rem_armor, charm_pool, mo
     # 提取cached_ctx中的part_series_availability（用于系列技能预检查）
     (_, _, _, _, _,
      _, _, _, part_series_availability) = cached_ctx
+
+    # 动态计算DFS超时：候选越多，超时越长
+    cand_count = len(cached_ctx[0])
+    if cand_count <= 30:
+        dfs_timeout = 0.1
+    elif cand_count <= 100:
+        dfs_timeout = 0.5
+    else:
+        dfs_timeout = 1.0
 
     # 孔位信息：直接报告基线方案的剩余孔位（跳过耗时的二分最大化）
     # 如需孔位最大化，可在外部单独调用
@@ -2423,30 +2441,25 @@ def query_extra_stream(fixed_skills, combo_skills, min_rem_armor, charm_pool, mo
                    'tag': 'extra', 'wcr': round(best_wcr, 1)}
             continue
         if start_lv > 0:
-            # cap>3用二分搜索减少降级次数，cap<=3用线性降级（更快）
-            if start_lv > 3:
-                lo, hi = 1, start_lv
-                best = 0
-                while lo <= hi:
-                    mid = (lo + hi) // 2
-                    test_fixed = dict(fixed_skills)
-                    test_fixed[sk] = mid
-                    res = dfs_search(charm_pool, test_fixed, combo_skills, min_rem_armor,
-                                     max_results=1, quiet=True, timeout_s=0.02, cached_ctx=cached_ctx)
-                    if res:
-                        best = mid
-                        lo = mid + 1
-                    else:
-                        hi = mid - 1
-            else:
-                for lv in range(start_lv, 0, -1):
-                    test_fixed = dict(fixed_skills)
-                    test_fixed[sk] = lv
-                    res = dfs_search(charm_pool, test_fixed, combo_skills, min_rem_armor,
-                                     max_results=1, quiet=True, timeout_s=0.02, cached_ctx=cached_ctx)
-                    if res:
-                        best = lv
-                        break
+            lo, hi = 1, start_lv
+            best = 0
+            while lo <= hi:
+                mid = (lo + hi) // 2
+                test_fixed = dict(fixed_skills)
+                test_fixed[sk] = mid
+                if sk == '会心击【特殊】':
+                    print(f"  [DEBUG] Binary search {sk}: trying Lv{mid}, lo={lo}, hi={hi}")
+                res = dfs_search(charm_pool, test_fixed, combo_skills, min_rem_armor,
+                                 max_results=1, quiet=True, timeout_s=dfs_timeout, cached_ctx=cached_ctx)
+                if sk == '会心击【特殊】':
+                    print(f"  [DEBUG] Binary search {sk}: Lv{mid} -> {len(res)} results")
+                if res:
+                    best = mid
+                    lo = mid + 1
+                else:
+                    hi = mid - 1
+            if sk == '会心击【特殊】':
+                print(f"  [DEBUG] Binary search {sk}: final best={best}")
 
         test_s = dict(baseline_skills)
         test_s[sk] = best

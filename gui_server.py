@@ -187,17 +187,21 @@ def _plan_result_to_dict(best, plan_cfg, t_used, attempts, verified, sch_t):
             'weapon_slots': list(c.get('weapon_slots', []))
         }
 
-    # 系列技能验证
+    # 系列技能验证（统计防具+护石件数）
     series_actual = {}
     for p in armors:
         for sk_name in p.get('skills', {}):
+            if sk_name in fs.NO_DECO_SK:
+                series_actual[sk_name] = series_actual.get(sk_name, 0) + 1
+    if charm_info and charm_info.get('skills'):
+        for sk_name in charm_info['skills']:
             if sk_name in fs.NO_DECO_SK:
                 series_actual[sk_name] = series_actual.get(sk_name, 0) + 1
     series_check = []
     sk = {k: v for k, v in best['skills'].items() if v > 0}
     for k, v in sk.items():
         if k in fs.NO_DECO_SK:
-            need_p = 3 if k in fs.GROUP_SK else (4 if v >= 2 else 2)
+            need_p = 4 if v >= 4 else (3 if k in fs.GROUP_SK else 2)
             wprov = 1 if k in weapon_sk else 0
             actual_p = series_actual.get(k, 0) + wprov
             series_check.append({
@@ -234,6 +238,11 @@ def _plan_result_to_dict(best, plan_cfg, t_used, attempts, verified, sch_t):
                 other_skills[k] = {'level': lv, 'cap': cap}
 
     cfg_d = best.get('_cfg', {})
+    weapon_skill_info = {}
+    if weapon_sk:
+        for s, lv in weapon_sk.items():
+            if lv > 0 and s in fs.NO_DECO_SK:
+                weapon_skill_info[s] = lv
     return {
         'damage': round(best.get('pract', 0), 2),
         'cfg': {
@@ -250,6 +259,7 @@ def _plan_result_to_dict(best, plan_cfg, t_used, attempts, verified, sch_t):
         },
         'armors': armor_list,
         'charm': charm_info,
+        'weapon_skill': weapon_skill_info,
         'series_check': series_check,
         'decorations': deco_counts,
         'core_skills': core_skills,
@@ -324,6 +334,7 @@ class SearchHandler(BaseHTTPRequestHandler):
                 'damage_skills': DAMAGE_SKILLS,
                 'skills_data': skills_data,
                 'skill_categories': SKILL_CATEGORIES,
+                'deco_skill_map': {k: v for k, v in fs.deco_skill_map.items()},
             }
             self._send_json(info)
             return
@@ -370,6 +381,8 @@ class SearchHandler(BaseHTTPRequestHandler):
             return self._handle_custom_search(params)
         if path == '/api/detail_calc':
             return self._handle_detail_calc(params)
+        if path == '/api/weapon_diy':
+            return self._handle_weapon_diy(params)
 
         self._send_json({'error': 'Not found'}, 404)
 
@@ -474,6 +487,7 @@ class SearchHandler(BaseHTTPRequestHandler):
         fixed_skills = params.get('fixed_skills', {})
         combo_skills = params.get('combo_skills', {})
         min_rem_armor = int(params.get('min_rem_armor', 0))
+        min_rem_weapon = int(params.get('min_rem_weapon', 0))
         mode = params.get('mode', 'normal')
         fav_skills = set(params.get('favorite_skills', []))
         dis_skills = set(params.get('disabled_skills', []))
@@ -498,7 +512,8 @@ class SearchHandler(BaseHTTPRequestHandler):
             try:
                 for chunk in fs.query_extra_stream(
                     fixed_skills, combo_skills, min_rem_armor, fs.charm_pool,
-                    mode=mode, fav_skills=fav_skills, dis_skills=dis_skills
+                    mode=mode, fav_skills=fav_skills, dis_skills=dis_skills,
+                    min_rem_weapon=min_rem_weapon
                 ):
                     _write_chunk(chunk)
             except Exception as e:
@@ -517,35 +532,44 @@ class SearchHandler(BaseHTTPRequestHandler):
         fixed_skills = params.get('fixed_skills', {})
         combo_skills = params.get('combo_skills', {})
         min_rem_armor = int(params.get('min_rem_armor', 0))
+        min_rem_weapon = int(params.get('min_rem_weapon', 0))
         max_results = int(params.get('max_results', 5))
         timeout_s = float(params.get('timeout_s', 15.0))
-        auto_weapon = params.get('auto_weapon_skill', True)  # 默认开启自动匹配
+        auto_weapon = params.get('auto_weapon_skill', True)
         disabled_ws = set(params.get('disabled_weapon_skills', []))
 
         fixed_skills = {k: int(v) for k, v in fixed_skills.items() if int(v) > 0}
         combo_skills = {k: int(v) for k, v in combo_skills.items() if int(v) > 0}
 
+        weapon_series = params.get('weapon_series_skill', '')
+        weapon_combo = params.get('weapon_combo_skill', '')
+
         weapon_skills_dict = {}
-        for s, lv in combo_skills.items():
-            weapon_skills_dict[s] = lv
+        if weapon_series and weapon_series in fs.NO_DECO_SK:
+            lv = combo_skills.get(weapon_series, 1)
+            weapon_skills_dict[weapon_series] = lv
+        if weapon_combo and weapon_combo in fs.NO_DECO_SK:
+            lv = combo_skills.get(weapon_combo, 1)
+            weapon_skills_dict[weapon_combo] = lv
 
         orig_wslots = self._apply_weapon_slots(params)
         t0 = time.time()
         auto_matched = None
+        auto_lv = None
         with _lock:
             try:
-                # 当用户未指定系列/组合技能且开启自动匹配时，遍历所有武器技能挑最优
-                has_user_weapon = any(s in fs.NO_DECO_SK for s in combo_skills)
+                has_user_weapon = bool(weapon_series or weapon_combo)
                 if auto_weapon and not has_user_weapon:
-                    raw_results, auto_matched = fs.dfs_search_auto_weapon(
+                    raw_results, auto_matched, auto_lv = fs.dfs_search_auto_weapon(
                         fs.charm_pool, fixed_skills, combo_skills, min_rem_armor,
                         max_results=max_results, timeout_s=timeout_s, quiet=False,
-                        disabled_weapon_skills=disabled_ws
+                        disabled_weapon_skills=disabled_ws, min_rem_weapon=min_rem_weapon
                     )
                 else:
                     raw_results = fs.dfs_search(
                         fs.charm_pool, fixed_skills, combo_skills, min_rem_armor,
-                        max_results=max_results, timeout_s=timeout_s, quiet=False
+                        max_results=max_results, timeout_s=timeout_s, quiet=False,
+                        min_rem_weapon=min_rem_weapon
                     )
             except Exception as e:
                 fs.WSLOTS = orig_wslots
@@ -556,7 +580,7 @@ class SearchHandler(BaseHTTPRequestHandler):
 
         # 若自动匹配到武器技能，需将其加入 weapon_skills_dict 以正确展示
         if auto_matched:
-            weapon_skills_dict[auto_matched] = weapon_skills_dict.get(auto_matched, 0) + 1
+            weapon_skills_dict[auto_matched] = auto_lv
 
         results = []
         for r in raw_results[:max_results]:
@@ -579,14 +603,74 @@ class SearchHandler(BaseHTTPRequestHandler):
         fixed_skills = {k: int(v) for k, v in fixed_skills.items() if int(v) > 0}
         combo_skills = {k: int(v) for k, v in combo_skills.items() if int(v) > 0}
 
+        weapon_params = params.get('weapon', {})
+        w_atk = int(weapon_params.get('base_attack', fs.W_ATK))
+        w_crt = int(weapon_params.get('crit', fs.W_CRT))
+        w_ele = int(weapon_params.get('element', fs.W_ELE))
+        perm_atk = int(weapon_params.get('perm_atk', fs.PERM_ATK))
+        weapon_type = weapon_params.get('weapon_type', '大剑')
+        augmentation = weapon_params.get('augmentation', 'none')
+        affixes = weapon_params.get('affixes', [])
+
+        base_atk = w_atk
+        base_crt = w_crt
+        base_ele = w_ele
+        base_sharp = 100
+
+        if augmentation != 'none':
+            if weapon_type in ('笛子', '铳枪'):
+                if augmentation == 'attack':
+                    base_atk += 3
+                elif augmentation == 'critical':
+                    base_crt += 2
+                elif augmentation == 'element':
+                    base_ele += 8
+            else:
+                if augmentation == 'attack':
+                    base_atk += 10
+                    base_crt -= 15
+                elif augmentation == 'critical':
+                    base_crt += 10
+                    base_atk -= 10
+                    base_sharp -= 10
+                    base_ele = 0
+                elif augmentation == 'element':
+                    base_crt -= 5
+                    ele_map = {'大剑':5,'太刀':5,'片手':4,'双刀':3,'大锤':4,'长枪':5,'斩斧':4,'盾斧':5,'虫棍':4,'弓':3}
+                    base_ele += ele_map.get(weapon_type, 0)
+
+        affix_type_map = {'attack': '攻击', 'critical': '会心', 'sharpness': '锋利度', 'element': '属性'}
+        affix_counts = {}
+        for af in affixes:
+            af_type = affix_type_map.get(af.get('type', ''), '')
+            af_level = int(af.get('level', 1))
+            if not af_type:
+                continue
+            key = af_type + '_' + str(af_level)
+            if affix_counts.get(key, 0) >= 2:
+                continue
+            affix_counts[key] = affix_counts.get(key, 0) + 1
+            if af_type == '攻击':
+                vals = {1: 5, 2: 6, 3: 9, 4: 12}
+                base_atk += vals.get(af_level, 0)
+            elif af_type == '会心':
+                vals = {1: 5, 2: 6, 3: 8, 4: 10}
+                base_crt += vals.get(af_level, 0)
+            elif af_type == '锋利度':
+                vals = {1: 30, 2: 50}
+                base_sharp += vals.get(af_level, 0)
+            elif af_type == '属性':
+                vals = {1: 30, 2: 50, 3: 80}
+                base_ele += vals.get(af_level, 0)
+
         # 合并所有技能
         all_skills = dict(fixed_skills)
         all_skills.update(combo_skills)
 
         orig_wslots = self._apply_weapon_slots(params)
+        orig = (fs.W_ATK, fs.W_CRT, fs.W_ELE, fs.PERM_ATK)
         t0 = time.time()
 
-        # 计算基线伤害(仅固定技能)
         baseline_dmg = 0
         baseline_wcr = 0
         final_dmg = 0
@@ -596,31 +680,44 @@ class SearchHandler(BaseHTTPRequestHandler):
         final_detail = {}
 
         try:
-            baseline_dmg, baseline_detail = fs.calc_damage_detail(fixed_skills)
-            baseline_wcr = fs.calc_weighted_crit(fixed_skills)
-            final_dmg, final_detail = fs.calc_damage_detail(all_skills)
-            final_wcr = fs.calc_weighted_crit(all_skills)
+            with _lock:
+                fs.W_ATK = max(base_atk, 1)
+                fs.W_CRT = max(base_crt, -100)
+                fs.W_ELE = max(base_ele, 0)
+                fs.PERM_ATK = perm_atk
+                fs._calc_damage_cached.cache_clear()
 
-            # 计算每个技能的独立贡献
-            for sk, lv in all_skills.items():
-                if lv <= 0:
-                    continue
-                # 移除该技能后的伤害
-                reduced = dict(all_skills)
-                del reduced[sk]
-                reduced_dmg, _ = fs.calc_damage_detail(reduced)
-                delta = final_dmg - reduced_dmg
-                skill_damages[sk] = {
-                    'level': lv,
-                    'cap': fs.SKILL_CAPS.get(sk, lv),
-                    'standalone_dmg': round(delta, 1),
-                }
+                baseline_dmg, baseline_detail = fs.calc_damage_detail(fixed_skills)
+                baseline_wcr = fs.calc_weighted_crit(fixed_skills)
+                final_dmg, final_detail = fs.calc_damage_detail(all_skills)
+                final_wcr = fs.calc_weighted_crit(all_skills)
+
+                for sk, lv in all_skills.items():
+                    if lv <= 0:
+                        continue
+                    reduced = dict(all_skills)
+                    del reduced[sk]
+                    reduced_dmg, _ = fs.calc_damage_detail(reduced)
+                    delta = final_dmg - reduced_dmg
+                    skill_damages[sk] = {
+                        'level': lv,
+                        'cap': fs.SKILL_CAPS.get(sk, lv),
+                        'standalone_dmg': round(delta, 1),
+                    }
         except Exception as e:
             fs.WSLOTS = orig_wslots
+            fs.W_ATK, fs.W_CRT, fs.W_ELE, fs.PERM_ATK = orig
+            fs._calc_damage_cached.cache_clear()
             self._send_json({'ok': False, 'error': f'伤害计算出错: {e}'}, 500)
             return
+        finally:
+            fs.WSLOTS = orig_wslots
+            fs.W_ATK, fs.W_CRT, fs.W_ELE, fs.PERM_ATK = orig
+            try:
+                fs._calc_damage_cached.cache_clear()
+            except Exception:
+                pass
 
-        fs.WSLOTS = orig_wslots
         t_used = time.time() - t0
 
         # 构建详细伤害计算过程
@@ -668,6 +765,137 @@ class SearchHandler(BaseHTTPRequestHandler):
             'final_detail': final_detail,
             'time': round(t_used, 2),
         })
+
+
+    def _handle_weapon_diy(self, params):
+        fixed_skills = params.get('fixed_skills', {})
+        combo_skills = params.get('combo_skills', {})
+        weapon_params = params.get('weapon', {})
+
+        w_atk = int(weapon_params.get('base_attack', fs.W_ATK))
+        w_crt = int(weapon_params.get('crit', fs.W_CRT))
+        w_ele = int(weapon_params.get('element', fs.W_ELE))
+        perm_atk = int(weapon_params.get('perm_atk', fs.PERM_ATK))
+
+        weapon_type = weapon_params.get('weapon_type', '大剑')
+        augmentation = weapon_params.get('augmentation', 'none')
+        affixes = weapon_params.get('affixes', [])
+
+        base_atk = w_atk
+        base_crt = w_crt
+        base_ele = w_ele
+        base_sharp = 100
+
+        if augmentation != 'none':
+            if weapon_type in ('笛子', '铳枪'):
+                if augmentation == 'attack':
+                    base_atk += 3
+                elif augmentation == 'critical':
+                    base_crt += 2
+                elif augmentation == 'element':
+                    base_ele += 8
+            else:
+                if augmentation == 'attack':
+                    base_atk += 10
+                    base_crt -= 15
+                elif augmentation == 'critical':
+                    base_crt += 10
+                    base_atk -= 10
+                    base_sharp -= 10
+                    base_ele = 0
+                elif augmentation == 'element':
+                    base_crt -= 5
+                    ele_map = {'大剑':5,'太刀':5,'片手':4,'双刀':3,'大锤':4,'长枪':5,'斩斧':4,'盾斧':5,'虫棍':4,'弓':3}
+                    base_ele += ele_map.get(weapon_type, 0)
+
+        affix_type_map = {'attack': '攻击', 'critical': '会心', 'sharpness': '锋利度', 'element': '属性'}
+        affix_skill_map = {'攻击': {}, '会心': {}, '锋利度': {}, '属性': {}}
+        affix_counts = {}
+        for af in affixes:
+            af_type = affix_type_map.get(af.get('type', ''), '')
+            af_level = int(af.get('level', 1))
+            if not af_type:
+                continue
+            key = af_type + '_' + str(af_level)
+            if affix_counts.get(key, 0) >= 2:
+                continue
+            affix_counts[key] = affix_counts.get(key, 0) + 1
+            if af_type == '攻击':
+                vals = {1: 5, 2: 6, 3: 9, 4: 12}
+                base_atk += vals.get(af_level, 0)
+            elif af_type == '会心':
+                vals = {1: 5, 2: 6, 3: 8, 4: 10}
+                base_crt += vals.get(af_level, 0)
+            elif af_type == '锋利度':
+                vals = {1: 30, 2: 50}
+                base_sharp += vals.get(af_level, 0)
+            elif af_type == '属性':
+                vals = {1: 30, 2: 50, 3: 80}
+                base_ele += vals.get(af_level, 0)
+
+        weapon_affixes = params.get('weapon_affixes', {})
+        fixed_skills = {k: int(v) for k, v in fixed_skills.items() if int(v) > 0}
+        combo_skills = {k: int(v) for k, v in combo_skills.items() if int(v) > 0}
+        weapon_affixes = {k: int(v) for k, v in weapon_affixes.items() if int(v) > 0}
+        all_skills = dict(fixed_skills)
+        all_skills.update(combo_skills)
+        all_skills.update(weapon_affixes)
+
+        orig = (fs.W_ATK, fs.W_CRT, fs.W_ELE, fs.PERM_ATK)
+        try:
+            with _lock:
+                fs.W_ATK = max(base_atk, 1)
+                fs.W_CRT = max(base_crt, -100)
+                fs.W_ELE = max(base_ele, 0)
+                fs.PERM_ATK = perm_atk
+                fs._calc_damage_cached.cache_clear()
+                final_dmg, final_detail = fs.calc_damage_detail(all_skills)
+                final_wcr = fs.calc_weighted_crit(all_skills)
+                baseline_dmg, baseline_detail = fs.calc_damage_detail(fixed_skills)
+                baseline_wcr = fs.calc_weighted_crit(fixed_skills)
+            dmg_increase = final_dmg - baseline_dmg
+            pct = (final_dmg / max(baseline_dmg, 1) - 1) * 100
+            skill_damages = {}
+            for sk, lv in all_skills.items():
+                if lv <= 0:
+                    continue
+                reduced = dict(all_skills)
+                del reduced[sk]
+                reduced_dmg, _ = fs.calc_damage_detail(reduced)
+                delta = final_dmg - reduced_dmg
+                skill_damages[sk] = {
+                    'level': lv,
+                    'cap': fs.SKILL_CAPS.get(sk, lv),
+                    'standalone_dmg': round(delta, 1),
+                }
+            aug_label = {'attack': '攻击激化', 'critical': '会心激化', 'element': '属性激化', 'none': '无'}.get(augmentation, '无')
+            detail_text = (
+                f'{weapon_type} | 激化: {aug_label} | '
+                f'攻击:{base_atk} 会心:{base_crt}% 属性:{base_ele} 锋利度:{base_sharp}'
+            )
+            self._send_json({
+                'baseline_dmg': round(baseline_dmg, 1),
+                'baseline_wcr': round(baseline_wcr, 1),
+                'final_dmg': round(final_dmg, 1),
+                'final_wcr': round(final_wcr, 1),
+                'dmg_increase': round(dmg_increase, 1),
+                'dmg_increase_pct': round(pct, 1),
+                'skill_damages': skill_damages,
+                'detail_text': detail_text,
+                'weapon_stats': {'atk': base_atk, 'crt': base_crt, 'ele': base_ele, 'sharp': base_sharp},
+                'baseline_detail': baseline_detail,
+                'final_detail': final_detail,
+                'time': 0.1,
+            })
+        except Exception as e:
+            self._send_json({'error': f'自定义武器计算出错: {e}'}, 500)
+        finally:
+            with _lock:
+                fs.W_ATK, fs.W_CRT, fs.W_ELE, fs.PERM_ATK = orig
+                try:
+                    fs._calc_damage_cached.cache_clear()
+                except Exception:
+                    pass
 
 
 def main():

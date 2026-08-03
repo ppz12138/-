@@ -1,3 +1,4 @@
+<!-- VERSION: 2026-08-03-v2 -->
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -365,6 +366,19 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
   background: rgba(74,222,128,0.1);
   box-shadow: 0 0 8px rgba(74,222,128,0.15);
 }
+.chip-series-inactive {
+  opacity: 0.8;
+  filter: grayscale(0.2);
+  border-style: dashed;
+  background: rgba(255,255,255,0.03);
+  color: #c0c7d2;
+}
+.skill-group-item {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+}
 .chip .chip-x {
   font-size: 11px;
   opacity: 0.7;
@@ -453,6 +467,7 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
 }
 .armor-card:hover { border-color: var(--accent); }
 .armor-card.charm-card { border-color: rgba(212,160,23,0.3); }
+.armor-card.weapon-card { border-color: rgba(212,160,23,0.3); }
 .armor-part {
   font-size: 10px;
   color: var(--muted);
@@ -916,6 +931,41 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
   <div class="card">
     <div class="card-title">技能选择 <span class="sub">点击技能展开等级选择，⭐收藏置顶</span></div>
     <div id="skill-selection"></div>
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+      <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:10px;">预留孔位</div>
+      <div style="display:flex;flex-wrap:wrap;gap:16px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:13px;color:var(--muted);font-weight:500;">防具孔</span>
+          <div style="display:flex;gap:4px;">
+            <select id="res-armor-lv1" onchange="updateReserveSlots()" style="width:52px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 2px;font-size:13px;text-align:center;">
+              <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option>
+            </select>
+            <select id="res-armor-lv2" onchange="updateReserveSlots()" style="width:52px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 2px;font-size:13px;text-align:center;">
+              <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option>
+            </select>
+            <select id="res-armor-lv3" onchange="updateReserveSlots()" style="width:52px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 2px;font-size:13px;text-align:center;">
+              <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option>
+            </select>
+          </div>
+          <span style="font-size:12px;color:var(--muted);">Lv1 / Lv2 / Lv3</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:13px;color:var(--muted);font-weight:500;">武器孔</span>
+          <div style="display:flex;gap:4px;">
+            <select id="res-weapon-lv1" onchange="updateReserveSlots()" style="width:52px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 2px;font-size:13px;text-align:center;">
+              <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option>
+            </select>
+            <select id="res-weapon-lv2" onchange="updateReserveSlots()" style="width:52px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 2px;font-size:13px;text-align:center;">
+              <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option>
+            </select>
+            <select id="res-weapon-lv3" onchange="updateReserveSlots()" style="width:52px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 2px;font-size:13px;text-align:center;">
+              <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option>
+            </select>
+          </div>
+          <span style="font-size:12px;color:var(--muted);">Lv1 / Lv2 / Lv3</span>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- 已选技能区 -->
@@ -948,10 +998,6 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
         <div class="param-group">
           <label for="max-results">返回结果数量</label>
           <input type="number" id="max-results" value="100" min="1" max="500">
-        </div>
-        <div class="param-group">
-          <label for="min-rem-armor">预留孔位（防具空孔等级和）</label>
-          <input type="number" id="min-rem-armor" value="0" min="0" max="9" title="搜索时至少保留的空防具孔位等级总和，用于手动追加其他珠子">
         </div>
         <button class="btn btn-primary" id="search-btn" onclick="runSearch()">🔍 开始搜索</button>
         <span id="search-status" class="muted" style="font-size:13px;"></span>
@@ -1059,6 +1105,8 @@ const CN_LABELS = {
 
 let selectedSkills = {};
 let weaponSlotLevels = [3, 3, 3];
+let armorReserve = {1: 0, 2: 0, 3: 0};
+let weaponReserve = {1: 0, 2: 0, 3: 0};
 let disabledWeaponSkills = new Set();
 let favSkills = new Set();
 let disabledSkills = new Set();
@@ -1132,6 +1180,7 @@ async function init() {
     DAMAGE_SKILLS = info.damage_skills || [];
     SERIES_NAMES = info.series_names || [];
     COMBO_SKILLS = info.combo_skill_list || [];
+    window._decoSkillMap = info.deco_skill_map || {};
     SKILL_CATEGORIES_ORDER = {};
     let _ord = 0;
     for (const skills of Object.values(SKILL_CATEGORIES || {})) {
@@ -1148,6 +1197,36 @@ async function init() {
   renderAll();
   renderSkillGroupList();
   updateSavedCount();
+}
+
+function initReserveSlots() {
+  const levels = [1, 2, 3];
+  for (const lv of levels) {
+    for (const type of ['armor', 'weapon']) {
+      const sel = document.getElementById('res-' + type + '-lv' + lv);
+      if (!sel) continue;
+      let html = '';
+      for (let i = 0; i <= 6; i++) {
+        html += '<option value="' + i + '">' + i + '</option>';
+      }
+      sel.innerHTML = html;
+    }
+  }
+}
+
+function getReserveSlots() {
+  const armorTotal = [1,2,3].reduce((s, lv) => s + parseInt(document.getElementById('res-armor-lv' + lv)?.value || '0'), 0);
+  const weaponTotal = [1,2,3].reduce((s, lv) => s + parseInt(document.getElementById('res-weapon-lv' + lv)?.value || '0'), 0);
+  return { armorTotal, weaponTotal };
+}
+
+function updateReserveSlots() {
+  for (const lv of [1, 2, 3]) {
+    const aVal = parseInt(document.getElementById('res-armor-lv' + lv)?.value || '0');
+    const wVal = parseInt(document.getElementById('res-weapon-lv' + lv)?.value || '0');
+    armorReserve[lv] = aVal;
+    weaponReserve[lv] = wVal;
+  }
 }
 
 function isComboSkill(skill) {
@@ -1446,10 +1525,6 @@ function renderSelectedSkills() {
     return 0;
   });
   document.getElementById('selected-count').textContent = keys.length + ' 个';
-  if (keys.length === 0) {
-    el.innerHTML = '<span class="empty-hint">尚未选择技能，请在上方技能区点击选择</span>';
-    return;
-  }
   let html = '';
   keys.forEach(s => {
     const cap = SKILL_CAPS[s] || 1;
@@ -1459,6 +1534,20 @@ function renderSelectedSkills() {
       esc(s) + ' Lv' + lv + '/' + cap +
       ' <span class="chip-x" onclick="event.stopPropagation();removeSkill(\'' + esc(s) + '\')">✕</span></span>';
   });
+  // 预留孔位显示
+  for (const lv of [1, 2, 3]) {
+    const aVal = armorReserve[lv] || 0;
+    const wVal = weaponReserve[lv] || 0;
+    if (aVal > 0) {
+      html += '<span class="chip chip-selected" title="防具孔 Lv' + lv + ' 预留 ' + aVal + ' 个">防具孔Lv' + lv + ' ×' + aVal + ' <span class="chip-x" onclick="event.stopPropagation();armorReserve[' + lv + ']=0;updateReserveSlots();renderSelectedSkills();">✕</span></span>';
+    }
+    if (wVal > 0) {
+      html += '<span class="chip chip-selected" title="武器孔 Lv' + lv + ' 预留 ' + wVal + ' 个">武器孔Lv' + lv + ' ×' + wVal + ' <span class="chip-x" onclick="event.stopPropagation();weaponReserve[' + lv + ']=0;updateReserveSlots();renderSelectedSkills();">✕</span></span>';
+    }
+  }
+  if (html === '') {
+    html = '<span class="empty-hint">尚未选择技能，请在上方技能区点击选择</span>';
+  }
   el.innerHTML = html;
   // 展开等级选择
   if (expandedSkill && expandedSkill.context === 'selected') {
@@ -1506,13 +1595,15 @@ async function runSearch() {
   }
   const autoWeapon = !hasDisabledSeries && !hasDisabledCombo;
   const maxResults = parseInt(document.getElementById('max-results').value) || 5;
-  const minRemArmor = parseInt(document.getElementById('min-rem-armor')?.value || '0');
+  const reserve = getReserveSlots();
   const params = {
     fixed_skills: fixed, combo_skills: combo,
     weapon_slots: weaponSlotLevels.slice(),
-    max_results: maxResults, min_rem_armor: minRemArmor,
+    max_results: maxResults, min_rem_armor: reserve.armorTotal, min_rem_weapon: reserve.weaponTotal,
     auto_weapon_skill: autoWeapon,
-    disabled_weapon_skills: [...disabledWeaponSkills]
+    disabled_weapon_skills: [...disabledWeaponSkills],
+    weapon_series_skill: selectedSeriesSkill || '',
+    weapon_combo_skill: selectedComboSkill || ''
   };
   lastSearchParams = params;
   const btn = document.getElementById('search-btn');
@@ -1569,8 +1660,26 @@ function renderResultCard(r, idx) {
       '<div class="skill-list">' + sk + '</div></div>';
   })() : '';
 
-  const decoHTML = Object.entries(r.decorations || {}).map(([k,v]) =>
-    '<span class="deco-chip">' + esc(k) + ' ×' + v + '</span>').join('') ||
+  const weaponSkillHTML = (() => {
+    const ws = r.weapon_skill || {};
+    const entries = Object.entries(ws);
+    if (entries.length === 0) return { html: '', text: '' };
+    const html = '<div class="armor-card weapon-card">' +
+      '<div class="armor-part">武器技能</div>' +
+      '<div class="skill-list">' + entries.map(([k,v]) => '<div>' + esc(k) + ' <span>Lv' + v + '</span></div>').join('') + '</div>' +
+    '</div>';
+    const text = entries.map(([k,v]) => esc(k) + ' Lv' + v).join(', ');
+    return { html, text };
+  })();
+  const weaponSkillText = weaponSkillHTML.text || '';
+  const weaponSkillCard = weaponSkillHTML.html || '';
+
+  const decoHTML = Object.entries(r.decorations || {}).map(([k,v]) => {
+    const skills = (window._decoSkillMap && window._decoSkillMap[k]) || [];
+    const skillStr = skills.map(([sk, lv]) => esc(sk) + '+' + lv).join(', ');
+    const title = skillStr ? ' title="' + esc(skillStr) + '"' : '';
+    return '<span class="deco-chip"' + title + '>' + esc(k) + ' ×' + v + '</span>';
+  }).join('') ||
     '<span class="muted">无</span>';
 
   // 系列/组合技能单独展示（件数制），其余技能统一展示
@@ -1593,12 +1702,19 @@ function renderResultCard(r, idx) {
     for (const s of r.series_check) {
       const cap = SKILL_CAPS[s.skill] || 1;
       seriesComboSet.add(s.skill);
+      const needPieces = s.need_pieces || (s.skill in GROUP_SK ? 3 : (cap >= 4 ? 4 : 2));
+      const actualPieces = s.actual_pieces || 0;
+      const levelFromPieces = Math.floor(actualPieces / 2);
+      const displayLevel = Math.min(levelFromPieces, cap);
       seriesComboInfo[s.skill] = {
-        actual_pieces: s.actual_pieces || 0,
-        need_pieces: s.need_pieces || (s.skill in GROUP_SK ? 3 : (cap >= 4 ? 4 : 2)),
+        actual_pieces: actualPieces,
+        armor_pieces: s.armor_pieces || 0,
+        weapon_provided: s.weapon_provided || 0,
+        need_pieces: needPieces,
+        level: displayLevel,
         ok: s.ok
       };
-      allSkills[s.skill] = { level: Math.min(s.level || 0, cap), cap: cap };
+      allSkills[s.skill] = { level: displayLevel, cap: cap };
     }
   }
 
@@ -1638,7 +1754,8 @@ function renderResultCard(r, idx) {
     if (isSeriesCombo && scInfo) {
       const pieces = scInfo.actual_pieces;
       const need = scInfo.need_pieces;
-      displayText = esc(k) + ' ' + pieces + '件/' + need + '件';
+      const level = scInfo.level || 0;
+      displayText = esc(k) + ' Lv' + level + '/' + need + '件';
       tooltipText = scInfo.ok ? '✓ 已激活' : '✕ 未激活';
     } else {
       const displayLv = Math.min(v.level || 0, v.cap || SKILL_CAPS[k] || 1);
@@ -1650,7 +1767,13 @@ function renderResultCard(r, idx) {
     const full = !isSeriesCombo && (Math.min(v.level || 0, v.cap || SKILL_CAPS[k] || 1) >= v.cap);
     const isPending = planAppends[k] > 0;
     let cls, click = '', style = '';
-    if (full) {
+    if (isSeriesCombo && scInfo) {
+      if (scInfo.ok) {
+        cls = 'chip-selected';
+      } else {
+        cls = 'chip-series-inactive';
+      }
+    } else if (full) {
       cls = 'chip-full';
     } else if (isPending) {
       cls = 'chip-append';
@@ -1680,9 +1803,35 @@ function renderResultCard(r, idx) {
 
   const remA = (r.remaining_slots && r.remaining_slots.armor) || [];
   const remW = (r.remaining_slots && r.remaining_slots.weapon) || [];
-  const remASum = remA.reduce((a,b)=>a+b,0);
-  const remWSum = remW.reduce((a,b)=>a+b,0);
+  const remACount = remA.filter(s => s > 0).length;
+  const remWCount = remW.filter(s => s > 0).length;
+  const remALv1 = remA.filter(s => s >= 1).length;
+  const remALv2 = remA.filter(s => s >= 2).length;
+  const remALv3 = remA.filter(s => s >= 3).length;
+  const remWLv1 = remW.filter(s => s >= 1).length;
+  const remWLv2 = remW.filter(s => s >= 2).length;
+  const remWLv3 = remW.filter(s => s >= 3).length;
   const t = r.timing || {};
+
+  let remainingHTML = '';
+  if (remACount > 0 || remWCount > 0) {
+    const parts = [];
+    if (remACount > 0) {
+      const lvParts = [];
+      if (remALv1 > 0) lvParts.push('Lv1×' + remALv1);
+      if (remALv2 > 0) lvParts.push('Lv2×' + remALv2);
+      if (remALv3 > 0) lvParts.push('Lv3×' + remALv3);
+      parts.push('<span class="k">剩余防具孔:</span><span class="v">' + remACount + '个 (' + lvParts.join(' ') + ')</span>');
+    }
+    if (remWCount > 0) {
+      const lvParts = [];
+      if (remWLv1 > 0) lvParts.push('Lv1×' + remWLv1);
+      if (remWLv2 > 0) lvParts.push('Lv2×' + remWLv2);
+      if (remWLv3 > 0) lvParts.push('Lv3×' + remWLv3);
+      parts.push('<span class="k">剩余武器孔:</span><span class="v">' + remWCount + '个 (' + lvParts.join(' ') + ')</span>');
+    }
+    remainingHTML = '<div class="info-item" style="flex-wrap:wrap;gap:4px 12px;">' + parts.join('') + '</div>';
+  }
 
   return '<div class="result-card">' +
     '<div class="result-head">' +
@@ -1694,12 +1843,11 @@ function renderResultCard(r, idx) {
       '</div>' +
     '</div>' +
     '<div class="info-row">' +
-      '<div class="info-item"><span class="k">防性:</span><span class="v">Lv' + (r.cfg && r.cfg.guard_lv != null ? r.cfg.guard_lv : '-') + '</span></div>' +
-      '<div class="info-item"><span class="k">精神:</span><span class="v">Lv' + (r.cfg && r.cfg.spirit_lv != null ? r.cfg.spirit_lv : 0) + '</span></div>' +
       '<div class="info-item"><span class="k">尝试:</span><span class="v">' + (t.attempts || 0) + '</span></div>' +
       '<div class="info-item"><span class="k">验证:</span><span class="v">' + (t.verified ? '✓' : '✗') + '</span></div>' +
       '<div class="info-item"><span class="k">搜索耗时:</span><span class="v">' + (t.search_time || 0) + 's</span></div>' +
-      '<div class="info-item"><span class="k">剩余孔(防/武):</span><span class="v">' + remASum + '级 / ' + remWSum + '级</span></div>' +
+      (weaponSkillCard ? '<div class="info-item"><span class="k">武器技能:</span><span class="v">' + weaponSkillText + '</span></div>' : '') +
+      remainingHTML +
     '</div>' +
     '<div class="section-title">装备组合</div>' +
     '<div class="armor-grid">' + armorsHTML + charmHTML + '</div>' +
@@ -1866,6 +2014,8 @@ function confirmSaveSkillGroup() {
     selectedComboSkill: selectedComboSkill,
     selectedComboLevel: selectedComboLevel,
     weaponSlots: weaponSlotLevels.slice(),
+    armorReserve: { ...armorReserve },
+    weaponReserve: { ...weaponReserve },
     favSkills: [...favSkills],
     disabledSkills: [...disabledSkills],
     time: new Date().toLocaleString('zh-CN')
@@ -1887,9 +2037,27 @@ function loadSkillGroup(idx) {
   selectedComboSkill = g.selectedComboSkill;
   selectedComboLevel = g.selectedComboLevel || 0;
   weaponSlotLevels = (g.weaponSlots && g.weaponSlots.length === 3) ? g.weaponSlots.slice() : [3, 3, 3];
+  if (g.armorReserve) {
+    armorReserve = { ...g.armorReserve };
+    for (const lv of [1, 2, 3]) {
+      const sel = document.getElementById('res-armor-lv' + lv);
+      if (sel) sel.value = armorReserve[lv] || 0;
+    }
+  }
+  if (g.weaponReserve) {
+    weaponReserve = { ...g.weaponReserve };
+    for (const lv of [1, 2, 3]) {
+      const sel = document.getElementById('res-weapon-lv' + lv);
+      if (sel) sel.value = weaponReserve[lv] || 0;
+    }
+  }
   if (g.favSkills) { favSkills = new Set(g.favSkills); }
   if (g.disabledSkills) { disabledSkills = new Set(g.disabledSkills); }
   renderAll();
+  renderSkillGroupList();
+  if (document.activeElement && document.activeElement.blur) {
+    document.activeElement.blur();
+  }
   alert('已加载技能组: ' + g.name);
 }
 function startEditSkillGroup(idx) {
@@ -2012,6 +2180,9 @@ function loadSavedPlan(idx) {
   if (r.other_skills) {
     for (const [k, v] of Object.entries(r.other_skills)) allSkills[k] = v.level || 0;
   }
+  if (r.weapon_skill) {
+    for (const [k, v] of Object.entries(r.weapon_skill)) allSkills[k] = v || 0;
+  }
   const activeSeriesCombo = new Set();
   if (r.series_check) {
     for (const s of r.series_check) {
@@ -2124,6 +2295,18 @@ function renderCompareSelectedList() {
     ).join('') + '</div>';
 }
 
+function getWeaponDIYParams() {
+  return {
+    base_attack: parseInt(document.getElementById('wdi-watk').value) || 229,
+    crit: parseInt(document.getElementById('wdi-wcrt').value) || 0,
+    element: parseInt(document.getElementById('wdi-wele').value) || 480,
+    perm_atk: parseInt(document.getElementById('wdi-perm').value) || 11,
+    weapon_type: document.getElementById('wdi-wtype').value || '大剑',
+    augmentation: document.getElementById('wdi-aug').value || 'none',
+    affixes: getStatAffixes()
+  };
+}
+
 async function runCompare() {
   if (compareSelected.size < 2) {
     document.getElementById('compare-status').textContent = '请至少勾选 2 个方案';
@@ -2160,10 +2343,12 @@ async function runCompare() {
           detailCombo[s.skill] = s.level;
         }
       }
+      const weaponDIY = getWeaponDIYParams();
       const detail = await API('/api/detail_calc', {
         fixed_skills: detailFixed,
         combo_skills: detailCombo,
-        weapon_slots: p.params?.weapon_slots || [3,3,3]
+        weapon_slots: p.params?.weapon_slots || [3,3,3],
+        weapon: weaponDIY
       });
       return { idx: i, ord: ord, plan: p, detail: detail };
     }));
@@ -2177,6 +2362,7 @@ async function runCompare() {
       document.getElementById('compare-status').textContent = '对比完成';
     }
     renderCompareResult(details);
+    loadWeaponDIYFromStorage();
   } catch (e) {
     area.innerHTML = '<div class="result-empty">对比出错: ' + esc(e.message) + '</div>';
     document.getElementById('compare-status').textContent = '对比失败';
@@ -2186,11 +2372,44 @@ async function runCompare() {
 }
 
 function renderCompareResult(details) {
+  window._compareDetails = details;
   const area = document.getElementById('compare-area');
   const bestDmg = Math.max(...details.map(d => d.detail.final_dmg || d.plan.damage || 0));
 
+  let html = '<div class="section-title">武器自定义</div>';
+  html += '<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:14px;">';
+  html += '<div><label style="font-size:12px;color:var(--muted);">武器类型</label><select id="wdi-wtype" style="width:100px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 8px;"><option value="大剑">大剑</option><option value="太刀">太刀</option><option value="片手">片手</option><option value="双刀">双刀</option><option value="大锤">大锤</option><option value="笛子">笛子</option><option value="长枪">长枪</option><option value="铳枪">铳枪</option><option value="斩斧">斩斧</option><option value="盾斧">盾斧</option><option value="虫棍">虫棍</option><option value="弓">弓</option></select></div>';
+  html += '<div><label style="font-size:12px;color:var(--muted);">激化类型</label><select id="wdi-aug" style="width:100px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 8px;"><option value="none">无</option><option value="attack">攻击激化</option><option value="critical">会心激化</option><option value="element">属性激化</option></select></div>';
+  html += '<div><label style="font-size:12px;color:var(--muted);">常驻攻击</label><input type="number" id="wdi-perm" value="11" style="width:80px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 8px;"></div>';
+  html += '</div>';
+  html += '<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:14px;">';
+  html += '<div><label style="font-size:12px;color:var(--muted);">基础攻击</label><input type="number" id="wdi-watk" value="229" style="width:80px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 8px;"></div>';
+  html += '<div><label style="font-size:12px;color:var(--muted);">会心率%</label><input type="number" id="wdi-wcrt" value="0" style="width:80px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 8px;"></div>';
+  html += '<div><label style="font-size:12px;color:var(--muted);">属性值</label><input type="number" id="wdi-wele" value="480" style="width:80px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 8px;"></div>';
+  html += '<div><label style="font-size:12px;color:var(--muted);">锋利度</label><input type="number" id="wdi-wsharp" value="100" style="width:80px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 8px;" disabled></div>';
+  html += '</div>';
+  html += '<div class="section-title">武器词条</div>';
+  html += '<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:14px;">';
+  html += '<div><label style="font-size:12px;color:var(--muted);">选择技能</label><select id="wdi-skill-sel" style="width:160px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 8px;"><option value="">-- 选择技能 --</option></select></div>';
+  html += '<div><label style="font-size:12px;color:var(--muted);">等级</label><input type="number" id="wdi-skill-lv" value="1" min="1" max="5" style="width:60px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 8px;"></div>';
+  html += '<button class="btn btn-sm" onclick="addWeaponAffix()">添加词条</button>';
+  html += '<button class="btn btn-primary" onclick="runWeaponDIY()">🔧 重新计算</button>';
+  html += '<span id="wdi-status" class="muted" style="font-size:12px;"></span>';
+  html += '</div>';
+  html += '<div id="wdi-affix-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;"></div>';
+
+  html += '<div class="section-title">复原强化词条</div>';
+  html += '<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:8px;">';
+  html += '<div><label style="font-size:12px;color:var(--muted);">词条类型</label><select id="wdi-af-type" style="width:100px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 8px;"><option value="attack">攻击</option><option value="critical">会心</option><option value="sharpness">锋利度</option><option value="element">属性</option></select></div>';
+  html += '<div><label style="font-size:12px;color:var(--muted);">等级</label><select id="wdi-af-lv" style="width:80px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 8px;"><option value="1">Lv1</option><option value="2">Lv2</option><option value="3">Lv3</option><option value="4">Lv4</option></select></div>';
+  html += '<button class="btn btn-sm" onclick="addStatAffix()">添加词条</button>';
+  html += '<span class="muted" style="font-size:12px;">最多5条，同类型最多2条</span>';
+  html += '</div>';
+  html += '<div id="wdi-stat-affix-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;"></div>';
+  html += '<div id="wdi-result" style="display:none;margin-bottom:14px;"></div>';
+
   // 1. 伤害总览对比表
-  let html = '<div class="section-title">伤害总览对比</div>';
+  html += '<div class="section-title">伤害总览对比</div>';
   html += '<table class="detail-table compare-table"><thead><tr>' +
     '<th>排名</th><th>方案</th><th>期望伤害</th><th>基线伤害</th><th>会心</th><th>伤害提升</th><th>vs最优</th>' +
   '</tr></thead><tbody>';
@@ -2342,29 +2561,7 @@ function renderCompareResult(details) {
   });
   html += '</tbody></table>';
 
-  // 3e. 各技能等级对比
-  html += '<div style="font-size:12px;font-weight:600;color:var(--accent);margin:10px 0 6px;">各技能等级</div>';
-  const allSkillSet = new Set();
-  details.forEach(d => {
-    const sl = d.detail.final_detail && d.detail.final_detail.skill_levels;
-    if (sl) Object.keys(sl).forEach(s => allSkillSet.add(s));
-  });
-  const allSkillKeys = [...allSkillSet].sort((a, b) => (SKILL_CATEGORIES_ORDER[a]||99) - (SKILL_CATEGORIES_ORDER[b]||99));
-  if (allSkillKeys.length > 0) {
-    html += '<table class="detail-table compare-table"><thead><tr><th>技能</th>';
-    details.forEach(d => { html += '<th>' + esc(d.plan.name) + '</th>'; });
-    html += '</tr></thead><tbody>';
-    allSkillKeys.forEach(sk => {
-      html += '<tr><td>' + esc(sk) + '</td>';
-      details.forEach(d => {
-        const sl = d.detail.final_detail && d.detail.final_detail.skill_levels;
-        const lv = sl ? (sl[sk] || 0) : 0;
-        html += '<td style="text-align:center;font-weight:600;">' + (lv > 0 ? 'Lv' + lv : '—') + '</td>';
-      });
-      html += '</tr>';
-    });
-    html += '</tbody></table>';
-  }
+  // 3e. [已移除] 各技能等级对比（与“各技能独立伤害贡献对比”重复）
 
   // 3f. 状态贡献对比
   html += '<div style="font-size:12px;font-weight:600;color:var(--accent);margin:10px 0 6px;">Top 状态贡献对比</div>';
@@ -2432,6 +2629,220 @@ function renderCompareResult(details) {
   html += '</div>';
 
   area.innerHTML = html;
+  if (typeof populateWeaponAffixSelect === 'function') populateWeaponAffixSelect();
+}
+
+let weaponAffixes = {};
+let statAffixes = [];
+
+function populateWeaponAffixSelect() {
+  const sel = document.getElementById('wdi-skill-sel');
+  if (!sel) return;
+  const skills = Object.keys(SKILL_CAPS || {}).filter(s => SKILL_CAPS[s] > 0).sort((a, b) => a.localeCompare(b, 'zh-CN'));
+  sel.innerHTML = '<option value="">-- 选择技能 --</option>' + skills.map(s => '<option value="' + esc(s) + '">' + esc(s) + ' (上限 ' + SKILL_CAPS[s] + ')</option>').join('');
+}
+
+function addWeaponAffix() {
+  const sel = document.getElementById('wdi-skill-sel');
+  const lvInput = document.getElementById('wdi-skill-lv');
+  if (!sel || !lvInput) return;
+  const skill = sel.value;
+  const lv = parseInt(lvInput.value) || 1;
+  if (!skill) return;
+  const cap = SKILL_CAPS[skill] || 1;
+  weaponAffixes[skill] = Math.min(lv, cap);
+  renderWeaponAffixList();
+}
+
+function removeWeaponAffix(skill) {
+  delete weaponAffixes[skill];
+  renderWeaponAffixList();
+}
+
+function renderWeaponAffixList() {
+  const el = document.getElementById('wdi-affix-list');
+  if (!el) return;
+  const entries = Object.entries(weaponAffixes);
+  if (entries.length === 0) {
+    el.innerHTML = '<span class="muted" style="font-size:12px;">未添加词条</span>';
+    return;
+  }
+  el.innerHTML = entries.map(([k, v]) =>
+    '<span class="chip chip-selected" style="display:inline-flex;align-items:center;gap:4px;">' + esc(k) + ' Lv' + v + ' <span class="chip-x" onclick="removeWeaponAffix(\'' + esc(k) + '\')">✕</span></span>'
+  ).join('');
+}
+
+function getWeaponAffixes() {
+  return { ...weaponAffixes };
+}
+
+function addStatAffix() {
+  const typeSel = document.getElementById('wdi-af-type');
+  const lvSel = document.getElementById('wdi-af-lv');
+  if (!typeSel || !lvSel) return;
+  const type = typeSel.value;
+  const level = parseInt(lvSel.value) || 1;
+
+  const key = type + '_' + level;
+  const counts = {};
+  for (const af of statAffixes) {
+    const k = af.type + '_' + af.level;
+    counts[k] = (counts[k] || 0) + 1;
+  }
+  if ((counts[key] || 0) >= 2) {
+    alert('相同类型和等级的词条最多2条');
+    return;
+  }
+  if (statAffixes.length >= 5) {
+    alert('最多5条词条');
+    return;
+  }
+
+  const maxLv = { attack: 4, critical: 4, sharpness: 2, element: 3 };
+  statAffixes.push({ type, level: Math.min(level, maxLv[type] || 1) });
+  renderStatAffixList();
+}
+
+function removeStatAffix(idx) {
+  statAffixes.splice(idx, 1);
+  renderStatAffixList();
+}
+
+function renderStatAffixList() {
+  const el = document.getElementById('wdi-stat-affix-list');
+  if (!el) return;
+  if (statAffixes.length === 0) {
+    el.innerHTML = '<span class="muted" style="font-size:12px;">未添加词条</span>';
+    return;
+  }
+  const typeLabels = { attack: '攻击', critical: '会心', sharpness: '锋利度', element: '属性' };
+  const valMap = {
+    attack: { 1: '+5', 2: '+6', 3: '+9', 4: '+12' },
+    critical: { 1: '+5', 2: '+6', 3: '+8', 4: '+10' },
+    sharpness: { 1: '+30', 2: '+50' },
+    element: { 1: '+30', 2: '+50', 3: '+80' }
+  };
+  el.innerHTML = statAffixes.map((af, i) =>
+    '<span class="chip chip-selected" style="display:inline-flex;align-items:center;gap:4px;">' + typeLabels[af.type] + ' Lv' + af.level + ' ' + (valMap[af.type][af.level] || '') + ' <span class="chip-x" onclick="removeStatAffix(' + i + ')">✕</span></span>'
+  ).join('');
+}
+
+function getStatAffixes() {
+  return statAffixes;
+}
+
+// ==================== 武器自定义 ====================
+function loadWeaponDIYFromStorage() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('mhw_wdi') || '{}');
+    if (!saved || !saved.wtype) return;
+    const setVal = (id, val) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.value = val;
+    };
+    setVal('wdi-wtype', saved.wtype);
+    setVal('wdi-aug', saved.waug);
+    setVal('wdi-watk', saved.watk);
+    setVal('wdi-wcrt', saved.wcrt);
+    setVal('wdi-wele', saved.wele);
+    setVal('wdi-perm', saved.perm);
+    if (saved.weaponAffixes) {
+      weaponAffixes = saved.weaponAffixes;
+      renderWeaponAffixList();
+    }
+    if (saved.statAffixes) {
+      statAffixes = saved.statAffixes;
+      renderStatAffixList();
+    }
+  } catch (e) {
+    console.error('加载 weapon_diy 设置失败:', e);
+  }
+}
+
+async function runWeaponDIY() {
+  const statusEl = document.getElementById('wdi-status');
+  const resultEl = document.getElementById('wdi-result');
+  if (!window._compareDetails || window._compareDetails.length === 0) {
+    statusEl.textContent = '请先进行方案对比';
+    return;
+  }
+  const watk = parseInt(document.getElementById('wdi-watk').value) || 229;
+  const wcrt = parseInt(document.getElementById('wdi-wcrt').value) || 0;
+  const wele = parseInt(document.getElementById('wdi-wele').value) || 480;
+  const perm = parseInt(document.getElementById('wdi-perm').value) || 11;
+  const wtype = document.getElementById('wdi-wtype').value || '大剑';
+  const waug = document.getElementById('wdi-aug').value || 'none';
+  const statAf = getStatAffixes();
+  statusEl.textContent = '计算中...';
+  resultEl.style.display = 'none';
+  try {
+    const promises = window._compareDetails.map(async (d) => {
+      const r = d.plan.result || {};
+      const fixed = {};
+      const combo = {};
+      if (r.core_skills) {
+        for (const [k, v] of Object.entries(r.core_skills)) {
+          if (isComboSkill(k)) combo[k] = v.level;
+          else fixed[k] = v.level;
+        }
+      }
+      if (r.other_skills) {
+        for (const [k, v] of Object.entries(r.other_skills)) {
+          if (isComboSkill(k)) combo[k] = v.level;
+          else fixed[k] = v.level;
+        }
+      }
+      if (r.series_check) {
+        for (const s of r.series_check) {
+          combo[s.skill] = s.level;
+        }
+      }
+      const res = await API('/api/weapon_diy', {
+        fixed_skills: fixed,
+        combo_skills: combo,
+        weapon_affixes: getWeaponAffixes(),
+        weapon: { base_attack: watk, crit: wcrt, element: wele, perm_atk: perm, weapon_type: wtype, augmentation: waug, affixes: statAf }
+      });
+      return { idx: d.idx, plan: d.plan, detail: res };
+    });
+    const results = await Promise.all(promises);
+    const wdiState = {
+      wtype, waug, watk, wcrt, wele, perm,
+      weaponAffixes: getWeaponAffixes(),
+      statAffixes: getStatAffixes()
+    };
+    localStorage.setItem('mhw_wdi', JSON.stringify(wdiState));
+    statusEl.textContent = '计算完成';
+    let rhtml = '<div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px;">自定义武器结果 (' + wtype + ' | 激化:' + waug + ' | 攻击:' + watk + ' 会心:' + wcrt + '% 属性:' + wele + ')</div>';
+    rhtml += '<table class="detail-table compare-table"><thead><tr><th>方案</th><th>期望伤害</th><th>基线伤害</th><th>会心</th><th>伤害提升</th></tr></thead><tbody>';
+    results.sort((a, b) => (b.detail.final_dmg || 0) - (a.detail.final_dmg || 0));
+    results.forEach((r, i) => {
+      const det = r.detail;
+      const finalDmg = det.final_dmg || 0;
+      const baseDmg = det.baseline_dmg || 0;
+      const wcr = det.final_wcr || 0;
+      const inc = det.dmg_increase || 0;
+      const pct = det.dmg_increase_pct || 0;
+      const isBest = i === 0;
+      rhtml += '<tr' + (isBest ? ' class="best-row"' : '') + '>' +
+        '<td>' + esc(r.plan.name) + '</td>' +
+        '<td style="color:var(--accent2);font-weight:700;">' + finalDmg.toFixed(1) + '</td>' +
+        '<td>' + baseDmg.toFixed(1) + '</td>' +
+        '<td>' + wcr.toFixed(1) + '%</td>' +
+        '<td>+' + inc.toFixed(1) + ' (' + pct + '%)</td>' +
+      '</tr>';
+    });
+    rhtml += '</tbody></table>';
+    if (results.length > 0 && results[0].detail.weapon_stats) {
+      const ws = results[0].detail.weapon_stats;
+      rhtml += '<div style="font-size:12px;color:var(--muted);margin-top:8px;">计算后武器面板: 攻击:' + ws.atk + ' 会心:' + ws.crt + '% 属性:' + ws.ele + ' 锋利度:' + ws.sharp + '</div>';
+    }
+    resultEl.innerHTML = rhtml;
+    resultEl.style.display = 'block';
+  } catch (e) {
+    statusEl.textContent = '计算出错: ' + e.message;
+  }
 }
 
 // ==================== 追加查询 ====================
@@ -2460,7 +2871,7 @@ async function runExtraQuery() {
   const params = {
     fixed_skills: fixed, combo_skills: combo,
     weapon_slots: weaponSlotLevels.slice(),
-    min_rem_armor: parseInt(document.getElementById('min-rem-armor')?.value || '0'),
+    min_rem_armor: getReserveSlots().armorTotal, min_rem_weapon: getReserveSlots().weaponTotal,
     mode: extraMode,
     favorite_skills: [...favSkills].filter(s => !disabledSkills.has(s)),
     disabled_skills: [...disabledSkills]
@@ -2571,11 +2982,13 @@ function setExtraMode(mode) {
 function renderExtraSection() {
   if (!extraQueryResult) return;
   const r = extraQueryResult;
+  const si = r.slot_info || {};
+  const sm = r.slot_max || {};
   document.getElementById('baseline-box').innerHTML =
     '<div class="bi"><span class="k">基线伤害:</span> <span class="v">' + (r.baseline_dmg || 0) + '</span></div>' +
     '<div class="bi"><span class="k">基线会心:</span> <span class="v">' + (r.baseline_wcr || 0) + '%</span></div>' +
-    '<div class="bi"><span class="k">孔位 Lv1/Lv2/Lv3:</span> <span class="v">' +
-      (r.slot_info && r.slot_info.Lv1) + '/' + (r.slot_info && r.slot_info.Lv2) + '/' + (r.slot_info && r.slot_info.Lv3) + '</span></div>';
+    '<div class="bi"><span class="k">防具孔:</span> <span class="v">Lv1 ' + (si.Lv1||0) + '/6 · Lv2 ' + (si.Lv2||0) + '/6 · Lv3 ' + (si.Lv3||0) + '/6</span></div>' +
+    '<div class="bi"><span class="k">武器孔:</span> <span class="v">Lv1 ' + (sm.Lv1||0) + '/6 · Lv2 ' + (sm.Lv2||0) + '/6 · Lv3 ' + (sm.Lv3||0) + '/6</span></div>';
   renderExtraSkills();
   renderAppendBar();
 }

@@ -29,7 +29,11 @@
 ## 架构
 
 ### 后端
-- `gui_server.py`: HTTP服务器，端口8765，处理API请求
+- `gui_server.py`: HTTP服务器，端口8766，处理API请求
+- 运行指令（在项目根目录终端执行）:
+  - 默认端口: `python gui_server.py`
+  - 指定端口: `python gui_server.py 8766`
+  - 访问地址: http://localhost:8766
 - `fast_search_v3.py`: DFS搜索引擎，位掩码+向量化优化
 - `calc_v8_final.py`: 伤害计算模块（import耗时约43秒，正常现象）
 - 数据文件: `decos_cn.json`(珠子), `armors_cn.json`(防具), `my_charms.json`(护石), `charms_cn.json`(可 craft 护石), `skills_data.json`(技能数据)
@@ -188,20 +192,6 @@
 5. ✅ 预留孔位 min_rem_armor=3: 方案剩余防具孔 [1,1,1] 总和=3 生效
 6. ✅ node --check index.html 内嵌 JS 语法通过
 
-## 2026-08-03 工作进度
-
-### 已完成
-1. **技能组管理增强**：替换下拉框为列表，支持重命名（行内编辑）、上移/下移排序、删除
-2. **追加查询搜索修正**：`appendAndSearch()` 改为调用 `runExtraQuery()` 而非 `runSearch()`，保持在追加模式内
-3. **已保存方案再次查询**：`loadSavedPlan()` 增加再次查询区域，默认包含全部已激活技能（系列/组合技能仅含 `ok: true`），点击 chip 可取消，支持重置
-4. **乘区显示优化**：参数名改为中文（霸主乘区、巨戟乘区、因祸得福期望、攻守发动），数值为1时自动隐藏
-5. **术语规范化**：明确"套装技能" = 系列技能 + 组合技能（NO_DECO_SK）
-
-### 待验证
-- 技能组管理 UI 交互（编辑、移动、删除）
-- 已保存方案再次查询功能
-- 追加并重新搜索切换为追加查询模式
-
 ### 优化内容
 1. **calc_damage / calc_weighted_crit 缓存**：添加 `@functools.lru_cache(maxsize=8192)`，将技能dict转为sorted tuple作为cache key。实测缓存命中时1.4M calls/s，未命中时673K calls/s，大幅减少DFS中的重复计算。
 2. **移除死代码**：fast_search_v3.py 第1735-1736行存在被第1737行覆盖的冗余slot计数代码，已清理。
@@ -211,3 +201,74 @@
 - calc_damage 缓存命中: ~1,400,000 calls/s
 - calc_damage 缓存未命中: ~670,000 calls/s
 - 单方案搜索（6方案全搜）: ~5.7s（含详细伤害计算输出）
+
+## 2026-08-03 工作进度
+
+### 已完成
+1. **技能组管理增强**：替换下拉框为列表，支持重命名（行内编辑）、上移/下移排序、删除
+2. **追加查询搜索修正**：`appendAndSearch()` 改为调用 `runExtraQuery()` 而非 `runSearch()`，保持在追加模式内
+3. **已保存方案再次查询**：`loadSavedPlan()` 增加再次查询区域，默认包含全部已激活技能（系列/组合技能仅含 `ok: true`），点击 chip 可取消，支持重置
+4. **乘区显示优化**：参数名改为中文（霸主乘区、巨戟乘区、因祸得福期望、攻守发动），数值为1时自动隐藏
+5. **术语规范化**：明确"套装技能" = 系列技能 + 组合技能（NO_DECO_SK）
+6. **技能组背景框**：`.skill-group-item` 添加背景、边框、圆角样式
+7. **预留孔位UI重写**：从搜索区移除 `min-rem-armor`，改在技能选择区底部显示防具/武器孔位预留（Lv1/Lv2/Lv3 各 0-6 个）。后端新增 `min_rem_weapon` 参数，`fill_slots` 和 `_check_deco_feasible` 增加武器孔最小保留检查
+8. **武器技能显示修复**：
+   - `_plan_result_to_dict` 返回 `weapon_skill` 字段
+   - `renderResultCard` 新增武器技能卡片
+   - 套装技能显示增加武器贡献 breakdown（如 `1防+1武/4件`）
+9. **剩余孔位显示改为数量制**：显示孔位个数及各级别分布（如 `4个 (Lv1×2 Lv2×1 Lv3×1)`）
+10. **自动匹配武器技能等级修复**：`dfs_search_auto_weapon` 返回 `(results, skill_name, skill_lv)` 三元组，`_handle_custom_search` 使用正确等级而非硬编码 +1
+
+### 待验证
+- 技能组管理 UI 交互（编辑、移动、删除）
+- 已保存方案再次查询功能
+- 追加并重新搜索切换为追加查询模式
+- 预留孔位新 UI 及后端 weapon 保留逻辑
+- 武器技能显示及套装技能 breakdown
+
+### 2026-08-03 晚间修复（第三轮）
+1. **系列技能显示简化**：移除武器贡献显示，只显示防具件数（如 `2件/4件` 而非 `1防+1武/4件`）
+2. **剩余孔位零级隐藏**：`remainingHTML` 中只显示数量 > 0 的孔位等级（如 `Lv1×3 Lv2×1`，不显示 `Lv3×0`）
+3. **系列技能 UI 优化**：`.chip-series-inactive` 文字颜色改为 `#c0c7d2`，灰度降低到 0.2，保持文字清晰可读；激活状态保持 `chip-selected` 蓝色边框高亮
+4. **技能组加载后 focus 修复**：`loadSkillGroup()` 末尾调用 `document.activeElement?.blur()`，解决加载技能组后 select 无法打开的问题
+5. **武器技能显示过滤**：`_plan_result_to_dict` 中 `weapon_skill_info` 只保留 `NO_DECO_SK` 技能，避免显示 利刃、格挡性能 等非套装技能
+
+### 2026-08-03 晚间修复（第四轮）
+6. **系列技能激活状态修复**：`_plan_result_to_dict` 中 `need_p` 计算改为 `4 if v >= 4 else (3 if k in GROUP_SK else 2)`，与后端搜索逻辑一致；`series_actual` 改为仅统计防具件数（排除护石）
+7. **追加模式孔位显示增强**：基线框显示防具孔/武器孔各级别数量，上限6个
+8. **方案对比面板武器自定义**：新增武器 DIY 区域（基础攻击/会心率/属性值/常驻攻击），支持点击"重新计算"更新伤害；新增 `/api/weapon_diy` 后端接口，线程安全地临时修改武器参数并计算伤害
+9. **移除方案对比"各技能等级"表格**：与"各技能独立伤害贡献对比"重复，已删除
+
+### 2026-08-03 晚间修复（第五轮）
+10. **武器技能区完全不显示修复**：移除前端 `weaponSkillHTML` 中对 `core_skills/other_skills` 的过滤逻辑，恢复显示所有 weapon_skill；在 `renderResultCard` 模板中插入 `weaponSkillCard` 独立卡片区域
+11. **系列技能激活状态修复**：`series_actual` 改为统计防具 + 护石的系列技能件数，与后端 `verify_series` 逻辑一致
+12. **武器自定义激化系统**：
+    - 新增武器类型选择（12种武器）
+    - 新增激化类型选择（无/攻击激化/会心激化/属性激化）
+    - 激化效果按武器类型区分：普通武器（攻击+10/-15会心/会心+10/-10攻击/-10锋利度/-属性/属性+X）；笛子/铳枪特殊（攻击+3/会心+2/属性+8）
+    - 属性激化各武器加成：大剑+5、太刀+5、片手+4、双刀+3、大锤+4、长枪+5、斩斧+4、盾斧+5、虫棍+4、弓+3
+    - 后端 `/api/weapon_diy` 支持 `weapon_type`、`augmentation`、`affixes` 参数
+13. **武器自定义复原强化词条**：
+    - 新增词条类型选择（攻击/会心/锋利度/属性）
+    - 等级限制：攻击Lv1-4(+5/+6/+9/+12)、会心Lv1-4(+5/+6/+8/+10)、锋利度Lv1-2(+30/+50)、属性Lv1-3(+30/+50/+80)
+    - 限制规则：最多5条词条，同类型最多2条
+    - 锋利度为显示用属性，不参与伤害计算
+ 14. **武器面板计算后展示**：weapon_diy 返回 `weapon_stats` 包含 atk/crt/ele/sharp，前端结果区显示计算后武器面板
+
+### 2026-08-03 晚间修复（第六轮）
+ 15. **武器技能数量限制修复**：
+     - 前端 `runSearch` 新增 `weapon_series_skill` 和 `weapon_combo_skill` 参数，明确告诉后端哪个技能装备在武器上
+     - 后端 `_handle_custom_search` 使用这两个参数填充 `weapon_skills_dict`，不再把 combo_skills 中的所有技能都当作武器技能
+     - 武器最多出 1 个系列技能 + 1 个组合技能，符合游戏机制
+ 16. **系列技能件数显示修复**：前端方案卡片中系列技能显示改用 `actual_pieces`（防具+护石+武器），不再只用 `armor_pieces`
+ 17. **weapon_diy 记忆功能**：使用 `localStorage` 记忆上一次的 weapon_diy 设置（武器类型、激化、基础属性、词条等），刷新页面后自动恢复
+ 18. **自动插珠算法优化**：`fill_slots` 中 armor_fixed 填充从按技能逐个贪心改为全局贪心，每次迭代评估所有 `(孔位, 珠子)` 组合对所有赤字技能的总收益
+
+### 2026-08-03 晚间修复（第七轮）
+ 19. **系列/组合技能显示统一**：
+     - 技能选择区保持等级显示（每个等级=2件装备）
+     - 方案技能区改为件数显示：系列技能显示为 `LvX/Y件`（X=当前等级，Y=需要件数），组合技能显示为 `?/3件`
+     - 激活状态用蓝色高亮（`chip-selected`），未激活用灰色虚线（`chip-series-inactive`）
+ 20. **weapon_skills_dict 等级来源修复**：`gui_server.py:548-553` 武器技能等级改为从 `combo_skills` 取，不再错误地从 `fixed_skills` 取
+ 21. **detail_calc 支持 weapon_diy 参数**：`_handle_detail_calc` 新增 weapon 参数处理（激化、词条、属性修正），方案对比面板数值可跟随 weapon_diy 自定义参数变动
+ 22. **前端 runCompare 传递 weapon_diy**：`runCompare` 中通过 `getWeaponDIYParams()` 读取 weapon_diy 设置并传递给 `/api/detail_calc`

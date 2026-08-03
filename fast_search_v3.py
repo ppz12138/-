@@ -544,7 +544,7 @@ def _fill_weapon_slots_smart(fs, w_slots, fixed_skills):
     _fill_weapon_cache[cache_key] = None
     return None
 
-def fill_slots(skills, a_slots, w_slots, fixed_skills, min_keep_armor=0):
+def fill_slots(skills, a_slots, w_slots, fixed_skills, min_keep_armor=0, min_keep_weapon=0):
     fs = dict(skills); used = []
     a = sorted([s for s in a_slots if s > 0])
     w = sorted([s for s in w_slots if s > 0], reverse=True)
@@ -562,45 +562,49 @@ def fill_slots(skills, a_slots, w_slots, fixed_skills, min_keep_armor=0):
         return None
     fs, w_used, rem_w = w_result
     used.extend(w_used)
+    pool_a = _get_deco_pool('armor')
     armor_fixed = {s: r for s, r in fixed_skills.items()
                    if s not in WEAPON_SK and not (s.startswith('Lv') and s.endswith('插槽'))
                    and s not in NO_DECO_SK
                    and fs.get(s, 0) < r}
-    for sk_need, need_lv in armor_fixed.items():
-        dtype = 'armor'
-        _skill_decos = _get_armor_deco_for_skill(sk_need)
-        while fs.get(sk_need, 0) < need_lv:
-            placed = False
-            best = None
+    if armor_fixed:
+        deficit = {}
+        for sk, need in armor_fixed.items():
+            d = need - fs.get(sk, 0)
+            if d > 0:
+                deficit[sk] = d
+        while deficit:
+            best_placement = None
             best_score = -1
-            for i, s in enumerate(a):
-                for deco in _skill_decos:
-                    if deco['slot'] > s: continue
-                    pts_for_need = 0
+            for si, s in enumerate(a):
+                if s <= 0:
+                    continue
+                for deco in pool_a:
+                    if deco['slot'] > s:
+                        continue
+                    total_gain = 0
+                    bonus = 0
                     for sk, pts in deco['skills']:
-                        if sk == sk_need:
-                            pts_for_need = pts
-                            break
-                    g = gain(sk_need, fs.get(sk_need, 0), pts_for_need)
-                    if g > 0:
-                        bonus = 0
-                        for sk, pts in deco['skills']:
-                            if sk != sk_need and sk in fixed_skills:
-                                if fs.get(sk, 0) < fixed_skills[sk]:
-                                    bonus += gain(sk, fs.get(sk, 0), pts)
-                        score = g * 100 + bonus
+                        if sk in deficit:
+                            total_gain += min(pts, deficit[sk])
+                        if sk in fixed_skills and fs.get(sk, 0) < fixed_skills.get(sk, 0):
+                            bonus += gain(sk, fs.get(sk, 0), pts)
+                    if total_gain > 0:
+                        score = total_gain * 100 + bonus
                         if score > best_score:
                             best_score = score
-                            best = (deco, i)
-            if best:
-                deco, idx = best
-                a.pop(idx)
-                for sk, pts in deco['skills']:
-                    fs[sk] = min(fs.get(sk, 0) + pts, SKILL_CAPS.get(sk, 99))
-                used.append(deco['name']); placed = True
-            if not placed: break
-        if fs.get(sk_need, 0) < need_lv:
-            return None
+                            best_placement = (deco, si)
+            if best_placement is None:
+                break
+            deco, idx = best_placement
+            a.pop(idx)
+            for sk, pts in deco['skills']:
+                fs[sk] = min(fs.get(sk, 0) + pts, SKILL_CAPS.get(sk, 99))
+                if sk in deficit:
+                    deficit[sk] = max(0, deficit[sk] - min(pts, deficit[sk]))
+                    if deficit[sk] <= 0:
+                        del deficit[sk]
+            used.append(deco['name'])
     for s, r in fixed_skills.items():
         if s.startswith('Lv') and s.endswith('插槽'):
             continue
@@ -620,10 +624,9 @@ def fill_slots(skills, a_slots, w_slots, fixed_skills, min_keep_armor=0):
                     if g_total > 0 and p_score > 0:
                         w_rem.pop(i)
                         for sk, pts in deco['skills']:
-                            fs[sk] = min(fs.get(sk, 0) + pts, SKILL_CAPS.get(sk, 99))
+                             fs[sk] = min(fs.get(sk, 0) + pts, SKILL_CAPS.get(sk, 99))
                         used.append(deco['name'])
                         break
-    pool_a = _get_deco_pool('armor')
     min_keep = max(min_keep_armor, total_slot_keep)
     if not _FEASIBILITY_ONLY:
         while len(a) > min_keep:
@@ -640,6 +643,9 @@ def fill_slots(skills, a_slots, w_slots, fixed_skills, min_keep_armor=0):
             for sk, pts in best_d['skills']:
                 fs[sk] = min(fs.get(sk, 0) + pts, SKILL_CAPS.get(sk, 99))
             used.append(best_d['name'])
+    if min_keep_weapon > 0:
+        if sum(1 for s in w_rem if s > 0) < min_keep_weapon:
+            return None
     all_rem = a + w_rem
     for n, need_cnt in slot_skill_needs.items():
         avail = sum(1 for s in all_rem if s >= n)
@@ -676,7 +682,7 @@ def can_fill_gap(skill_gap, a_slots, w_slots):
 
 # ==================== 珠子可行性检查 ====================
 def _check_deco_feasible(skills, a_slots, w_slots, fixed_skills, combo_skills,
-                         weapon_skills, min_rem_armor):
+                         weapon_skills, min_rem_armor, min_rem_weapon=0):
     a_cnt = {1:0, 2:0, 3:0}
     for s in a_slots:
         if s > 0: a_cnt[s] = a_cnt[s] + 1
@@ -689,6 +695,13 @@ def _check_deco_feasible(skills, a_slots, w_slots, fixed_skills, combo_skills,
             a_cnt[lv] -= 1
             rem -= 1
     if rem > 0:
+        return False
+    rem_w = min_rem_weapon
+    for lv in [1, 2, 3]:
+        while rem_w > 0 and w_cnt[lv] > 0:
+            w_cnt[lv] -= 1
+            rem_w -= 1
+    if rem_w > 0:
         return False
     for sk, lv in fixed_skills.items():
         if sk.startswith('Lv') and sk.endswith('插槽'):
@@ -993,7 +1006,8 @@ def _build_candidates(charm_pool, fixed_skills, combo_skills, quiet=False, extra
 
 # ==================== 向量化DFS搜索 ====================
 def dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
-               max_results=0, timeout_s=10.0, quiet=False, cached_ctx=None):
+               max_results=0, timeout_s=10.0, quiet=False, cached_ctx=None,
+               min_rem_weapon=0):
     """DFS回溯搜索（向量化优化版 v3）
 
     核心优化（参照网页配装器策略）：
@@ -1372,9 +1386,9 @@ def dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
                     _w_s = _base_w + _ch_wslots if _ch_wslots else _base_w
 
                     if not _check_deco_feasible(_cur, _a_s, _w_s, _merged_fixed, {},
-                                                weapon_skills, min_rem_armor):
+                                                weapon_skills, min_rem_armor, min_rem_weapon):
                         continue
-                    filled = fill_slots(_cur, _a_s, _w_s, _merged_fixed, min_keep_armor=min_rem_armor)
+                    filled = fill_slots(_cur, _a_s, _w_s, _merged_fixed, min_keep_armor=min_rem_armor, min_keep_weapon=min_rem_weapon)
                     if filled is None:
                         continue
                     fs, used, rem_a, rem_w = filled
@@ -1625,9 +1639,9 @@ def dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
         # 快速可行性检查（避免无效的fill_slots调用）
         # merged_fixed已包含combo_skills的武器技能需求，传空combo避免重复计算
         if not _check_deco_feasible(cur_skills, a_s, w_s, merged_fixed, {},
-                                    weapon_skills, min_rem_armor):
+                                    weapon_skills, min_rem_armor, min_rem_weapon):
             return False
-        filled = fill_slots(cur_skills, a_s, w_s, merged_fixed, min_keep_armor=min_rem_armor)
+        filled = fill_slots(cur_skills, a_s, w_s, merged_fixed, min_keep_armor=min_rem_armor, min_keep_weapon=min_rem_weapon)
         if filled is None:
             return False
         fs, used, rem_a, rem_w = filled
@@ -2063,7 +2077,8 @@ def dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
 
 def dfs_search_auto_weapon(charm_pool, fixed_skills, combo_skills, min_rem_armor,
                            max_results=5, timeout_s=10.0, quiet=True,
-                           disabled_weapon_skills=None, total_timeout=30.0):
+                           disabled_weapon_skills=None, total_timeout=30.0,
+                           min_rem_weapon=0):
     """武器技能自动匹配最优：当用户未指定系列/组合技能时，
     遍历所有可用的系列+组合技能作为武器技能，挑选伤害最高的方案。
 
@@ -2074,8 +2089,9 @@ def dfs_search_auto_weapon(charm_pool, fixed_skills, combo_skills, min_rem_armor
     has_user_weapon = any(s in NO_DECO_SK for s in (combo_skills or {}))
     if has_user_weapon:
         results = dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
-                             max_results=max_results, timeout_s=timeout_s, quiet=quiet)
-        return results, None
+                             max_results=max_results, timeout_s=timeout_s, quiet=quiet,
+                             min_rem_weapon=min_rem_weapon)
+        return results, None, None
 
     # 收集候选武器技能：系列技能 + 组合技能，排除被禁用的
     disabled = disabled_weapon_skills or set()
@@ -2092,8 +2108,9 @@ def dfs_search_auto_weapon(charm_pool, fixed_skills, combo_skills, min_rem_armor
     if not candidates_ws:
         # 没有可用武器技能，走普通搜索
         results = dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
-                             max_results=max_results, timeout_s=timeout_s, quiet=quiet)
-        return results, None
+                             max_results=max_results, timeout_s=timeout_s, quiet=quiet,
+                             min_rem_weapon=min_rem_weapon)
+        return results, None, None
 
     if not quiet:
         print(f"  自动匹配武器技能: 候选{len(candidates_ws)}个")
@@ -2114,7 +2131,8 @@ def dfs_search_auto_weapon(charm_pool, fixed_skills, combo_skills, min_rem_armor
         new_combo[ws_name] = ws_lv
         try:
             results = dfs_search(charm_pool, fixed_skills, new_combo, min_rem_armor,
-                                 max_results=1, timeout_s=timeout_s, quiet=quiet)
+                                 max_results=1, timeout_s=timeout_s, quiet=quiet,
+                                 min_rem_weapon=min_rem_weapon)
         except Exception:
             results = []
         if not results:
@@ -2131,15 +2149,17 @@ def dfs_search_auto_weapon(charm_pool, fixed_skills, combo_skills, min_rem_armor
     if not best_results:
         # 所有武器技能都搜不到方案，回退到无武器技能搜索
         results = dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
-                             max_results=max_results, timeout_s=timeout_s, quiet=quiet)
-        return results, None
+                             max_results=max_results, timeout_s=timeout_s, quiet=quiet,
+                             min_rem_weapon=min_rem_weapon)
+        return results, None, None
 
     # 用最优武器技能重新搜索，返回完整结果数
     best_combo = dict(combo_skills) if combo_skills else {}
     best_combo[best_weapon_skill] = best_weapon_lv
     try:
         best_results = dfs_search(charm_pool, fixed_skills, best_combo, min_rem_armor,
-                                  max_results=max_results, timeout_s=timeout_s, quiet=quiet)
+                                  max_results=max_results, timeout_s=timeout_s, quiet=quiet,
+                                  min_rem_weapon=min_rem_weapon)
     except Exception:
         best_results = [per_skill_best[best_weapon_skill][2]]
 
@@ -2153,7 +2173,7 @@ def dfs_search_auto_weapon(charm_pool, fixed_skills, combo_skills, min_rem_armor
 
     if not quiet:
         print(f"  自动匹配最优武器技能: {best_weapon_skill} Lv{best_weapon_lv} (伤害{best_dmg:.1f})，返回{len(best_results)}方案")
-    return best_results, best_weapon_skill
+    return best_results, best_weapon_skill, best_weapon_lv
 
 
 def _quick_skill_upper_bound(sk, cached_ctx, wslots):
@@ -2197,7 +2217,7 @@ def _quick_skill_upper_bound(sk, cached_ctx, wslots):
 
 
 # ==================== 追加技能查询（v3优化版）====================
-def query_extra_stream(fixed_skills, combo_skills, min_rem_armor, charm_pool, mode='normal', fav_skills=None, dis_skills=None):
+def query_extra_stream(fixed_skills, combo_skills, min_rem_armor, charm_pool, mode='normal', fav_skills=None, dis_skills=None, min_rem_weapon=0):
     """逐技能扫描生成器：流式 yield 进度，避免长查询被代理超时切断。
 
     yield 顺序：
@@ -2297,7 +2317,7 @@ def query_extra_stream(fixed_skills, combo_skills, min_rem_armor, charm_pool, mo
     # 基线搜索
     t0_base = time.time()
     base_res = dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
-                          max_results=1, quiet=True, timeout_s=5.0)
+                          max_results=1, quiet=True, timeout_s=5.0, min_rem_weapon=min_rem_weapon)
     base_dt = time.time() - t0_base
     slot_info = {'Lv1': 0, 'Lv2': 0, 'Lv3': 0}
     if base_res:
@@ -2330,10 +2350,9 @@ def query_extra_stream(fixed_skills, combo_skills, min_rem_armor, charm_pool, mo
     else:
         dfs_timeout = 1.0
 
-    # 孔位信息：直接报告基线方案的剩余孔位（跳过耗时的二分最大化）
-    # 如需孔位最大化，可在外部单独调用
-    slot_max = {'Lv1': slot_info['Lv1'], 'Lv2': slot_info['Lv2'], 'Lv3': slot_info['Lv3']}
-    print(f"  [孔位] 基线剩余: Lv1x{slot_max['Lv1']} Lv2x{slot_max['Lv2']} Lv3x{slot_max['Lv3']}")
+    # 孔位信息：基线剩余 + 理论上限(6)
+    slot_max = {'Lv1': 6, 'Lv2': 6, 'Lv3': 6}
+    print(f"  [孔位] 基线剩余: Lv1x{slot_info['Lv1']} Lv2x{slot_info['Lv2']} Lv3x{slot_info['Lv3']} (上限6)")
 
     skill_max = {}
     total = len(final_output) + len(under_max)
@@ -2360,7 +2379,8 @@ def query_extra_stream(fixed_skills, combo_skills, min_rem_armor, charm_pool, mo
             test_fixed = dict(fixed_skills)
             test_fixed[sk] = lv
             res = dfs_search(charm_pool, test_fixed, combo_skills, min_rem_armor,
-                             max_results=1, quiet=True, timeout_s=0.5, cached_ctx=cached_ctx)
+                             max_results=1, quiet=True, timeout_s=0.5, cached_ctx=cached_ctx,
+                             min_rem_weapon=min_rem_weapon)
             if res:
                 best = lv
                 break
@@ -2403,7 +2423,8 @@ def query_extra_stream(fixed_skills, combo_skills, min_rem_armor, charm_pool, mo
                     test_fixed[sk] = lv
                     # 优化：现在可以使用cached_ctx（已包含所有系列技能名）
                     res = dfs_search(charm_pool, test_fixed, combo_skills, min_rem_armor,
-                                     max_results=1, quiet=True, timeout_s=0.05, cached_ctx=cached_ctx)
+                                     max_results=1, quiet=True, timeout_s=0.05, cached_ctx=cached_ctx,
+                                     min_rem_weapon=min_rem_weapon)
                     if res:
                         best = lv
                         break
@@ -2450,7 +2471,8 @@ def query_extra_stream(fixed_skills, combo_skills, min_rem_armor, charm_pool, mo
                 if sk == '会心击【特殊】':
                     print(f"  [DEBUG] Binary search {sk}: trying Lv{mid}, lo={lo}, hi={hi}")
                 res = dfs_search(charm_pool, test_fixed, combo_skills, min_rem_armor,
-                                 max_results=1, quiet=True, timeout_s=dfs_timeout, cached_ctx=cached_ctx)
+                                 max_results=1, quiet=True, timeout_s=dfs_timeout, cached_ctx=cached_ctx,
+                                 min_rem_weapon=min_rem_weapon)
                 if sk == '会心击【特殊】':
                     print(f"  [DEBUG] Binary search {sk}: Lv{mid} -> {len(res)} results")
                 if res:

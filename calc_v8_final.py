@@ -480,29 +480,29 @@ def print_summary(results, extra_name, base_fixed):
               f"{flex_show:<28} {t_used:>6.2f}s")
     return total_dmg
 
+def print_results_detail(results, extra_fixed_skill):
+    """打印每个有解方案的详情"""
+    for cfg in PLAN_CFGS:
+        label, weapon_sk, extra_fixed = cfg
+        best, t_used, att, verc, sch_t = results[label]
+        if not best:
+            continue
+        merged_extra = dict(extra_fixed)
+        merged_extra.update(extra_fixed_skill)
+        merged_cfg = (label, weapon_sk, merged_extra)
+        cfg_d = best['_cfg']
+        print(f"\n{'='*90}")
+        print(f"[ {label} ]  武器技能: {weapon_sk}  额外强制: {extra_fixed}")
+        print(f"{'='*90}")
+        print(f"  最优: {cfg_d['core_src']}  防性{cfg_d['guard_lv']}  伤害={best['pract']:.1f}")
+        print(f"  (尝试{att}次, 验证通过{verc}个, 搜索{sch_t:.2f}s, 总{t_used:.2f}s)")
+        print_detail(best, merged_cfg)
+
+
 if __name__ == '__main__':
     print("="*90)
     print("固定技能组对比：巨戟4 vs 霸主3")
     print("="*90)
-
-    def print_results_detail(results, extra_fixed_skill):
-        """打印每个有解方案的详情"""
-        for cfg in PLAN_CFGS:
-            label, weapon_sk, extra_fixed = cfg
-            best, t_used, att, verc, sch_t = results[label]
-            if not best:
-                continue
-            merged_extra = dict(extra_fixed)
-            merged_extra.update(extra_fixed_skill)
-            merged_cfg = (label, weapon_sk, merged_extra)
-            cfg_d = best['_cfg']
-            print(f"\n{'='*90}")
-            print(f"[ {label} ]  武器技能: {weapon_sk}  额外强制: {extra_fixed}")
-            print(f"{'='*90}")
-            print(f"  最优: {cfg_d['core_src']}  防性{cfg_d['guard_lv']}  伤害={best['pract']:.1f}")
-            print(f"  (尝试{att}次, 验证通过{verc}个, 搜索{sch_t:.2f}s, 总{t_used:.2f}s)")
-            print_detail(best, merged_cfg)
-
 
     # 方案A：固定巨戟龙的默示录4
     print("\n" + "="*90)

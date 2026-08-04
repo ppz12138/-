@@ -1277,9 +1277,11 @@ function isComboSkill(skill) {
 
 // ==================== 武器技能选择 ====================
 function showSeriesEffects() {
+  console.log('[Series] showSeriesEffects called, selectedSeriesSkill:', selectedSeriesSkill);
   if (!selectedSeriesSkill || selectedSeriesSkill === '__disabled__') return;
   const el = document.getElementById('series-skill-effects');
   const info = getSeriesEffectName(selectedSeriesSkill);
+  console.log('[Series] getSeriesEffectName in showSeriesEffects:', info);
   if (!info || !el) return;
   const curPieces = selectedSeriesLevel || 2;
   el.innerHTML = '<button class="effect-btn ' + (curPieces===2?'active':'') + '" onclick="selectSeriesEffect(\'' + esc(selectedSeriesSkill) + '\', 2)">' + esc(info.effectI) + ' (2件)</button>' +
@@ -1340,9 +1342,11 @@ function clearComboSkill() {
 }
 
 function onSeriesSkillChange() {
+  console.log('[Series] onSeriesSkillChange called, value:', document.getElementById('series-skill-select').value);
   const sel = document.getElementById('series-skill-select');
   const name = sel.value;
   const effectsEl = document.getElementById('series-skill-effects');
+  console.log('[Series] name:', name, 'SKILLS_DATA loaded:', !!SKILLS_DATA, 'has 系列技能:', !!(SKILLS_DATA && SKILLS_DATA['系列技能']));
   if (name === '__disabled__') {
     selectedSeriesSkill = '__disabled__';
     selectedSeriesLevel = 0;
@@ -1350,11 +1354,14 @@ function onSeriesSkillChange() {
     renderWeaponSkillBoxes();
   } else if (name) {
     const info = getSeriesEffectName(name);
+    console.log('[Series] getSeriesEffectName result:', info);
     if (info && effectsEl) {
       effectsEl.innerHTML = '<button class="effect-btn" onclick="selectSeriesEffect(\'' + esc(name) + '\', 2)">' + esc(info.effectI) + ' (2件)</button>' +
         '<button class="effect-btn" onclick="selectSeriesEffect(\'' + esc(name) + '\', 4)">' + esc(info.effectII) + ' (4件)</button>';
       effectsEl.style.display = 'flex';
+      console.log('[Series] showing effect buttons');
     } else {
+      console.log('[Series] fallback to selectSeriesSkill');
       selectSeriesSkill(name, 2);
     }
   } else {
@@ -1387,6 +1394,7 @@ function onComboSkillChange() {
 }
 
 function selectSeriesEffect(name, pieces) {
+  console.log('[Series] selectSeriesEffect called, name:', name, 'pieces:', pieces);
   selectedSeriesSkill = name;
   selectedSeriesLevel = pieces;
   const effectsEl = document.getElementById('series-skill-effects');

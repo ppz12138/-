@@ -1782,6 +1782,16 @@ function renderResultCard(r, idx) {
     }
   }
 
+  // 将武器技能也纳入方案技能区展示
+  if (r.weapon_skill) {
+    for (const [sk, lv] of Object.entries(r.weapon_skill)) {
+      if (!(sk in allSkills)) {
+        const cap = SKILL_CAPS[sk] || 1;
+        allSkills[sk] = { level: Math.min(lv || 0, cap), cap: cap };
+      }
+    }
+  }
+
   // 排序：收藏置顶 + 按分类中出现顺序
   const selKeys = Object.keys(selectedSkills);
   const weaponSel = [];

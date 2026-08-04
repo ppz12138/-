@@ -480,76 +480,77 @@ def print_summary(results, extra_name, base_fixed):
               f"{flex_show:<28} {t_used:>6.2f}s")
     return total_dmg
 
-print("="*90)
-print("固定技能组对比：巨戟4 vs 霸主3")
-print("="*90)
-
-def print_results_detail(results, extra_fixed_skill):
-    """打印每个有解方案的详情"""
-    for cfg in PLAN_CFGS:
-        label, weapon_sk, extra_fixed = cfg
-        best, t_used, att, verc, sch_t = results[label]
-        if not best:
-            continue
-        merged_extra = dict(extra_fixed)
-        merged_extra.update(extra_fixed_skill)
-        merged_cfg = (label, weapon_sk, merged_extra)
-        cfg_d = best['_cfg']
-        print(f"\n{'='*90}")
-        print(f"[ {label} ]  武器技能: {weapon_sk}  额外强制: {extra_fixed}")
-        print(f"{'='*90}")
-        print(f"  最优: {cfg_d['core_src']}  防性{cfg_d['guard_lv']}  伤害={best['pract']:.1f}")
-        print(f"  (尝试{att}次, 验证通过{verc}个, 搜索{sch_t:.2f}s, 总{t_used:.2f}s)")
-        print_detail(best, merged_cfg)
-
-
-# 方案A：固定巨戟龙的默示录4
-print("\n" + "="*90)
-print("方案A：固定技能 + 巨戟龙的默示录4")
-print("="*90)
-fixed_geki4 = {'巨戟龙的默示录': 4}
-results_geki4 = run_all_plans(fixed_geki4)
-print_results_detail(results_geki4, fixed_geki4)
-total_geki4 = print_summary(results_geki4, "固定巨戟4", BASE_FIXED_MIN)
-
-# 方案B：固定霸主之魂3
-print("\n" + "="*90)
-print("方案B：固定技能 + 霸主之魂3")
-print("="*90)
-fixed_bahar3 = {'霸主之魂': 3}
-results_bahar3 = run_all_plans(fixed_bahar3)
-print_results_detail(results_bahar3, fixed_bahar3)
-total_bahar3 = print_summary(results_bahar3, "固定霸主3", BASE_FIXED_MIN)
-
-# 对比结论
-print("\n" + "="*90)
-print("对比结论")
-print("="*90)
-print(f"  固定巨戟4：6方案总伤害 {total_geki4:.1f}")
-print(f"  固定霸主3：6方案总伤害 {total_bahar3:.1f}")
-diff = total_geki4 - total_bahar3
-if diff > 0:
-    print(f"  结论：固定巨戟4更优，总伤害高 {diff:.1f}")
-else:
-    print(f"  结论：固定霸主3更优，总伤害高 {-diff:.1f}")
-
-# 详细输出最优方案
-for section_name, results, fixed_sk in [
-    ("固定巨戟4", results_geki4, fixed_geki4),
-    ("固定霸主3", results_bahar3, fixed_bahar3),
-]:
-    print("\n" + "="*90)
-    print(f"最优方案详细计算（{section_name}）")
+if __name__ == '__main__':
     print("="*90)
-    best_label = max(results.keys(), key=lambda k: results[k][0]['pract'] if results[k][0] else 0)
-    best, t_used, att, verc, sch_t = results[best_label]
-    if best:
-        cfg = next(c for c in PLAN_CFGS if c[0] == best_label)
-        merged_cfg = (cfg[0], cfg[1], {**cfg[2], **fixed_sk})
-        cfg_d = best['_cfg']
-        print(f"  最优方案: {best_label}")
-        print(f"  最优: {cfg_d['core_src']}  防性{cfg_d['guard_lv']}  伤害={best['pract']:.1f}")
-        print(f"  (尝试{att}次, 验证通过{verc}个, 搜索{sch_t:.2f}s, 总{t_used:.2f}s)")
-        print_detail(best, merged_cfg)
+    print("固定技能组对比：巨戟4 vs 霸主3")
+    print("="*90)
+
+    def print_results_detail(results, extra_fixed_skill):
+        """打印每个有解方案的详情"""
+        for cfg in PLAN_CFGS:
+            label, weapon_sk, extra_fixed = cfg
+            best, t_used, att, verc, sch_t = results[label]
+            if not best:
+                continue
+            merged_extra = dict(extra_fixed)
+            merged_extra.update(extra_fixed_skill)
+            merged_cfg = (label, weapon_sk, merged_extra)
+            cfg_d = best['_cfg']
+            print(f"\n{'='*90}")
+            print(f"[ {label} ]  武器技能: {weapon_sk}  额外强制: {extra_fixed}")
+            print(f"{'='*90}")
+            print(f"  最优: {cfg_d['core_src']}  防性{cfg_d['guard_lv']}  伤害={best['pract']:.1f}")
+            print(f"  (尝试{att}次, 验证通过{verc}个, 搜索{sch_t:.2f}s, 总{t_used:.2f}s)")
+            print_detail(best, merged_cfg)
+
+
+    # 方案A：固定巨戟龙的默示录4
+    print("\n" + "="*90)
+    print("方案A：固定技能 + 巨戟龙的默示录4")
+    print("="*90)
+    fixed_geki4 = {'巨戟龙的默示录': 4}
+    results_geki4 = run_all_plans(fixed_geki4)
+    print_results_detail(results_geki4, fixed_geki4)
+    total_geki4 = print_summary(results_geki4, "固定巨戟4", BASE_FIXED_MIN)
+
+    # 方案B：固定霸主之魂3
+    print("\n" + "="*90)
+    print("方案B：固定技能 + 霸主之魂3")
+    print("="*90)
+    fixed_bahar3 = {'霸主之魂': 3}
+    results_bahar3 = run_all_plans(fixed_bahar3)
+    print_results_detail(results_bahar3, fixed_bahar3)
+    total_bahar3 = print_summary(results_bahar3, "固定霸主3", BASE_FIXED_MIN)
+
+    # 对比结论
+    print("\n" + "="*90)
+    print("对比结论")
+    print("="*90)
+    print(f"  固定巨戟4：6方案总伤害 {total_geki4:.1f}")
+    print(f"  固定霸主3：6方案总伤害 {total_bahar3:.1f}")
+    diff = total_geki4 - total_bahar3
+    if diff > 0:
+        print(f"  结论：固定巨戟4更优，总伤害高 {diff:.1f}")
     else:
-        print(f"  {section_name} 所有方案均无解")
+        print(f"  结论：固定霸主3更优，总伤害高 {-diff:.1f}")
+
+    # 详细输出最优方案
+    for section_name, results, fixed_sk in [
+        ("固定巨戟4", results_geki4, fixed_geki4),
+        ("固定霸主3", results_bahar3, fixed_bahar3),
+    ]:
+        print("\n" + "="*90)
+        print(f"最优方案详细计算（{section_name}）")
+        print("="*90)
+        best_label = max(results.keys(), key=lambda k: results[k][0]['pract'] if results[k][0] else 0)
+        best, t_used, att, verc, sch_t = results[best_label]
+        if best:
+            cfg = next(c for c in PLAN_CFGS if c[0] == best_label)
+            merged_cfg = (cfg[0], cfg[1], {**cfg[2], **fixed_sk})
+            cfg_d = best['_cfg']
+            print(f"  最优方案: {best_label}")
+            print(f"  最优: {cfg_d['core_src']}  防性{cfg_d['guard_lv']}  伤害={best['pract']:.1f}")
+            print(f"  (尝试{att}次, 验证通过{verc}个, 搜索{sch_t:.2f}s, 总{t_used:.2f}s)")
+            print_detail(best, merged_cfg)
+        else:
+            print(f"  {section_name} 所有方案均无解")

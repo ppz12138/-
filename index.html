@@ -291,7 +291,8 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
 }
 .ls-label { font-size: 12px; color: var(--muted); margin-right: 4px; }
 .lv-btn {
-  width: 30px; height: 30px;
+  min-width: 30px; height: 30px;
+  padding: 0 10px;
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--bg3);
@@ -301,6 +302,7 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
   font-weight: 600;
   transition: all 0.2s ease;
   font-family: inherit;
+  white-space: nowrap;
 }
 .lv-btn:hover { border-color: var(--accent); background: rgba(108,140,255,0.1); }
 .lv-btn.active {

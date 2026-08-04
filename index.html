@@ -1768,8 +1768,7 @@ function renderResultCard(r, idx) {
       seriesComboSet.add(s.skill);
       const needPieces = s.need_pieces || (s.skill in GROUP_SK ? 3 : (cap >= 4 ? 4 : 2));
       const actualPieces = s.actual_pieces || 0;
-      const levelFromPieces = Math.floor(actualPieces / 2);
-      const displayLevel = Math.min(levelFromPieces, cap);
+      const displayLevel = actualPieces;
       seriesComboInfo[s.skill] = {
         actual_pieces: actualPieces,
         armor_pieces: s.armor_pieces || 0,
@@ -1829,7 +1828,7 @@ function renderResultCard(r, idx) {
       const pieces = scInfo.actual_pieces;
       const need = scInfo.need_pieces;
       const level = scInfo.level || 0;
-      displayText = esc(k) + pieces + '件';
+      displayText = esc(k) + ' Lv' + level;
       tooltipText = scInfo.ok ? '✓ 已激活' : '✕ 未激活';
     } else {
       const displayLv = Math.min(v.level || 0, v.cap || SKILL_CAPS[k] || 1);

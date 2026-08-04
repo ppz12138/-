@@ -130,16 +130,8 @@ for _sname in skills_data.get('组合技能', {}):
 
 WEAPON_SK = frozenset(skills_data.get('武器技能', {}).keys())
 
-SERIES_SK = frozenset([
-    '巨戟龙的默示录', '火龙之力', '凶爪龙之力', '黑蚀龙之力',
-    '泡狐龙之力', '煌雷龙之力', '海龙的涡雷',
-    '冻峰龙之反叛', '锁刃龙之饥饿', '辟兽之力', '暗器蛸之力',
-    '铠龙之守护', '雪狮子王之斗志', '雷颚龙之斗志', '波衣龙之守护',
-    '狱焰蛸之反叛', '护锁刃龙之命脉', '白炽龙之脉动',
-    '花舞祈祷', '千刃龙的斗志', '踊火祈祷', '欧米茄共鸣',
-    '暗黑骑士之证', '梦灯祈祷', '祝谣祈祷',
-])
-GROUP_SK = frozenset(skills_data.get('组合技能', {}).keys()) if '组合技能' in skills_data else frozenset()
+SERIES_SK = frozenset(k for k in skills_data.get('系列技能', {}) if k != '说明')
+GROUP_SK = frozenset(k for k in skills_data.get('组合技能', {}) if k != '说明')
 NO_DECO_SK = SERIES_SK | GROUP_SK
 SLOT_SKILLS = frozenset([f'Lv{n}插槽' for n in range(1, 5)])
 

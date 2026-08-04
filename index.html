@@ -836,6 +836,24 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
   font-family: inherit;
 }
 .weapon-skill-clear:hover { background: rgba(239,68,68,0.2); }
+.weapon-skill-effects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.effect-btn {
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.effect-btn:hover { border-color: var(--accent); background: rgba(108,140,255,0.08); }
+.effect-btn.active { border-color: var(--accent); background: rgba(108,140,255,0.18); color: var(--accent); font-weight: 600; }
 
 /* Tabs */
 .tab-bar {
@@ -907,6 +925,7 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
         <div class="weapon-skill-selected" id="series-skill-selected">
           <span class="weapon-skill-empty">留空 · 搜索时自动匹配最优</span>
         </div>
+        <div class="weapon-skill-effects" id="series-skill-effects" style="display:none;margin-top:6px;"></div>
       </div>
       <div class="weapon-combo-box" id="weapon-combo-box">
         <div class="weapon-skill-box-title">⚡ 组合技能</div>
@@ -916,6 +935,7 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
         <div class="weapon-skill-selected" id="combo-skill-selected">
           <span class="weapon-skill-empty">留空 · 搜索时自动匹配最优</span>
         </div>
+        <div class="weapon-skill-effects" id="combo-skill-effects" style="display:none;margin-top:6px;"></div>
       </div>
     </div>
     <div class="mt8">
@@ -1229,11 +1249,54 @@ function updateReserveSlots() {
   }
 }
 
+function getSeriesEffectName(baseName) {
+  const sd = SKILLS_DATA && SKILLS_DATA['系列技能'] ? SKILLS_DATA['系列技能'][baseName] : null;
+  if (!sd) return null;
+  const root = sd['技能名'] || baseName;
+  return {
+    effectI: root + 'I',
+    effectII: root + 'II',
+    needI: 2,
+    needII: 4
+  };
+}
+
+function getComboEffectName(baseName) {
+  const sd = SKILLS_DATA && SKILLS_DATA['组合技能'] ? SKILLS_DATA['组合技能'][baseName] : null;
+  if (!sd) return null;
+  const root = sd['技能名'] || baseName;
+  return {
+    effect: root,
+    need: 3
+  };
+}
+
 function isComboSkill(skill) {
   return WEAPON_SKILL_LIST.includes(skill) || SERIES_NAMES.includes(skill) || COMBO_SKILLS.includes(skill);
 }
 
 // ==================== 武器技能选择 ====================
+function showSeriesEffects() {
+  if (!selectedSeriesSkill || selectedSeriesSkill === '__disabled__') return;
+  const el = document.getElementById('series-skill-effects');
+  const info = getSeriesEffectName(selectedSeriesSkill);
+  if (!info || !el) return;
+  const curPieces = selectedSeriesLevel || 2;
+  el.innerHTML = '<button class="effect-btn ' + (curPieces===2?'active':'') + '" onclick="selectSeriesEffect(\'' + esc(selectedSeriesSkill) + '\', 2)">' + esc(info.effectI) + ' (2件)</button>' +
+    '<button class="effect-btn ' + (curPieces===4?'active':'') + '" onclick="selectSeriesEffect(\'' + esc(selectedSeriesSkill) + '\', 4)">' + esc(info.effectII) + ' (4件)</button>';
+  el.style.display = 'flex';
+}
+
+function showComboEffects() {
+  if (!selectedComboSkill || selectedComboSkill === '__disabled__') return;
+  const el = document.getElementById('combo-skill-effects');
+  const info = getComboEffectName(selectedComboSkill);
+  if (!info || !el) return;
+  const curPieces = selectedComboLevel || 3;
+  el.innerHTML = '<button class="effect-btn ' + (curPieces===3?'active':'') + '" onclick="selectComboEffect(\'' + esc(selectedComboSkill) + '\', 3)">' + esc(info.effect) + ' (3件)</button>';
+  el.style.display = 'flex';
+}
+
 function selectSeriesSkill(name, level) {
   if (!name) {
     clearSeriesSkill();
@@ -1257,6 +1320,8 @@ function selectComboSkill(name, level) {
 function clearSeriesSkill() {
   selectedSeriesSkill = null;
   selectedSeriesLevel = 0;
+  const effectsEl = document.getElementById('series-skill-effects');
+  if (effectsEl) effectsEl.style.display = 'none';
   if (window._lastAutoWeapon && SERIES_NAMES.includes(window._lastAutoWeapon)) {
     window._lastAutoWeapon = null;
   }
@@ -1266,6 +1331,8 @@ function clearSeriesSkill() {
 function clearComboSkill() {
   selectedComboSkill = null;
   selectedComboLevel = 0;
+  const effectsEl = document.getElementById('combo-skill-effects');
+  if (effectsEl) effectsEl.style.display = 'none';
   if (window._lastAutoWeapon && COMBO_SKILLS.includes(window._lastAutoWeapon)) {
     window._lastAutoWeapon = null;
   }
@@ -1275,31 +1342,68 @@ function clearComboSkill() {
 function onSeriesSkillChange() {
   const sel = document.getElementById('series-skill-select');
   const name = sel.value;
+  const effectsEl = document.getElementById('series-skill-effects');
   if (name === '__disabled__') {
     selectedSeriesSkill = '__disabled__';
     selectedSeriesLevel = 0;
+    if (effectsEl) effectsEl.style.display = 'none';
     renderWeaponSkillBoxes();
   } else if (name) {
-    const lv = SKILL_CAPS[name] || 1;
-    selectSeriesSkill(name, lv);
+    const info = getSeriesEffectName(name);
+    if (info && effectsEl) {
+      effectsEl.innerHTML = '<button class="effect-btn" onclick="selectSeriesEffect(\'' + esc(name) + '\', 2)">' + esc(info.effectI) + ' (2件)</button>' +
+        '<button class="effect-btn" onclick="selectSeriesEffect(\'' + esc(name) + '\', 4)">' + esc(info.effectII) + ' (4件)</button>';
+      effectsEl.style.display = 'flex';
+    } else {
+      selectSeriesSkill(name, 2);
+    }
   } else {
     clearSeriesSkill();
+    if (effectsEl) effectsEl.style.display = 'none';
   }
 }
 
 function onComboSkillChange() {
   const sel = document.getElementById('combo-skill-select');
   const name = sel.value;
+  const effectsEl = document.getElementById('combo-skill-effects');
   if (name === '__disabled__') {
     selectedComboSkill = '__disabled__';
     selectedComboLevel = 0;
+    if (effectsEl) effectsEl.style.display = 'none';
     renderWeaponSkillBoxes();
   } else if (name) {
-    const lv = SKILL_CAPS[name] || 1;
-    selectComboSkill(name, lv);
+    const info = getComboEffectName(name);
+    if (info && effectsEl) {
+      effectsEl.innerHTML = '<button class="effect-btn" onclick="selectComboEffect(\'' + esc(name) + '\', 3)">' + esc(info.effect) + ' (3件)</button>';
+      effectsEl.style.display = 'flex';
+    } else {
+      selectComboSkill(name, 3);
+    }
   } else {
     clearComboSkill();
+    if (effectsEl) effectsEl.style.display = 'none';
   }
+}
+
+function selectSeriesEffect(name, pieces) {
+  selectedSeriesSkill = name;
+  selectedSeriesLevel = pieces;
+  const effectsEl = document.getElementById('series-skill-effects');
+  if (effectsEl) effectsEl.style.display = 'none';
+  const sel = document.getElementById('series-skill-select');
+  if (sel) sel.value = name;
+  renderWeaponSkillBoxes();
+}
+
+function selectComboEffect(name, pieces) {
+  selectedComboSkill = name;
+  selectedComboLevel = pieces;
+  const effectsEl = document.getElementById('combo-skill-effects');
+  if (effectsEl) effectsEl.style.display = 'none';
+  const sel = document.getElementById('combo-skill-select');
+  if (sel) sel.value = name;
+  renderWeaponSkillBoxes();
 }
 
 function renderWeaponSkillBoxes() {
@@ -1329,42 +1433,50 @@ function renderWeaponSkillBoxes() {
   }
 
   const seriesSelected = document.getElementById('series-skill-selected');
+  const seriesEffectsEl = document.getElementById('series-skill-effects');
   if (seriesSelected) {
     if (selectedSeriesSkill === '__disabled__') {
       seriesSelected.innerHTML = '<span class="chip chip-disabled">禁用</span>' +
         '<button class="weapon-skill-clear" onclick="clearSeriesSkill()">✕ 清除</button>';
+      if (seriesEffectsEl) seriesEffectsEl.style.display = 'none';
     } else if (selectedSeriesSkill) {
-      const lv = selectedSeriesLevel || SKILL_CAPS[selectedSeriesSkill] || 1;
-      seriesSelected.innerHTML = '<span class="chip chip-selected">' +
-        esc(selectedSeriesSkill) + ' Lv' + lv + '</span>' +
+      const pieces = selectedSeriesLevel || 2;
+      seriesSelected.innerHTML = '<span class="chip chip-selected" style="cursor:pointer;" onclick="showSeriesEffects()">' +
+        esc(selectedSeriesSkill) + pieces + '件</span>' +
         '<button class="weapon-skill-clear" onclick="clearSeriesSkill()">✕ 清除</button>';
     } else if (window._lastAutoWeapon && SERIES_NAMES.includes(window._lastAutoWeapon)) {
-      const lv = SKILL_CAPS[window._lastAutoWeapon] || 1;
+      const pieces = SKILL_CAPS[window._lastAutoWeapon] || 2;
       seriesSelected.innerHTML = '<span class="chip chip-selected">' +
-        esc(window._lastAutoWeapon) + ' Lv' + lv + ' <span style="font-size:11px;color:var(--muted);">(自动匹配)</span></span>' +
+        esc(window._lastAutoWeapon) + pieces + '件 <span style="font-size:11px;color:var(--muted);">(自动匹配)</span></span>' +
         '<button class="weapon-skill-clear" onclick="clearSeriesSkill()">✕ 清除</button>';
+      if (seriesEffectsEl) seriesEffectsEl.style.display = 'none';
     } else {
       seriesSelected.innerHTML = '<span class="weapon-skill-empty">留空 · 搜索时自动匹配最优</span>';
+      if (seriesEffectsEl) seriesEffectsEl.style.display = 'none';
     }
   }
 
   const comboSelected = document.getElementById('combo-skill-selected');
+  const comboEffectsEl = document.getElementById('combo-skill-effects');
   if (comboSelected) {
     if (selectedComboSkill === '__disabled__') {
       comboSelected.innerHTML = '<span class="chip chip-disabled">禁用</span>' +
         '<button class="weapon-skill-clear" onclick="clearComboSkill()">✕ 清除</button>';
+      if (comboEffectsEl) comboEffectsEl.style.display = 'none';
     } else if (selectedComboSkill) {
-      const lv = selectedComboLevel || SKILL_CAPS[selectedComboSkill] || 1;
-      comboSelected.innerHTML = '<span class="chip chip-selected">' +
-        esc(selectedComboSkill) + ' Lv' + lv + '</span>' +
+      const pieces = selectedComboLevel || 3;
+      comboSelected.innerHTML = '<span class="chip chip-selected" style="cursor:pointer;" onclick="showComboEffects()">' +
+        esc(selectedComboSkill) + pieces + '件</span>' +
         '<button class="weapon-skill-clear" onclick="clearComboSkill()">✕ 清除</button>';
     } else if (window._lastAutoWeapon && COMBO_SKILLS.includes(window._lastAutoWeapon)) {
-      const lv = SKILL_CAPS[window._lastAutoWeapon] || 1;
+      const pieces = SKILL_CAPS[window._lastAutoWeapon] || 3;
       comboSelected.innerHTML = '<span class="chip chip-selected">' +
-        esc(window._lastAutoWeapon) + ' Lv' + lv + ' <span style="font-size:11px;color:var(--muted);">(自动匹配)</span></span>' +
+        esc(window._lastAutoWeapon) + pieces + '件 <span style="font-size:11px;color:var(--muted);">(自动匹配)</span></span>' +
         '<button class="weapon-skill-clear" onclick="clearComboSkill()">✕ 清除</button>';
+      if (comboEffectsEl) comboEffectsEl.style.display = 'none';
     } else {
       comboSelected.innerHTML = '<span class="weapon-skill-empty">留空 · 搜索时自动匹配最优</span>';
+      if (comboEffectsEl) comboEffectsEl.style.display = 'none';
     }
   }
 }

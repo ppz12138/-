@@ -604,7 +604,8 @@ class SearchHandler(BaseHTTPRequestHandler):
             fake_cfg = ('自定义搜索', weapon_actual_skills, {})
             # 传入 combo_skills 作为需求技能，用于正确计算 need_pieces
             plan_result = _plan_result_to_dict(r, fake_cfg, t_used, 1, len(raw_results), t_used, requirement_skills=combo_skills)
-            results.append(plan_result)
+            if plan_result is not None:
+                results.append(plan_result)
 
         # 构造返回的武器技能信息
         auto_weapon_info = {}

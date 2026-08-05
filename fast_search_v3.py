@@ -839,6 +839,8 @@ def _dominated_check(item, dom, skill_names):
 
 # ==================== 候选构建 ====================
 def _build_candidates(charm_pool, fixed_skills, combo_skills, quiet=False, extra_skill_names=None, user_weapon_skills=None):
+    global _quick_skill_cache
+    _quick_skill_cache = {}
     """构建候选装备列表（与dfs_search分离，允许缓存复用）
 
     extra_skill_names: 额外技能名集合，用于扩大支配检查和预过滤范围，
@@ -2402,6 +2404,8 @@ def dfs_search_auto_weapon(charm_pool, fixed_skills, combo_skills, min_rem_armor
     return best_results, best_weapon_series, best_weapon_group
 
 
+_quick_skill_cache = {}
+
 def _quick_skill_upper_bound(sk, cached_ctx, wslots):
     """快速计算技能sk的理论可追加上界（预筛用）
 
@@ -2411,6 +2415,10 @@ def _quick_skill_upper_bound(sk, cached_ctx, wslots):
     - 所有孔位（含武器孔）按最优珠子换算sk等级
     返回值是理论上限，实际可能因固定技能约束而更低。
     """
+    cache_key = (sk, tuple(wslots))
+    if cache_key in _quick_skill_cache:
+        return _quick_skill_cache[cache_key]
+
     (candidates, all_skill_names, weapon_skills, armor_fixed, weapon_fixed,
      best_by_part, best_slot_by_part, candidates_by_part, part_series_availability) = cached_ctx
 
@@ -2439,7 +2447,9 @@ def _quick_skill_upper_bound(sk, cached_ctx, wslots):
         # 简化：假设所有孔位都>=slot_req（乐观）
         deco_max = (total_slots // slot_req) * pts
 
-    return gear_max + deco_max
+    result = gear_max + deco_max
+    _quick_skill_cache[cache_key] = result
+    return result
 
 
 # ==================== 追加技能查询（v3优化版）====================

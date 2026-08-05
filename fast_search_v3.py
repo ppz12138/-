@@ -1656,16 +1656,30 @@ def dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
         if filled is None:
             return False
         fs, used, rem_a, rem_w = filled
+        # 统计装备中系列/组合技能件数
+        _series_pieces = {}
+        for e in equipped:
+            if e is None:
+                continue
+            for sk in e.get('skills', {}):
+                if sk in NO_DECO_SK:
+                    _series_pieces[sk] = _series_pieces.get(sk, 0) + 1
+        for sk, lv in weapon_skills.items():
+            if sk in NO_DECO_SK:
+                _series_pieces[sk] = _series_pieces.get(sk, 0) + 1
+
         for s, r in fixed_skills.items():
             if s.startswith('Lv') and s.endswith('插槽'):
                 continue
             if s in NO_DECO_SK:
+                if _series_pieces.get(s, 0) < r:
+                    return False
                 continue
             if fs.get(s, 0) < r: return False
         if combo_skills:
             for s, r in combo_skills.items():
                 if s in NO_DECO_SK:
-                    if fs.get(s, 0) < r:
+                    if _series_pieces.get(s, 0) < r:
                         return False
                     continue
                 if fs.get(s, 0) < r: return False
@@ -2090,18 +2104,14 @@ def dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
 
 def _generate_weapon_equipment(fixed_skills, combo_skills, disabled_weapon_skills=None):
     """生成武器装备列表：每个武器技能组合是一个独立装备
-    
+
     武器可以带：
     - 1个系列技能（如火龙之力、黑蚀龙之力等）
     - 1个组合技能（如霸主之魂）
     - 两者都带
-    
+
     返回武器装备列表，每个装备的part_idx=6
     """
-    # 有伤害贡献的系列技能
-    DAMAGE_SERIES_SK = frozenset([
-        '火龙之力', '霸主之魂', '黑蚀龙之力', '凶爪龙之力', '巨戟龙的默示录',
-    ])
     
     disabled = disabled_weapon_skills or set()
     
@@ -2115,22 +2125,22 @@ def _generate_weapon_equipment(fixed_skills, combo_skills, disabled_weapon_skill
             if s in NO_DECO_SK:
                 need_series[s] = max(need_series.get(s, 0), lv)
     
-    # 系列技能候选
+    # 系列技能候选：尝试所有有效等级（Lv2=效果I, Lv4=效果II）
     series_candidates = []
     for s in SERIES_SK:
         if s in disabled:
             continue
-        # 如果需求中有这个系列技能，优先尝试
         priority = 1 if s in need_series else 2
-        series_candidates.append((s, 2, priority))  # 尝试Lv2
-    
-    # 组合技能候选
+        series_candidates.append((s, 2, priority))
+        series_candidates.append((s, 4, priority))
+
+    # 组合技能候选：尝试所有有效等级（Lv3）
     group_candidates = []
     for s in GROUP_SK:
         if s in disabled:
             continue
         priority = 1 if s in need_series else 2
-        group_candidates.append((s, 3, priority))  # 尝试Lv3
+        group_candidates.append((s, 3, priority))
     
     # 构造所有武器装备组合
     weapon_equipments = []
@@ -2139,28 +2149,29 @@ def _generate_weapon_equipment(fixed_skills, combo_skills, disabled_weapon_skill
     weapon_slots = list(WSLOTS)
     w_slot_sum = sum(weapon_slots)
     
-    # 只带系列技能
+# 只带系列技能
     for s_name, s_lv, priority in series_candidates:
         skills = {s_name: 1}  # 武器只提供1级
         name = f"武器[{s_name} Lv{s_lv}]"
         weapon_equipments.append({
             'name': name,
-            'part_idx': 6,  # 武器部位
+            'part_idx': 6,
             'skills': skills,
-            'slots': [],  # 武器不提供防具孔
+            'slots': [],
             'slots_sorted': (),
             'weapon_slots': weapon_slots,
             'wslots_sorted': tuple(sorted(weapon_slots, reverse=True)),
             'rarity': 0,
-            'score': priority * 100 + s_lv,  # 优先需求的技能
+            'score': priority * 100 + s_lv,
             'max_slot': max(weapon_slots) if weapon_slots else 0,
             'slot_sum': 0,
             'w_slot_sum': w_slot_sum,
-            '_is_weapon': True,  # 标记为武器装备
+            '_is_weapon': True,
             '_weapon_series': s_name,
+            '_weapon_series_level': s_lv,
             '_weapon_group': None,
         })
-    
+
     # 只带组合技能
     for g_name, g_lv, priority in group_candidates:
         skills = {g_name: 1}
@@ -2180,9 +2191,10 @@ def _generate_weapon_equipment(fixed_skills, combo_skills, disabled_weapon_skill
             'w_slot_sum': w_slot_sum,
             '_is_weapon': True,
             '_weapon_series': None,
+            '_weapon_series_level': None,
             '_weapon_group': g_name,
         })
-    
+
     # 同时带系列+组合
     for s_name, s_lv, s_priority in series_candidates:
         for g_name, g_lv, g_priority in group_candidates:
@@ -2204,6 +2216,7 @@ def _generate_weapon_equipment(fixed_skills, combo_skills, disabled_weapon_skill
                 'w_slot_sum': w_slot_sum,
                 '_is_weapon': True,
                 '_weapon_series': s_name,
+                '_weapon_series_level': s_lv,
                 '_weapon_group': g_name,
             })
     
@@ -2277,6 +2290,8 @@ def dfs_search_auto_weapon(charm_pool, fixed_skills, combo_skills, min_rem_armor
     best_results = []
     best_weapon_series = None
     best_weapon_group = None
+    best_weapon_series_level = None
+    best_weapon_group_level = None
     best_dmg = -1.0
     
     for weq in weapon_equipments:
@@ -2291,7 +2306,7 @@ def dfs_search_auto_weapon(charm_pool, fixed_skills, combo_skills, min_rem_armor
         
         if weq['_weapon_series']:
             candidate_weapon_skills[weq['_weapon_series']] = 1
-            new_combo[weq['_weapon_series']] = 2  # 尝试Lv2
+            new_combo[weq['_weapon_series']] = weq.get('_weapon_series_level', 2)
         
         if weq['_weapon_group']:
             candidate_weapon_skills[weq['_weapon_group']] = 1
@@ -2328,6 +2343,8 @@ def dfs_search_auto_weapon(charm_pool, fixed_skills, combo_skills, min_rem_armor
             best_dmg = dmg
             best_weapon_series = weq['_weapon_series']
             best_weapon_group = weq['_weapon_group']
+            best_weapon_series_level = weq.get('_weapon_series_level')
+            best_weapon_group_level = weq.get('_weapon_group_level')
             best_results = results
     
     if not best_results:
@@ -2342,11 +2359,11 @@ def dfs_search_auto_weapon(charm_pool, fixed_skills, combo_skills, min_rem_armor
     best_weapon_skills = {}
 
     if best_weapon_series:
-        best_combo_skills[best_weapon_series] = 2
+        best_combo_skills[best_weapon_series] = best_weapon_series_level or 2
         best_weapon_skills[best_weapon_series] = 1
 
     if best_weapon_group:
-        best_combo_skills[best_weapon_group] = 3
+        best_combo_skills[best_weapon_group] = best_weapon_group_level or 3
         best_weapon_skills[best_weapon_group] = 1
 
     try:

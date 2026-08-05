@@ -1,4 +1,4 @@
-<!-- VERSION: 2026-08-04-v4 -->
+<!-- VERSION: 2026-08-04-v6 -->
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -1799,8 +1799,9 @@ function renderResultCard(r, idx) {
   // 将武器技能也纳入方案技能区展示
   if (r.weapon_skill) {
     for (const [sk, lv] of Object.entries(r.weapon_skill)) {
-      if (!(sk in allSkills)) {
-        const cap = SKILL_CAPS[sk] || 1;
+      const cap = SKILL_CAPS[sk] || 1;
+      const existing = allSkills[sk];
+      if (!existing || lv > existing.level) {
         allSkills[sk] = { level: Math.min(lv || 0, cap), cap: cap };
       }
     }

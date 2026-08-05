@@ -563,7 +563,18 @@ class SearchHandler(BaseHTTPRequestHandler):
             weapon_actual_skills[weapon_combo] = 1
 
         # 需求技能（用户在技能选择区选择的）
+        # 包含 combo_skills 和系列/组合武器的需求等级
+        requirement_skills = dict(combo_skills)
+        if weapon_series and weapon_series in fs.NO_DECO_SK and weapon_series_level > 0:
+            requirement_skills[weapon_series] = weapon_series_level
+        if weapon_combo and weapon_combo in fs.NO_DECO_SK and weapon_combo_level > 0:
+            requirement_skills[weapon_combo] = weapon_combo_level
+
         search_combo = dict(combo_skills)
+        if weapon_series and weapon_series in fs.NO_DECO_SK and weapon_series_level > 0:
+            search_combo[weapon_series] = weapon_series_level
+        if weapon_combo and weapon_combo in fs.NO_DECO_SK and weapon_combo_level > 0:
+            search_combo[weapon_combo] = weapon_combo_level
 
         orig_wslots = self._apply_weapon_slots(params)
         t0 = time.time()
@@ -602,8 +613,7 @@ class SearchHandler(BaseHTTPRequestHandler):
         results = []
         for r in raw_results[:max_results]:
             fake_cfg = ('自定义搜索', weapon_actual_skills, {})
-            # 传入 combo_skills 作为需求技能，用于正确计算 need_pieces
-            plan_result = _plan_result_to_dict(r, fake_cfg, t_used, 1, len(raw_results), t_used, requirement_skills=combo_skills)
+            plan_result = _plan_result_to_dict(r, fake_cfg, t_used, 1, len(raw_results), t_used, requirement_skills=requirement_skills)
             results.append(plan_result)
 
         # 构造返回的武器技能信息

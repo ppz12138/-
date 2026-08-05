@@ -628,42 +628,29 @@ def fill_slots(skills, a_slots, w_slots, fixed_skills, min_keep_armor=0, min_kee
     w_rem = sorted([s for s in rem_w if s > 0], reverse=True)
     if not _FEASIBILITY_ONLY:
         w_pool = _get_deco_pool('weapon')
-        w_pool_scored = []
-        for deco in w_pool:
-            p_score = _deco_priority_score(deco['skills'], fs, SKILL_CAPS)
-            g_total = sum(gain(sk, fs.get(sk, 0), pts) for sk, pts in deco['skills'])
-            if g_total > 0 and p_score > 0:
-                w_pool_scored.append((p_score, g_total, deco))
-        w_pool_scored.sort(key=lambda x: (-x[0], -x[1]))
-        for _p_score, _g_total, deco in w_pool_scored:
+        w_pool_sorted = sorted(w_pool, key=lambda d: (-_deco_priority_score(d['skills'], fs, SKILL_CAPS), -d['slot']))
+        for deco in w_pool_sorted:
             for i, s in enumerate(w_rem):
                 if s >= deco['slot']:
-                    w_rem.pop(i)
-                    for sk, pts in deco['skills']:
-                         fs[sk] = min(fs.get(sk, 0) + pts, SKILL_CAPS.get(sk, 99))
-                    used.append(deco['name'])
-                    break
+                    p_score = _deco_priority_score(deco['skills'], fs, SKILL_CAPS)
+                    g_total = sum(gain(sk, fs.get(sk, 0), pts) for sk, pts in deco['skills'])
+                    if g_total > 0 and p_score > 0:
+                        w_rem.pop(i)
+                        for sk, pts in deco['skills']:
+                             fs[sk] = min(fs.get(sk, 0) + pts, SKILL_CAPS.get(sk, 99))
+                        used.append(deco['name'])
+                        break
     min_keep = max(min_keep_armor, total_slot_keep)
     if not _FEASIBILITY_ONLY:
-        pool_a_scored = []
-        for deco in pool_a:
-            p_score = _deco_priority_score(deco['skills'], fs, SKILL_CAPS)
-            g_total = sum(gain(sk, fs.get(sk, 0), pts) for sk, pts in deco['skills'])
-            if g_total > 0 and (p_score * 100 + g_total) > 0:
-                pool_a_scored.append((p_score * 100 + g_total, deco))
-        pool_a_scored.sort(key=lambda x: -x[0])
         while len(a) > min_keep:
-            best_d = None; best_i = -1
-            a_max = max(a) if a else 0
-            for _score, deco in pool_a_scored:
-                if deco['slot'] > a_max:
-                    continue
-                for si, s in enumerate(a):
-                    if s >= deco['slot']:
-                        best_d = deco; best_i = si
-                        break
-                if best_d is not None:
-                    break
+            best_d = None; best_s = -1; best_i = -1
+            for si, s in enumerate(a):
+                for deco in pool_a:
+                    if deco['slot'] > s: continue
+                    p_score = _deco_priority_score(deco['skills'], fs, SKILL_CAPS)
+                    g_total = sum(gain(sk, fs.get(sk, 0), pts) for sk, pts in deco['skills'])
+                    if g_total > 0 and (p_score * 100 + g_total) > best_s:
+                        best_s = p_score * 100 + g_total; best_d = deco; best_i = si
             if best_d is None: break
             a.pop(best_i)
             for sk, pts in best_d['skills']:
@@ -2407,6 +2394,10 @@ def dfs_search_auto_weapon(charm_pool, fixed_skills, combo_skills, min_rem_armor
 _quick_skill_cache = {}
 
 def _quick_skill_upper_bound(sk, cached_ctx, wslots):
+    cache_key = (sk, tuple(wslots))
+    if cache_key in _quick_skill_cache:
+        return _quick_skill_cache[cache_key]
+
     """快速计算技能sk的理论可追加上界（预筛用）
 
     基于候选装备列表的乐观估计：
@@ -2415,10 +2406,6 @@ def _quick_skill_upper_bound(sk, cached_ctx, wslots):
     - 所有孔位（含武器孔）按最优珠子换算sk等级
     返回值是理论上限，实际可能因固定技能约束而更低。
     """
-    cache_key = (sk, tuple(wslots))
-    if cache_key in _quick_skill_cache:
-        return _quick_skill_cache[cache_key]
-
     (candidates, all_skill_names, weapon_skills, armor_fixed, weapon_fixed,
      best_by_part, best_slot_by_part, candidates_by_part, part_series_availability) = cached_ctx
 

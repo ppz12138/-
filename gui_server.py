@@ -47,16 +47,19 @@ def _build_skill_caps():
             lv = info.get('max_lv', 0)
             if lv > 0:
                 caps[name] = lv
-    # 系列技能通常2级
+    # 系列技能: 霸主之魂上限3，其余系列上限4
     for name in sd.get('系列技能', {}):
         if name == '说明':
             continue
-        caps[name] = 2
-    # 组合技能通常1级
+        if name == '霸主之魂':
+            caps[name] = 3
+        else:
+            caps[name] = 4
+    # 组合技能上限3
     for name in sd.get('组合技能', {}):
         if name == '说明':
             continue
-        caps[name] = 1
+        caps[name] = 3
     return caps
 
 
@@ -159,7 +162,7 @@ SKILL_CAPS = _build_skill_caps()
 SKILL_CATEGORIES = _build_skill_categories()
 
 
-def _plan_result_to_dict(best, plan_cfg, t_used, attempts, verified, sch_t):
+def _plan_result_to_dict(best, plan_cfg, t_used, attempts, verified, sch_t, requirement_skills=None):
     """将搜索结果转换为可JSON序列化的字典"""
     if not best:
         return None
@@ -201,11 +204,16 @@ def _plan_result_to_dict(best, plan_cfg, t_used, attempts, verified, sch_t):
     sk = {k: v for k, v in best['skills'].items() if v > 0}
     for k, v in sk.items():
         if k in fs.NO_DECO_SK:
-            need_p = 4 if v >= 4 else (3 if k in fs.GROUP_SK else 2)
+            # 需求等级：优先使用用户选择的需求等级，其次使用武器洗练等级，最后使用实际找到的等级
+            if requirement_skills and k in requirement_skills:
+                user_lv = requirement_skills[k]
+            else:
+                user_lv = weapon_sk.get(k, v)
+            need_p = max(1, user_lv)
             wprov = 1 if k in weapon_sk else 0
             actual_p = series_actual.get(k, 0) + wprov
             series_check.append({
-                'skill': k, 'level': v, 'need_pieces': need_p,
+                'skill': k, 'level': actual_p, 'need_pieces': need_p,
                 'weapon_provided': wprov, 'armor_pieces': series_actual.get(k, 0),
                 'actual_pieces': actual_p, 'ok': actual_p >= need_p
             })
@@ -241,7 +249,7 @@ def _plan_result_to_dict(best, plan_cfg, t_used, attempts, verified, sch_t):
     weapon_skill_info = {}
     if weapon_sk:
         for s, lv in weapon_sk.items():
-            if lv > 0 and s in fs.NO_DECO_SK:
+            if lv > 0:
                 weapon_skill_info[s] = lv
     return {
         'damage': round(best.get('pract', 0), 2),
@@ -543,33 +551,39 @@ class SearchHandler(BaseHTTPRequestHandler):
 
         weapon_series = params.get('weapon_series_skill', '')
         weapon_combo = params.get('weapon_combo_skill', '')
+        weapon_series_level = int(params.get('weapon_series_level', 0))
+        weapon_combo_level = int(params.get('weapon_combo_level', 0))
 
-        weapon_skills_dict = {}
+        # 武器实际带的技能（用于显示和搜索）
+        # 注意：武器洗练技能只提供1级
+        weapon_actual_skills = {}
         if weapon_series and weapon_series in fs.NO_DECO_SK:
-            lv = combo_skills.get(weapon_series, 1)
-            weapon_skills_dict[weapon_series] = lv
+            weapon_actual_skills[weapon_series] = 1
         if weapon_combo and weapon_combo in fs.NO_DECO_SK:
-            lv = combo_skills.get(weapon_combo, 1)
-            weapon_skills_dict[weapon_combo] = lv
+            weapon_actual_skills[weapon_combo] = 1
+
+        # 需求技能（用户在技能选择区选择的）
+        search_combo = dict(combo_skills)
 
         orig_wslots = self._apply_weapon_slots(params)
         t0 = time.time()
-        auto_matched = None
-        auto_lv = None
+        auto_matched_series = None  # skill name or None
+        auto_matched_group = None   # skill name or None
         with _lock:
             try:
                 has_user_weapon = bool(weapon_series or weapon_combo)
                 if auto_weapon and not has_user_weapon:
-                    raw_results, auto_matched, auto_lv = fs.dfs_search_auto_weapon(
-                        fs.charm_pool, fixed_skills, combo_skills, min_rem_armor,
+                    raw_results, auto_matched_series, auto_matched_group = fs.dfs_search_auto_weapon(
+                        fs.charm_pool, fixed_skills, search_combo, min_rem_armor,
                         max_results=max_results, timeout_s=timeout_s, quiet=False,
-                        disabled_weapon_skills=disabled_ws, min_rem_weapon=min_rem_weapon
+                        disabled_weapon_skills=disabled_ws, min_rem_weapon=min_rem_weapon,
+                        user_weapon_skills=weapon_actual_skills
                     )
                 else:
                     raw_results = fs.dfs_search(
-                        fs.charm_pool, fixed_skills, combo_skills, min_rem_armor,
+                        fs.charm_pool, fixed_skills, search_combo, min_rem_armor,
                         max_results=max_results, timeout_s=timeout_s, quiet=False,
-                        min_rem_weapon=min_rem_weapon
+                        min_rem_weapon=min_rem_weapon, user_weapon_skills=weapon_actual_skills
                     )
             except Exception as e:
                 fs.WSLOTS = orig_wslots
@@ -578,21 +592,35 @@ class SearchHandler(BaseHTTPRequestHandler):
         fs.WSLOTS = orig_wslots
         t_used = time.time() - t0
 
-        # 若自动匹配到武器技能，需将其加入 weapon_skills_dict 以正确展示
-        if auto_matched:
-            weapon_skills_dict[auto_matched] = auto_lv
+        # 若自动匹配到武器技能，加入武器实际技能列表
+        # 注意：武器洗练技能只提供1级
+        if auto_matched_series:
+            weapon_actual_skills[auto_matched_series] = 1
+        if auto_matched_group:
+            weapon_actual_skills[auto_matched_group] = 1
 
         results = []
         for r in raw_results[:max_results]:
-            fake_cfg = ('自定义搜索', weapon_skills_dict, {})
-            results.append(_plan_result_to_dict(r, fake_cfg, t_used, 1, len(raw_results), t_used))
+            fake_cfg = ('自定义搜索', weapon_actual_skills, {})
+            # 传入 combo_skills 作为需求技能，用于正确计算 need_pieces
+            plan_result = _plan_result_to_dict(r, fake_cfg, t_used, 1, len(raw_results), t_used, requirement_skills=combo_skills)
+            results.append(plan_result)
+
+        # 构造返回的武器技能信息
+        auto_weapon_info = {}
+        if auto_matched_series:
+            auto_weapon_info['series_skill'] = auto_matched_series
+            auto_weapon_info['series_level'] = fs.SKILL_CAPS.get(auto_matched_series, 2)
+        if auto_matched_group:
+            auto_weapon_info['group_skill'] = auto_matched_group
+            auto_weapon_info['group_level'] = fs.SKILL_CAPS.get(auto_matched_group, 3)
 
         self._send_json({
             'count': len(results),
             'total_time': round(t_used, 2),
             'fixed_skills': fixed_skills,
             'combo_skills': combo_skills,
-            'auto_weapon_skill': auto_matched,
+            'auto_weapon': auto_weapon_info if auto_weapon_info else None,
             'results': results
         })
 

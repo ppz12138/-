@@ -183,7 +183,7 @@ def verify_series(result, weapon_sk, target_skills=None, extra_fixed=None):
         lv = skills.get(sk_name, 0)
         if lv <= 0:
             continue
-        need_pieces = 4 if lv >= 4 else (3 if sk_name in fs.GROUP_SK else 2)
+        need_pieces = max(1, lv)
         weapon_prov = 1 if sk_name in weapon_sk else 0
         actual = series_actual.get(sk_name, 0) + weapon_prov
         if actual < need_pieces:
@@ -282,7 +282,7 @@ def print_detail(best, plan_cfg):
     if series_in_sk:
         print(f"  系列技能验证:")
         for k,v in series_in_sk.items():
-            need_p = 4 if v >= 4 else (3 if k in fs.GROUP_SK else 2)
+            need_p = max(1, v)
             wprov = 1 if k in weapon_sk else 0
             actual_p = series_actual.get(k, 0) + wprov
             ok = "[OK]" if actual_p >= need_p else "[NO]"

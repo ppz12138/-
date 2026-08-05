@@ -499,6 +499,21 @@ def _fill_weapon_slots_smart(fs, w_slots, fixed_skills):
     if sum(_deco_contribs[:n_slots]) < _total_deficit:
         _fill_weapon_cache[cache_key] = None
         return None
+    # 逐技能可行性预检：每个赤字技能能否在剩余slot数内被满足
+    for sk, need in w_fixed.items():
+        have = fs.get(sk, 0)
+        if have >= need:
+            continue
+        d = need - have
+        pool = deco_idx.get((sk, 'weapon'), [])
+        if not pool:
+            _fill_weapon_cache[cache_key] = None
+            return None
+        best_pts = max(pts for sr, pts, dn in pool)
+        need_slots = (d + best_pts - 1) // best_pts
+        if need_slots > n_slots:
+            _fill_weapon_cache[cache_key] = None
+            return None
     for n in range(1, n_slots + 1):
         for combo in combinations_with_replacement(range(len(cand_decos)), n):
             deco_list = [cand_decos[i] for i in combo]
@@ -565,38 +580,44 @@ def fill_slots(skills, a_slots, w_slots, fixed_skills, min_keep_armor=0, min_kee
             d = need - fs.get(sk, 0)
             if d > 0:
                 deficit[sk] = d
-        while deficit:
-            best_placement = None
-            best_score = -1
-            for si, s in enumerate(a):
-                if s <= 0:
-                    continue
-                for deco in pool_a:
-                    if deco['slot'] > s:
+        if deficit:
+            deficit_skills = set(deficit.keys())
+            pool_a_relevant = [d for d in pool_a if any(sk in deficit_skills for sk, pts in d['skills'])]
+            deco_by_slot = {1: [], 2: [], 3: []}
+            for d in pool_a_relevant:
+                deco_by_slot[d['slot']].append(d)
+            while deficit:
+                best_placement = None
+                best_score = -1
+                for si, s in enumerate(a):
+                    if s <= 0:
                         continue
-                    total_gain = 0
-                    bonus = 0
-                    for sk, pts in deco['skills']:
-                        if sk in deficit:
-                            total_gain += min(pts, deficit[sk])
-                        if sk in fixed_skills and fs.get(sk, 0) < fixed_skills.get(sk, 0):
-                            bonus += gain(sk, fs.get(sk, 0), pts)
-                    if total_gain > 0:
-                        score = total_gain * 100 + bonus
-                        if score > best_score:
-                            best_score = score
-                            best_placement = (deco, si)
-            if best_placement is None:
-                break
-            deco, idx = best_placement
-            a.pop(idx)
-            for sk, pts in deco['skills']:
-                fs[sk] = min(fs.get(sk, 0) + pts, SKILL_CAPS.get(sk, 99))
-                if sk in deficit:
-                    deficit[sk] = max(0, deficit[sk] - min(pts, deficit[sk]))
-                    if deficit[sk] <= 0:
-                        del deficit[sk]
-            used.append(deco['name'])
+                    for slot_lv in range(1, s + 1):
+                        for deco in deco_by_slot.get(slot_lv, []):
+                            total_gain = 0
+                            bonus = 0
+                            for sk, pts in deco['skills']:
+                                if sk in deficit:
+                                    total_gain += min(pts, deficit[sk])
+                                cur = fs.get(sk, 0)
+                                if sk in fixed_skills and cur < fixed_skills.get(sk, 0):
+                                    bonus += gain(sk, cur, pts)
+                            if total_gain > 0:
+                                score = total_gain * 100 + bonus
+                                if score > best_score:
+                                    best_score = score
+                                    best_placement = (deco, si)
+                if best_placement is None:
+                    break
+                deco, idx = best_placement
+                a.pop(idx)
+                for sk, pts in deco['skills']:
+                    fs[sk] = min(fs.get(sk, 0) + pts, SKILL_CAPS.get(sk, 99))
+                    if sk in deficit:
+                        deficit[sk] = max(0, deficit[sk] - min(pts, deficit[sk]))
+                        if deficit[sk] <= 0:
+                            del deficit[sk]
+                used.append(deco['name'])
     for s, r in fixed_skills.items():
         if s.startswith('Lv') and s.endswith('插槽'):
             continue
@@ -607,29 +628,42 @@ def fill_slots(skills, a_slots, w_slots, fixed_skills, min_keep_armor=0, min_kee
     w_rem = sorted([s for s in rem_w if s > 0], reverse=True)
     if not _FEASIBILITY_ONLY:
         w_pool = _get_deco_pool('weapon')
-        w_pool_sorted = sorted(w_pool, key=lambda d: (-_deco_priority_score(d['skills'], fs, SKILL_CAPS), -d['slot']))
-        for deco in w_pool_sorted:
+        w_pool_scored = []
+        for deco in w_pool:
+            p_score = _deco_priority_score(deco['skills'], fs, SKILL_CAPS)
+            g_total = sum(gain(sk, fs.get(sk, 0), pts) for sk, pts in deco['skills'])
+            if g_total > 0 and p_score > 0:
+                w_pool_scored.append((p_score, g_total, deco))
+        w_pool_scored.sort(key=lambda x: (-x[0], -x[1]))
+        for _p_score, _g_total, deco in w_pool_scored:
             for i, s in enumerate(w_rem):
                 if s >= deco['slot']:
-                    p_score = _deco_priority_score(deco['skills'], fs, SKILL_CAPS)
-                    g_total = sum(gain(sk, fs.get(sk, 0), pts) for sk, pts in deco['skills'])
-                    if g_total > 0 and p_score > 0:
-                        w_rem.pop(i)
-                        for sk, pts in deco['skills']:
-                             fs[sk] = min(fs.get(sk, 0) + pts, SKILL_CAPS.get(sk, 99))
-                        used.append(deco['name'])
-                        break
+                    w_rem.pop(i)
+                    for sk, pts in deco['skills']:
+                         fs[sk] = min(fs.get(sk, 0) + pts, SKILL_CAPS.get(sk, 99))
+                    used.append(deco['name'])
+                    break
     min_keep = max(min_keep_armor, total_slot_keep)
     if not _FEASIBILITY_ONLY:
+        pool_a_scored = []
+        for deco in pool_a:
+            p_score = _deco_priority_score(deco['skills'], fs, SKILL_CAPS)
+            g_total = sum(gain(sk, fs.get(sk, 0), pts) for sk, pts in deco['skills'])
+            if g_total > 0 and (p_score * 100 + g_total) > 0:
+                pool_a_scored.append((p_score * 100 + g_total, deco))
+        pool_a_scored.sort(key=lambda x: -x[0])
         while len(a) > min_keep:
-            best_d = None; best_s = -1; best_i = -1
-            for si, s in enumerate(a):
-                for deco in pool_a:
-                    if deco['slot'] > s: continue
-                    p_score = _deco_priority_score(deco['skills'], fs, SKILL_CAPS)
-                    g_total = sum(gain(sk, fs.get(sk, 0), pts) for sk, pts in deco['skills'])
-                    if g_total > 0 and (p_score * 100 + g_total) > best_s:
-                        best_s = p_score * 100 + g_total; best_d = deco; best_i = si
+            best_d = None; best_i = -1
+            a_max = max(a) if a else 0
+            for _score, deco in pool_a_scored:
+                if deco['slot'] > a_max:
+                    continue
+                for si, s in enumerate(a):
+                    if s >= deco['slot']:
+                        best_d = deco; best_i = si
+                        break
+                if best_d is not None:
+                    break
             if best_d is None: break
             a.pop(best_i)
             for sk, pts in best_d['skills']:
@@ -730,27 +764,6 @@ def _check_deco_feasible(skills, a_slots, w_slots, fixed_skills, combo_skills,
                 all_req[sk] = all_req.get(sk, 0) + armor_need
     w_total_need = 0
     a_total_need = 0
-    for sk, need in all_req.items():
-        have = skills.get(sk, 0)
-        if have >= need: continue
-        d = need - have
-        dtype = 'weapon' if sk in WEAPON_SK else 'armor'
-        pool = deco_idx.get((sk, dtype), [])
-        if not pool:
-            return False
-        if dtype == 'weapon':
-            w_total_need += d
-        else:
-            a_total_need += d
-    w_total_slots = w_cnt[1] + w_cnt[2] + w_cnt[3]
-    a_total_slots = a_cnt[1] + a_cnt[2] + a_cnt[3]
-    if a_total_need > 0:
-        a_max_pts = max((max(pts for sr, pts, dn in deco_idx.get((sk, 'armor'), [(0,1,'')]))
-                        for sk in all_req if sk not in WEAPON_SK and skills.get(sk, 0) < all_req[sk]), default=1)
-        a_slots_needed = (a_total_need + a_max_pts - 1) // a_max_pts
-        if a_slots_needed > a_total_slots:
-            return False
-    w_need = {1:0, 2:0, 3:0}
     a_need = {1:0, 2:0, 3:0}
     for sk, need in all_req.items():
         have = skills.get(sk, 0)
@@ -758,25 +771,34 @@ def _check_deco_feasible(skills, a_slots, w_slots, fixed_skills, combo_skills,
         d = need - have
         dtype = 'weapon' if sk in WEAPON_SK else 'armor'
         if dtype == 'weapon':
-            continue
-        pool = deco_idx.get((sk, dtype), [])
-        best = max(pool, key=lambda x: x[1])
-        best_pts = best[1]
-        best_slot = best[0]
-        slots_needed = (d + best_pts - 1) // best_pts
-        a_need[best_slot] += slots_needed
-    w_avail = [0, 0, 0, 0]
-    w_use = [0, 0, 0, 0]
-    for lv in [1, 2, 3]:
-        w_avail[lv] = w_cnt[lv]
-        w_use[lv] = w_need[lv]
-    for lv in [1, 2]:
-        if w_use[lv] > w_avail[lv]:
-            borrow = w_use[lv] - w_avail[lv]
-            w_use[lv] = w_avail[lv]
-            w_use[lv+1] += borrow
-    if w_use[3] > w_avail[3]:
-        return False
+            pool = deco_idx.get((sk, 'weapon'), [])
+            if not pool:
+                return False
+            w_total_need += d
+        else:
+            pool = deco_idx.get((sk, 'armor'), [])
+            if not pool:
+                return False
+            a_total_need += d
+            best = max(pool, key=lambda x: x[1])
+            best_pts = best[1]
+            best_slot = best[0]
+            slots_needed = (d + best_pts - 1) // best_pts
+            a_need[best_slot] += slots_needed
+    w_total_slots = w_cnt[1] + w_cnt[2] + w_cnt[3]
+    a_total_slots = a_cnt[1] + a_cnt[2] + a_cnt[3]
+    if a_total_need > 0:
+        a_max_pts = 1
+        for sk in all_req:
+            if sk not in WEAPON_SK and skills.get(sk, 0) < all_req[sk]:
+                pool = deco_idx.get((sk, 'armor'), [])
+                if pool:
+                    mp = max(pts for sr, pts, dn in pool)
+                    if mp > a_max_pts:
+                        a_max_pts = mp
+        a_slots_needed = (a_total_need + a_max_pts - 1) // a_max_pts
+        if a_slots_needed > a_total_slots:
+            return False
     a_avail = [0, 0, 0, 0]
     a_use2 = [0, 0, 0, 0]
     for lv in [1, 2, 3]:

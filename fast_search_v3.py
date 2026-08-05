@@ -98,7 +98,7 @@ SKILL_CAPS = {
     '冰属性攻击强化': 3, '雷属性攻击强化': 3,
     '巨戟龙的默示录': 4, '火龙之力': 4, '凶爪龙之力': 4,
     '黑蚀龙之力': 4, '泡狐龙之力': 4, '煌雷龙之力': 4,
-    '海龙的涡雷': 4, '冻峰龙之反叛': 4, '锁刃龙之饥饿': 4, '霸主之魂': 3,
+    '海龙之涡雷': 4, '冻峰龙的反叛': 4, '锁刃龙的饥饿': 4, '霸主之魂': 3,
 }
 
 # 从skills_data.json补充缺失的技能上限
@@ -119,27 +119,19 @@ for _cat_key in ['武器技能', '防具技能']:
         _lv = _sinfo.get('max_lv', 0)
         if _lv > 0 and _sname not in SKILL_CAPS:
             SKILL_CAPS[_sname] = _lv
-# 系列技能统一2级，覆盖硬编码值
+# 系列技能补充缺失的上限（不覆盖硬编码值）：系列技能最多4件
 for _sname in skills_data.get('系列技能', {}):
-    if _sname != '说明':
-        SKILL_CAPS[_sname] = 2
-# 组合技能统一1级，覆盖硬编码值
+    if _sname != '说明' and _sname not in SKILL_CAPS:
+        SKILL_CAPS[_sname] = 4
+# 组合技能补充缺失的上限（不覆盖硬编码值）：组合技能上限3级
 for _sname in skills_data.get('组合技能', {}):
-    if _sname != '说明':
-        SKILL_CAPS[_sname] = 1
+    if _sname != '说明' and _sname not in SKILL_CAPS:
+        SKILL_CAPS[_sname] = 3
 
 WEAPON_SK = frozenset(skills_data.get('武器技能', {}).keys())
 
-SERIES_SK = frozenset([
-    '巨戟龙的默示录', '火龙之力', '凶爪龙之力', '黑蚀龙之力',
-    '泡狐龙之力', '煌雷龙之力', '海龙的涡雷',
-    '冻峰龙之反叛', '锁刃龙之饥饿', '辟兽之力', '暗器蛸之力',
-    '铠龙之守护', '雪狮子王之斗志', '雷颚龙之斗志', '波衣龙之守护',
-    '狱焰蛸之反叛', '护锁刃龙之命脉', '白炽龙之脉动',
-    '花舞祈祷', '千刃龙的斗志', '踊火祈祷', '欧米茄共鸣',
-    '暗黑骑士之证', '梦灯祈祷', '祝谣祈祷',
-])
-GROUP_SK = frozenset(skills_data.get('组合技能', {}).keys()) if '组合技能' in skills_data else frozenset()
+SERIES_SK = frozenset(k for k in skills_data.get('系列技能', {}) if k != '说明')
+GROUP_SK = frozenset(k for k in skills_data.get('组合技能', {}) if k != '说明')
 NO_DECO_SK = SERIES_SK | GROUP_SK
 SLOT_SKILLS = frozenset([f'Lv{n}插槽' for n in range(1, 5)])
 
@@ -217,8 +209,8 @@ def _calc_damage_cached(skills_tuple):
     fire_dragon=cl('火龙之力',4)
     bahar=cl('霸主之魂',3)
     geki=cl('巨戟龙的默示录',4)
-    touhou=cl('冻峰龙之反叛',4)
-    kizuna=cl('锁刃龙之饥饿',4)
+    touhou=cl('冻峰龙的反叛',4)
+    kizuna=cl('锁刃龙的饥饿',4)
     kuroshoku=cl('黑蚀龙之力',4)
     kyozou=cl('凶爪龙之力',4)
     ecb=ELEM_CRIT[ecrit]; scb=SUPER_CRIT[super_lv]
@@ -340,8 +332,8 @@ def _calc_damage_cached(skills_tuple):
             '攻击': atk, '看破': kanken, '龙属性攻击强化': dragon,
             '攻击守势': oguard, '因祸得福': coal, '攻势': foray,
             '属性吸收': absorb, '火龙之力': fire_dragon, '霸主之魂': bahar,
-            '巨戟龙的默示录': geki, '冻峰龙之反叛': touhou,
-            '锁刃龙之饥饿': kizuna, '黑蚀龙之力': kuroshoku,
+            '巨戟龙的默示录': geki, '冻峰龙的反叛': touhou,
+            '锁刃龙的饥饿': kizuna, '黑蚀龙之力': kuroshoku,
             '凶爪龙之力': kyozou
         },
         'coefficients': {
@@ -824,16 +816,26 @@ def _dominated_check(item, dom, skill_names):
     return True
 
 # ==================== 候选构建 ====================
-def _build_candidates(charm_pool, fixed_skills, combo_skills, quiet=False, extra_skill_names=None):
+def _build_candidates(charm_pool, fixed_skills, combo_skills, quiet=False, extra_skill_names=None, user_weapon_skills=None):
     """构建候选装备列表（与dfs_search分离，允许缓存复用）
 
     extra_skill_names: 额外技能名集合，用于扩大支配检查和预过滤范围，
     确保追加技能查询时不会误删含目标技能的候选。
+    user_weapon_skills: 用户在武器配置区选择的技能（或自动匹配的武器技能）
+        - None: 未指定，从 combo_skills 中提取 NO_DECO_SK 作为武器技能（旧行为）
+        - {}: 明确没有武器技能，不从 combo_skills 提取
+        - {技能: 等级}: 指定了武器技能
     """
     weapon_skills = {}
-    if combo_skills:
-        for sk, lv in combo_skills.items():
+    if user_weapon_skills is not None:
+        # 新行为：使用传入的武器技能（可以是空字典 {}）
+        for sk, lv in user_weapon_skills.items():
             weapon_skills[sk] = lv
+    elif combo_skills:
+        # 旧行为：从 combo_skills 中提取 NO_DECO_SK 作为武器技能
+        for sk, lv in combo_skills.items():
+            if sk in NO_DECO_SK:
+                weapon_skills[sk] = 1
 
     # 武器技能也可以由防具和护石提供，所以不将它们从armor_fixed中排除
     # weapon_fixed仅用于武器孔位填充优化，不影响候选预过滤
@@ -1007,7 +1009,7 @@ def _build_candidates(charm_pool, fixed_skills, combo_skills, quiet=False, extra
 # ==================== 向量化DFS搜索 ====================
 def dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
                max_results=0, timeout_s=10.0, quiet=False, cached_ctx=None,
-               min_rem_weapon=0):
+               min_rem_weapon=0, user_weapon_skills=None):
     """DFS回溯搜索（向量化优化版 v3）
 
     核心优化（参照网页配装器策略）：
@@ -1021,10 +1023,19 @@ def dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
     part_names = ['head', 'body', 'arms', 'waist', 'legs']
 
     if cached_ctx is not None:
-        (candidates, all_skill_names, weapon_skills, armor_fixed, weapon_fixed,
+        (candidates, all_skill_names, _cached_weapon_skills, armor_fixed, _cached_weapon_fixed,
          best_by_part, best_slot_by_part, candidates_by_part, part_series_availability) = cached_ctx
+        # 从当前的 user_weapon_skills 重新计算 weapon_skills 和 weapon_fixed
+        if user_weapon_skills is not None:
+            weapon_skills = {}
+            for sk, lv in user_weapon_skills.items():
+                weapon_skills[sk] = lv
+            weapon_fixed = {s: r for s, r in fixed_skills.items() if s in WEAPON_SK}
+        else:
+            weapon_skills = _cached_weapon_skills
+            weapon_fixed = _cached_weapon_fixed
     else:
-        ctx = _build_candidates(charm_pool, fixed_skills, combo_skills, quiet=quiet)
+        ctx = _build_candidates(charm_pool, fixed_skills, combo_skills, quiet=quiet, user_weapon_skills=user_weapon_skills)
         (candidates, all_skill_names, weapon_skills, armor_fixed, weapon_fixed,
          best_by_part, best_slot_by_part, candidates_by_part, part_series_availability) = ctx
 
@@ -1153,8 +1164,8 @@ def dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
             mandatory_series = False
             if all_series_req:
                 for _ss, _lv in all_series_req.items():
-                    _need = 4 if _lv >= 4 else (3 if _ss in GROUP_SK else 2)
-                    _wprov = 1 if (combo_skills and combo_skills.get(_ss, 0) > 0) else 0
+                    _need = _lv
+                    _wprov = 1 if (weapon_skills and weapon_skills.get(_ss, 0) > 0) else 0
                     other_max = _wprov
                     for _pj in range(5):
                         if _pj != pi and _ss in part_series_availability.get(_pj, set()):
@@ -1190,7 +1201,7 @@ def dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
         if ss not in NO_DECO_SK:
             continue
         need_lv = fixed_skills[ss]
-        need_pieces = 4 if need_lv >= 4 else (3 if ss in GROUP_SK else 2)
+        need_pieces = max(1, need_lv)
         weapon_provided = combo_skills.get(ss, 0) > 0 if combo_skills else False
         avail_pieces = (1 if weapon_provided else 0)
         avail_pieces += sum(1 for p in part_names
@@ -1267,11 +1278,11 @@ def dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
     _series_need_pieces = []
     for _ss in _req_series_list:
         _nlv = all_series_req[_ss]
-        _series_need_pieces.append(4 if _nlv >= 4 else (3 if _ss in GROUP_SK else 2))
+        _series_need_pieces.append(max(1, _nlv))
     # 武器提供的系列件数
     _series_wprov = [0] * _n_req_series
-    if combo_skills and _n_req_series > 0:
-        for _ss, _lv in combo_skills.items():
+    if weapon_skills and _n_req_series > 0:
+        for _ss, _lv in weapon_skills.items():
             if _ss in _series_idx_map:
                 _series_wprov[_series_idx_map[_ss]] = 1
 
@@ -1654,6 +1665,8 @@ def dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
         if combo_skills:
             for s, r in combo_skills.items():
                 if s in NO_DECO_SK:
+                    if fs.get(s, 0) < r:
+                        return False
                     continue
                 if fs.get(s, 0) < r: return False
         if min_rem_armor > 0:
@@ -2075,105 +2088,296 @@ def dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
     return results
 
 
-def dfs_search_auto_weapon(charm_pool, fixed_skills, combo_skills, min_rem_armor,
-                           max_results=5, timeout_s=10.0, quiet=True,
-                           disabled_weapon_skills=None, total_timeout=30.0,
-                           min_rem_weapon=0):
-    """武器技能自动匹配最优：当用户未指定系列/组合技能时，
-    遍历所有可用的系列+组合技能作为武器技能，挑选伤害最高的方案。
-
-    total_timeout: 整个自动匹配过程的超时秒数，防止候选过多时卡住。
+def _generate_weapon_equipment(fixed_skills, combo_skills, disabled_weapon_skills=None):
+    """生成武器装备列表：每个武器技能组合是一个独立装备
+    
+    武器可以带：
+    - 1个系列技能（如火龙之力、黑蚀龙之力等）
+    - 1个组合技能（如霸主之魂）
+    - 两者都带
+    
+    返回武器装备列表，每个装备的part_idx=6
     """
-    start_time = time.time()
-    # 如果用户已指定系列/组合技能，直接走普通搜索
-    has_user_weapon = any(s in NO_DECO_SK for s in (combo_skills or {}))
-    if has_user_weapon:
-        results = dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
-                             max_results=max_results, timeout_s=timeout_s, quiet=quiet,
-                             min_rem_weapon=min_rem_weapon)
-        return results, None, None
-
-    # 收集候选武器技能：系列技能 + 组合技能，排除被禁用的
+    # 有伤害贡献的系列技能
+    DAMAGE_SERIES_SK = frozenset([
+        '火龙之力', '霸主之魂', '黑蚀龙之力', '凶爪龙之力', '巨戟龙的默示录',
+    ])
+    
     disabled = disabled_weapon_skills or set()
-    candidates_ws = []
+    
+    # 获取需求的系列技能和组合技能
+    need_series = {}
+    for s, lv in fixed_skills.items():
+        if s in NO_DECO_SK:
+            need_series[s] = max(need_series.get(s, 0), lv)
+    if combo_skills:
+        for s, lv in combo_skills.items():
+            if s in NO_DECO_SK:
+                need_series[s] = max(need_series.get(s, 0), lv)
+    
+    # 系列技能候选
+    series_candidates = []
     for s in SERIES_SK:
         if s in disabled:
             continue
-        candidates_ws.append((s, 2))  # 系列技能默认尝试Lv2(4件)
+        # 如果需求中有这个系列技能，优先尝试
+        priority = 1 if s in need_series else 2
+        series_candidates.append((s, 2, priority))  # 尝试Lv2
+    
+    # 组合技能候选
+    group_candidates = []
     for s in GROUP_SK:
         if s in disabled:
             continue
-        candidates_ws.append((s, 1))  # 组合技能Lv1(3件)
+        priority = 1 if s in need_series else 2
+        group_candidates.append((s, 3, priority))  # 尝试Lv3
+    
+    # 构造所有武器装备组合
+    weapon_equipments = []
+    
+    # 计算武器孔位（固定）
+    weapon_slots = list(WSLOTS)
+    w_slot_sum = sum(weapon_slots)
+    
+    # 只带系列技能
+    for s_name, s_lv, priority in series_candidates:
+        skills = {s_name: 1}  # 武器只提供1级
+        name = f"武器[{s_name} Lv{s_lv}]"
+        weapon_equipments.append({
+            'name': name,
+            'part_idx': 6,  # 武器部位
+            'skills': skills,
+            'slots': [],  # 武器不提供防具孔
+            'slots_sorted': (),
+            'weapon_slots': weapon_slots,
+            'wslots_sorted': tuple(sorted(weapon_slots, reverse=True)),
+            'rarity': 0,
+            'score': priority * 100 + s_lv,  # 优先需求的技能
+            'max_slot': max(weapon_slots) if weapon_slots else 0,
+            'slot_sum': 0,
+            'w_slot_sum': w_slot_sum,
+            '_is_weapon': True,  # 标记为武器装备
+            '_weapon_series': s_name,
+            '_weapon_group': None,
+        })
+    
+    # 只带组合技能
+    for g_name, g_lv, priority in group_candidates:
+        skills = {g_name: 1}
+        name = f"武器[{g_name} Lv{g_lv}]"
+        weapon_equipments.append({
+            'name': name,
+            'part_idx': 6,
+            'skills': skills,
+            'slots': [],
+            'slots_sorted': (),
+            'weapon_slots': weapon_slots,
+            'wslots_sorted': tuple(sorted(weapon_slots, reverse=True)),
+            'rarity': 0,
+            'score': priority * 100 + g_lv,
+            'max_slot': max(weapon_slots) if weapon_slots else 0,
+            'slot_sum': 0,
+            'w_slot_sum': w_slot_sum,
+            '_is_weapon': True,
+            '_weapon_series': None,
+            '_weapon_group': g_name,
+        })
+    
+    # 同时带系列+组合
+    for s_name, s_lv, s_priority in series_candidates:
+        for g_name, g_lv, g_priority in group_candidates:
+            skills = {s_name: 1, g_name: 1}
+            name = f"武器[{s_name} Lv{s_lv} + {g_name} Lv{g_lv}]"
+            combined_priority = min(s_priority, g_priority)
+            weapon_equipments.append({
+                'name': name,
+                'part_idx': 6,
+                'skills': skills,
+                'slots': [],
+                'slots_sorted': (),
+                'weapon_slots': weapon_slots,
+                'wslots_sorted': tuple(sorted(weapon_slots, reverse=True)),
+                'rarity': 0,
+                'score': combined_priority * 1000 + s_lv + g_lv,
+                'max_slot': max(weapon_slots) if weapon_slots else 0,
+                'slot_sum': 0,
+                'w_slot_sum': w_slot_sum,
+                '_is_weapon': True,
+                '_weapon_series': s_name,
+                '_weapon_group': g_name,
+            })
+    
+    # 添加一个"无武器技能"的装备（武器不带任何技能）
+    weapon_equipments.append({
+        'name': '武器[无技能]',
+        'part_idx': 6,
+        'skills': {},
+        'slots': [],
+        'slots_sorted': (),
+        'weapon_slots': weapon_slots,
+        'wslots_sorted': tuple(sorted(weapon_slots, reverse=True)),
+        'rarity': 0,
+        'score': 0,  # 最低优先级
+        'max_slot': max(weapon_slots) if weapon_slots else 0,
+        'slot_sum': 0,
+        'w_slot_sum': w_slot_sum,
+        '_is_weapon': True,
+        '_weapon_series': None,
+        '_weapon_group': None,
+    })
+    
+    return weapon_equipments
 
-    if not candidates_ws:
-        # 没有可用武器技能，走普通搜索
+
+def dfs_search_auto_weapon(charm_pool, fixed_skills, combo_skills, min_rem_armor,
+                           max_results=5, timeout_s=10.0, quiet=True,
+                           disabled_weapon_skills=None, total_timeout=30.0,
+                           min_rem_weapon=0, user_weapon_skills=None):
+    """武器技能自动匹配最优：将武器视为独立装备，参与DFS搜索选择最优方案。
+    
+    核心思想：武器 = 独立装备部位（part_idx=6），每个武器技能组合是一个独立装备。
+    搜索时程序自动选择最优的武器装备（无技能/系列/组合/系列+组合）。
+    
+    user_weapon_skills: 用户在武器配置区选择的技能（如果已指定则直接使用）
+    """
+    start_time = time.time()
+
+    # 如果用户已在武器配置区指定技能，直接走普通搜索
+    has_user_weapon = user_weapon_skills and any(s in NO_DECO_SK for s in user_weapon_skills)
+    if has_user_weapon:
         results = dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
                              max_results=max_results, timeout_s=timeout_s, quiet=quiet,
-                             min_rem_weapon=min_rem_weapon)
+                             min_rem_weapon=min_rem_weapon, user_weapon_skills=user_weapon_skills)
+        if results:
+            r = results[0]
+            # 标记武器信息
+            if user_weapon_skills:
+                for sk in user_weapon_skills:
+                    if sk in SERIES_SK:
+                        r['_auto_weapon_series'] = sk
+                    elif sk in GROUP_SK:
+                        r['_auto_weapon_group'] = sk
         return results, None, None
 
+    # ===== 预构建通用候选池（只构建一次）=====
     if not quiet:
-        print(f"  自动匹配武器技能: 候选{len(candidates_ws)}个")
+        print('  预构建候选池...')
+    t0 = time.time()
+    cached_ctx = _build_candidates(charm_pool, fixed_skills, combo_skills, quiet=quiet, user_weapon_skills={})
+    if not quiet:
+        print(f'  候选池构建耗时: {time.time() - t0:.3f}s')
 
+    # 生成武器装备列表
+    weapon_equipments = _generate_weapon_equipment(fixed_skills, combo_skills, disabled_weapon_skills)
+    
+    if not quiet:
+        print(f"  生成{len(weapon_equipments)}种武器装备")
+    
+    # 对每个武器装备进行搜索，选择伤害最高的
     best_results = []
-    best_weapon_skill = None
-    best_weapon_lv = 1
+    best_weapon_series = None
+    best_weapon_group = None
     best_dmg = -1.0
-    per_skill_best = {}  # skill -> (dmg, lv, result)
-
-    for ws_name, ws_lv in candidates_ws:
+    
+    for weq in weapon_equipments:
         if time.time() - start_time > total_timeout:
             if not quiet:
                 print(f"  自动匹配武器技能: 总超时({total_timeout}s)，返回当前最优")
             break
-        # 构造本次搜索的 combo_skills
+        
+        # 构造武器技能
+        candidate_weapon_skills = {}
         new_combo = dict(combo_skills) if combo_skills else {}
-        new_combo[ws_name] = ws_lv
+        
+        if weq['_weapon_series']:
+            candidate_weapon_skills[weq['_weapon_series']] = 1
+            new_combo[weq['_weapon_series']] = 2  # 尝试Lv2
+        
+        if weq['_weapon_group']:
+            candidate_weapon_skills[weq['_weapon_group']] = 1
+            new_combo[weq['_weapon_group']] = 3  # 尝试Lv3
+        
+        if not candidate_weapon_skills:
+            # 无武器技能，用空字典
+            candidate_weapon_skills = {}
+        
         try:
             results = dfs_search(charm_pool, fixed_skills, new_combo, min_rem_armor,
                                  max_results=1, timeout_s=timeout_s, quiet=quiet,
-                                 min_rem_weapon=min_rem_weapon)
+                                 min_rem_weapon=min_rem_weapon, user_weapon_skills=candidate_weapon_skills,
+                                 cached_ctx=cached_ctx)
         except Exception:
             results = []
+        
         if not results:
             continue
+        
         top = results[0]
         dmg = top.get('pract', 0)
-        per_skill_best[ws_name] = (dmg, ws_lv, top)
+        
+        if not quiet:
+            parts = []
+            if weq['_weapon_series']:
+                parts.append(f"{weq['_weapon_series']}")
+            if weq['_weapon_group']:
+                parts.append(f"{weq['_weapon_group']}")
+            ws_str = ' + '.join(parts) if parts else '无技能'
+            print(f"    {ws_str}: 伤害{dmg:.1f}")
+        
         if dmg > best_dmg:
             best_dmg = dmg
-            best_weapon_skill = ws_name
-            best_weapon_lv = ws_lv
+            best_weapon_series = weq['_weapon_series']
+            best_weapon_group = weq['_weapon_group']
             best_results = results
-
+    
     if not best_results:
         # 所有武器技能都搜不到方案，回退到无武器技能搜索
         results = dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
                              max_results=max_results, timeout_s=timeout_s, quiet=quiet,
-                             min_rem_weapon=min_rem_weapon)
+                             min_rem_weapon=min_rem_weapon, user_weapon_skills=user_weapon_skills)
         return results, None, None
 
-    # 用最优武器技能重新搜索，返回完整结果数
-    best_combo = dict(combo_skills) if combo_skills else {}
-    best_combo[best_weapon_skill] = best_weapon_lv
+    # 用最优武器技能组合重新搜索，返回完整结果数
+    best_combo_skills = dict(combo_skills) if combo_skills else {}
+    best_weapon_skills = {}
+
+    if best_weapon_series:
+        best_combo_skills[best_weapon_series] = 2
+        best_weapon_skills[best_weapon_series] = 1
+
+    if best_weapon_group:
+        best_combo_skills[best_weapon_group] = 3
+        best_weapon_skills[best_weapon_group] = 1
+
     try:
-        best_results = dfs_search(charm_pool, fixed_skills, best_combo, min_rem_armor,
+        best_results = dfs_search(charm_pool, fixed_skills, best_combo_skills, min_rem_armor,
                                   max_results=max_results, timeout_s=timeout_s, quiet=quiet,
-                                  min_rem_weapon=min_rem_weapon)
+                                  min_rem_weapon=min_rem_weapon, user_weapon_skills=best_weapon_skills,
+                                  cached_ctx=cached_ctx)
     except Exception:
-        best_results = [per_skill_best[best_weapon_skill][2]]
+        pass
 
     # 标记自动匹配的武器技能到结果中
     for r in best_results:
-        r['_auto_weapon_skill'] = best_weapon_skill
+        if best_weapon_series:
+            r['_auto_weapon_series'] = best_weapon_series
+        if best_weapon_group:
+            r['_auto_weapon_group'] = best_weapon_group
 
     # 限制返回数量
     if max_results > 0:
         best_results = best_results[:max_results]
 
     if not quiet:
-        print(f"  自动匹配最优武器技能: {best_weapon_skill} Lv{best_weapon_lv} (伤害{best_dmg:.1f})，返回{len(best_results)}方案")
-    return best_results, best_weapon_skill, best_weapon_lv
+        parts = []
+        if best_weapon_series:
+            parts.append(f"{best_weapon_series}")
+        if best_weapon_group:
+            parts.append(f"{best_weapon_group}")
+        ws_str = ' + '.join(parts) if parts else '无技能'
+        print(f"  自动匹配最优武器技能: {ws_str} (伤害{best_dmg:.1f})，返回{len(best_results)}方案")
+
+    return best_results, best_weapon_series, best_weapon_group
 
 
 def _quick_skill_upper_bound(sk, cached_ctx, wslots):
@@ -2226,8 +2430,8 @@ def query_extra_stream(fixed_skills, combo_skills, min_rem_armor, charm_pool, mo
       {'type':'done', 'result': {...完整结果...}}
     """
     series_names = ['巨戟龙的默示录', '火龙之力', '凶爪龙之力', '黑蚀龙之力',
-                    '泡狐龙之力', '煌雷龙之力', '海龙的涡雷',
-                    '冻峰龙之反叛', '锁刃龙之饥饿']
+                    '泡狐龙之力', '煌雷龙之力', '海龙之涡雷',
+                    '冻峰龙的反叛', '锁刃龙的饥饿']
 
     fixed_set = set(fixed_skills.keys())
     if combo_skills:

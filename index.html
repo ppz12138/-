@@ -1,4 +1,4 @@
-<!-- VERSION: 2026-08-03-v2 -->
+<!-- VERSION: 2026-08-04-v4 -->
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -291,7 +291,8 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
 }
 .ls-label { font-size: 12px; color: var(--muted); margin-right: 4px; }
 .lv-btn {
-  width: 30px; height: 30px;
+  min-width: 30px; height: 30px;
+  padding: 0 10px;
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--bg3);
@@ -301,6 +302,7 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
   font-weight: 600;
   transition: all 0.2s ease;
   font-family: inherit;
+  white-space: nowrap;
 }
 .lv-btn:hover { border-color: var(--accent); background: rgba(108,140,255,0.1); }
 .lv-btn.active {
@@ -782,7 +784,6 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 .weapon-skills-row { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 14px; }
 .weapon-series-box, .weapon-combo-box {
   flex: 1;
-  min-width: 260px;
   padding: 14px;
   background: var(--bg);
   border: 1px solid var(--border);
@@ -1229,6 +1230,28 @@ function updateReserveSlots() {
   }
 }
 
+function getSeriesEffectName(baseName) {
+  const sd = SKILLS_DATA && SKILLS_DATA['系列技能'] ? SKILLS_DATA['系列技能'][baseName] : null;
+  if (!sd) return null;
+  const root = sd['技能名'] || baseName;
+  return {
+    effectI: root + 'I',
+    effectII: root + 'II',
+    needI: 2,
+    needII: 4
+  };
+}
+
+function getComboEffectName(baseName) {
+  const sd = SKILLS_DATA && SKILLS_DATA['组合技能'] ? SKILLS_DATA['组合技能'][baseName] : null;
+  if (!sd) return null;
+  const root = sd['技能名'] || baseName;
+  return {
+    effect: root,
+    need: 3
+  };
+}
+
 function isComboSkill(skill) {
   return WEAPON_SKILL_LIST.includes(skill) || SERIES_NAMES.includes(skill) || COMBO_SKILLS.includes(skill);
 }
@@ -1257,8 +1280,8 @@ function selectComboSkill(name, level) {
 function clearSeriesSkill() {
   selectedSeriesSkill = null;
   selectedSeriesLevel = 0;
-  if (window._lastAutoWeapon && SERIES_NAMES.includes(window._lastAutoWeapon)) {
-    window._lastAutoWeapon = null;
+  if (window._lastAutoWeapon && window._lastAutoWeapon.series_skill) {
+    window._lastAutoWeapon.series_skill = null;
   }
   renderWeaponSkillBoxes();
 }
@@ -1266,8 +1289,8 @@ function clearSeriesSkill() {
 function clearComboSkill() {
   selectedComboSkill = null;
   selectedComboLevel = 0;
-  if (window._lastAutoWeapon && COMBO_SKILLS.includes(window._lastAutoWeapon)) {
-    window._lastAutoWeapon = null;
+  if (window._lastAutoWeapon && window._lastAutoWeapon.group_skill) {
+    window._lastAutoWeapon.group_skill = null;
   }
   renderWeaponSkillBoxes();
 }
@@ -1334,14 +1357,14 @@ function renderWeaponSkillBoxes() {
       seriesSelected.innerHTML = '<span class="chip chip-disabled">禁用</span>' +
         '<button class="weapon-skill-clear" onclick="clearSeriesSkill()">✕ 清除</button>';
     } else if (selectedSeriesSkill) {
-      const lv = selectedSeriesLevel || SKILL_CAPS[selectedSeriesSkill] || 1;
+      const lv = selectedSeriesLevel || 2;
       seriesSelected.innerHTML = '<span class="chip chip-selected">' +
         esc(selectedSeriesSkill) + ' Lv' + lv + '</span>' +
         '<button class="weapon-skill-clear" onclick="clearSeriesSkill()">✕ 清除</button>';
-    } else if (window._lastAutoWeapon && SERIES_NAMES.includes(window._lastAutoWeapon)) {
-      const lv = SKILL_CAPS[window._lastAutoWeapon] || 1;
+    } else if (window._lastAutoWeapon && window._lastAutoWeapon.series_skill) {
+      const lv = window._lastAutoWeapon.series_level || 2;
       seriesSelected.innerHTML = '<span class="chip chip-selected">' +
-        esc(window._lastAutoWeapon) + ' Lv' + lv + ' <span style="font-size:11px;color:var(--muted);">(自动匹配)</span></span>' +
+        esc(window._lastAutoWeapon.series_skill) + ' Lv' + lv + ' <span style="font-size:11px;color:var(--muted);">(自动匹配)</span></span>' +
         '<button class="weapon-skill-clear" onclick="clearSeriesSkill()">✕ 清除</button>';
     } else {
       seriesSelected.innerHTML = '<span class="weapon-skill-empty">留空 · 搜索时自动匹配最优</span>';
@@ -1354,14 +1377,14 @@ function renderWeaponSkillBoxes() {
       comboSelected.innerHTML = '<span class="chip chip-disabled">禁用</span>' +
         '<button class="weapon-skill-clear" onclick="clearComboSkill()">✕ 清除</button>';
     } else if (selectedComboSkill) {
-      const lv = selectedComboLevel || SKILL_CAPS[selectedComboSkill] || 1;
+      const lv = selectedComboLevel || 3;
       comboSelected.innerHTML = '<span class="chip chip-selected">' +
         esc(selectedComboSkill) + ' Lv' + lv + '</span>' +
         '<button class="weapon-skill-clear" onclick="clearComboSkill()">✕ 清除</button>';
-    } else if (window._lastAutoWeapon && COMBO_SKILLS.includes(window._lastAutoWeapon)) {
-      const lv = SKILL_CAPS[window._lastAutoWeapon] || 1;
+    } else if (window._lastAutoWeapon && window._lastAutoWeapon.group_skill) {
+      const lv = window._lastAutoWeapon.group_level || 3;
       comboSelected.innerHTML = '<span class="chip chip-selected">' +
-        esc(window._lastAutoWeapon) + ' Lv' + lv + ' <span style="font-size:11px;color:var(--muted);">(自动匹配)</span></span>' +
+        esc(window._lastAutoWeapon.group_skill) + ' Lv' + lv + ' <span style="font-size:11px;color:var(--muted);">(自动匹配)</span></span>' +
         '<button class="weapon-skill-clear" onclick="clearComboSkill()">✕ 清除</button>';
     } else {
       comboSelected.innerHTML = '<span class="weapon-skill-empty">留空 · 搜索时自动匹配最优</span>';
@@ -1452,6 +1475,15 @@ function renderSkillButton(skill, context) {
   const cap = SKILL_CAPS[skill] || 1;
   const selected = context === 'select' ? (selectedSkills[skill] > 0) : false;
   const fav = favSkills.has(skill);
+  const isSeries = SERIES_NAMES.includes(skill);
+  const isCombo = COMBO_SKILLS.includes(skill);
+  const isSeriesCombo = isSeries || isCombo;
+  if (isSeriesCombo) {
+    return '<button class="skill-btn ' + (selected?'selected':'') + '" onclick="toggleSkillExpand(\'' + context + '\',\'' + esc(skill) + '\')">' +
+      '<span class="fav-star ' + (fav?'on':'') + '" onclick="event.stopPropagation();toggleFav(\'' + esc(skill) + '\')">' + (fav?'★':'☆') + '</span>' +
+      '<span>' + esc(skill) + '</span>' +
+      '</button>';
+  }
   const curLv = selectedSkills[skill] || 0;
   let dots = '';
   for (let i = 0; i < cap && i < 7; i++) {
@@ -1466,6 +1498,26 @@ function renderSkillButton(skill, context) {
 
 function renderLevelSelector(skill, context, curLv) {
   const cap = SKILL_CAPS[skill] || 1;
+  const isSeries = SERIES_NAMES.includes(skill);
+  const isCombo = COMBO_SKILLS.includes(skill);
+  if (isSeries || isCombo) {
+    let html = '<div class="level-selector"><span class="ls-label">' + esc(skill) + ' 效果:</span>';
+    if (isSeries) {
+      const info = getSeriesEffectName(skill);
+      if (info) {
+        html += '<button class="lv-btn ' + (curLv===2?'active':'') + '" onclick="setSkillLevel(\'' + esc(skill) + '\',2,\'' + context + '\')">' + esc(info.effectI) + ' (2件)</button>';
+        html += '<button class="lv-btn ' + (curLv===4?'active':'') + '" onclick="setSkillLevel(\'' + esc(skill) + '\',4,\'' + context + '\')">' + esc(info.effectII) + ' (4件)</button>';
+      }
+    } else if (isCombo) {
+      const info = getComboEffectName(skill);
+      if (info) {
+        html += '<button class="lv-btn ' + (curLv===3?'active':'') + '" onclick="setSkillLevel(\'' + esc(skill) + '\',3,\'' + context + '\')">' + esc(info.effect) + ' (3件)</button>';
+      }
+    }
+    html += '<button class="lv-btn cancel" onclick="cancelSkill(\'' + esc(skill) + '\',\'' + context + '\')">取消</button>';
+    html += '</div>';
+    return html;
+  }
   let html = '<div class="level-selector"><span class="ls-label">' + esc(skill) + ' 等级:</span>';
   for (let i = 1; i <= cap; i++) {
     html += '<button class="lv-btn ' + (i===curLv?'active':'') + '" onclick="setSkillLevel(\'' + esc(skill) + '\',' + i + ',\'' + context + '\')">' + i + '</button>';
@@ -1529,9 +1581,21 @@ function renderSelectedSkills() {
   keys.forEach(s => {
     const cap = SKILL_CAPS[s] || 1;
     const lv = selectedSkills[s];
-    const full = lv >= cap;
-    html += '<span class="chip ' + (full?'chip-full':'chip-selected') + '" onclick="toggleSkillExpand(\'selected\',\'' + esc(s) + '\')" title="点击调整等级">' +
-      esc(s) + ' Lv' + lv + '/' + cap +
+    const isSeries = SERIES_NAMES.includes(s);
+    const isCombo = COMBO_SKILLS.includes(s);
+    let displayText, titleText, chipClass;
+    if (isSeries || isCombo) {
+      displayText = esc(s) + ' LV' + lv;
+      titleText = '点击调整等级';
+      chipClass = 'chip-selected';
+    } else {
+      const full = lv >= cap;
+      displayText = esc(s) + ' Lv' + lv + '/' + cap;
+      titleText = '点击调整等级';
+      chipClass = full ? 'chip-full' : 'chip-selected';
+    }
+    html += '<span class="chip ' + chipClass + '" onclick="toggleSkillExpand(\'selected\',\'' + esc(s) + '\')" title="' + titleText + '">' +
+      displayText +
       ' <span class="chip-x" onclick="event.stopPropagation();removeSkill(\'' + esc(s) + '\')">✕</span></span>';
   });
   // 预留孔位显示
@@ -1603,7 +1667,9 @@ async function runSearch() {
     auto_weapon_skill: autoWeapon,
     disabled_weapon_skills: [...disabledWeaponSkills],
     weapon_series_skill: selectedSeriesSkill || '',
-    weapon_combo_skill: selectedComboSkill || ''
+    weapon_series_level: selectedSeriesLevel || 0,
+    weapon_combo_skill: selectedComboSkill || '',
+    weapon_combo_level: selectedComboLevel || 0
   };
   lastSearchParams = params;
   const btn = document.getElementById('search-btn');
@@ -1615,8 +1681,20 @@ async function runSearch() {
     const res = await API('/api/custom_search', params);
     if (res.error) throw new Error(res.error);
     lastSearchResults = res;
-    window._lastAutoWeapon = res.auto_weapon_skill || null;
-    const autoInfo = res.auto_weapon_skill ? ' · 自动匹配武器技能: <b>' + esc(res.auto_weapon_skill) + '</b>' : '';
+    window._lastAutoWeapon = res.auto_weapon || null;
+    let autoInfo = '';
+    if (res.auto_weapon) {
+      const parts = [];
+      if (res.auto_weapon.series_skill) {
+        parts.push(res.auto_weapon.series_skill + ' Lv' + res.auto_weapon.series_level);
+      }
+      if (res.auto_weapon.group_skill) {
+        parts.push(res.auto_weapon.group_skill + ' Lv' + res.auto_weapon.group_level);
+      }
+      if (parts.length > 0) {
+        autoInfo = ' · 自动匹配武器: <b>' + parts.join(' + ') + '</b>';
+      }
+    }
     document.getElementById('search-status').innerHTML = '找到 <b>' + res.count + '</b> 个方案 (' + res.total_time + 's)' + autoInfo;
     renderSearchResults(res);
     switchTab('search');
@@ -1663,7 +1741,7 @@ function renderResultCard(r, idx) {
   const weaponSkillHTML = (() => {
     const ws = r.weapon_skill || {};
     const entries = Object.entries(ws);
-    if (entries.length === 0) return { html: '', text: '' };
+    if (entries.length === 0) return { html: '', text: '无' };
     const html = '<div class="armor-card weapon-card">' +
       '<div class="armor-part">武器技能</div>' +
       '<div class="skill-list">' + entries.map(([k,v]) => '<div>' + esc(k) + ' <span>Lv' + v + '</span></div>').join('') + '</div>' +
@@ -1671,7 +1749,7 @@ function renderResultCard(r, idx) {
     const text = entries.map(([k,v]) => esc(k) + ' Lv' + v).join(', ');
     return { html, text };
   })();
-  const weaponSkillText = weaponSkillHTML.text || '';
+  const weaponSkillText = weaponSkillHTML.text || '无';
   const weaponSkillCard = weaponSkillHTML.html || '';
 
   const decoHTML = Object.entries(r.decorations || {}).map(([k,v]) => {
@@ -1702,19 +1780,29 @@ function renderResultCard(r, idx) {
     for (const s of r.series_check) {
       const cap = SKILL_CAPS[s.skill] || 1;
       seriesComboSet.add(s.skill);
-      const needPieces = s.need_pieces || (s.skill in GROUP_SK ? 3 : (cap >= 4 ? 4 : 2));
+      const needPieces = s.need_pieces || Math.max(1, cap);
       const actualPieces = s.actual_pieces || 0;
-      const levelFromPieces = Math.floor(actualPieces / 2);
-      const displayLevel = Math.min(levelFromPieces, cap);
+      const displayLevel = Math.min(s.level || 0, cap);
       seriesComboInfo[s.skill] = {
         actual_pieces: actualPieces,
         armor_pieces: s.armor_pieces || 0,
         weapon_provided: s.weapon_provided || 0,
         need_pieces: needPieces,
         level: displayLevel,
+        cap: cap,
         ok: s.ok
       };
       allSkills[s.skill] = { level: displayLevel, cap: cap };
+    }
+  }
+
+  // 将武器技能也纳入方案技能区展示
+  if (r.weapon_skill) {
+    for (const [sk, lv] of Object.entries(r.weapon_skill)) {
+      if (!(sk in allSkills)) {
+        const cap = SKILL_CAPS[sk] || 1;
+        allSkills[sk] = { level: Math.min(lv || 0, cap), cap: cap };
+      }
     }
   }
 
@@ -1724,7 +1812,10 @@ function renderResultCard(r, idx) {
   if (selectedSeriesSkill && selectedSeriesSkill !== '__disabled__' && !disabledWeaponSkills.has(selectedSeriesSkill)) weaponSel.push(selectedSeriesSkill);
   if (selectedComboSkill && selectedComboSkill !== '__disabled__' && !disabledWeaponSkills.has(selectedComboSkill)) weaponSel.push(selectedComboSkill);
   // 加入自动匹配的武器技能
-  if (window._lastAutoWeapon && !weaponSel.includes(window._lastAutoWeapon)) weaponSel.push(window._lastAutoWeapon);
+  if (window._lastAutoWeapon) {
+    if (window._lastAutoWeapon.series_skill && !weaponSel.includes(window._lastAutoWeapon.series_skill)) weaponSel.push(window._lastAutoWeapon.series_skill);
+    if (window._lastAutoWeapon.group_skill && !weaponSel.includes(window._lastAutoWeapon.group_skill)) weaponSel.push(window._lastAutoWeapon.group_skill);
+  }
 
   // 构建分类顺序映射
   const catOrder = {};
@@ -1755,7 +1846,7 @@ function renderResultCard(r, idx) {
       const pieces = scInfo.actual_pieces;
       const need = scInfo.need_pieces;
       const level = scInfo.level || 0;
-      displayText = esc(k) + ' Lv' + level + '/' + need + '件';
+      displayText = esc(k) + ' Lv' + level;
       tooltipText = scInfo.ok ? '✓ 已激活' : '✕ 未激活';
     } else {
       const displayLv = Math.min(v.level || 0, v.cap || SKILL_CAPS[k] || 1);
@@ -1846,7 +1937,7 @@ function renderResultCard(r, idx) {
       '<div class="info-item"><span class="k">尝试:</span><span class="v">' + (t.attempts || 0) + '</span></div>' +
       '<div class="info-item"><span class="k">验证:</span><span class="v">' + (t.verified ? '✓' : '✗') + '</span></div>' +
       '<div class="info-item"><span class="k">搜索耗时:</span><span class="v">' + (t.search_time || 0) + 's</span></div>' +
-      (weaponSkillCard ? '<div class="info-item"><span class="k">武器技能:</span><span class="v">' + weaponSkillText + '</span></div>' : '') +
+      '<div class="info-item"><span class="k">武器技能:</span><span class="v">' + weaponSkillText + '</span></div>' +
       remainingHTML +
     '</div>' +
     '<div class="section-title">装备组合</div>' +
@@ -2865,8 +2956,14 @@ async function runExtraQuery() {
     const lv = selectedComboLevel || SKILL_CAPS[selectedComboSkill] || 1;
     combo[selectedComboSkill] = lv;
   }
-  if (window._lastAutoWeapon && !combo[window._lastAutoWeapon] && !hasDisabledSeries && !hasDisabledCombo) {
-    combo[window._lastAutoWeapon] = SKILL_CAPS[window._lastAutoWeapon] || 1;
+  // 加入自动匹配的武器技能
+  if (window._lastAutoWeapon && !hasDisabledSeries && !hasDisabledCombo) {
+    if (window._lastAutoWeapon.series_skill && !combo[window._lastAutoWeapon.series_skill]) {
+      combo[window._lastAutoWeapon.series_skill] = window._lastAutoWeapon.series_level || 1;
+    }
+    if (window._lastAutoWeapon.group_skill && !combo[window._lastAutoWeapon.group_skill]) {
+      combo[window._lastAutoWeapon.group_skill] = window._lastAutoWeapon.group_level || 1;
+    }
   }
   const params = {
     fixed_skills: fixed, combo_skills: combo,

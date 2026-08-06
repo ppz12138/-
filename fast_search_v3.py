@@ -1112,7 +1112,7 @@ def dfs_search(charm_pool, fixed_skills, combo_skills, min_rem_armor,
     if combo_skills:
         for ss, lv in combo_skills.items():
             if ss in NO_DECO_SK:
-                all_series_req[ss] = lv
+                all_series_req[ss] = max(all_series_req.get(ss, 0), lv)
 
     # 系列技能→位掩码映射
     series_bit_map = {}
@@ -2743,22 +2743,15 @@ def query_extra_stream(fixed_skills, combo_skills, min_rem_armor, charm_pool, mo
                         continue
                     test_fixed = dict(fixed_skills)
                     test_fixed[sk] = lv
-                    # ===== 武器作为"平权组件"（追加系列技能）=====
-                    # 追加某系列（如火龙2→巨戟2）时，允许武器携带该系列来凑件数：
-                    # 武器带1个系列+1个组合，这里把武器系列替换为被追加的 sk（保留组合）。
-                    append_weapon_skills = {}
-                    if user_weapon_skills:
-                        for _ws, _wl in user_weapon_skills.items():
-                            if _ws in GROUP_SK:
-                                append_weapon_skills[_ws] = _wl
-                            # 原有系列不保留，替换为被追加系列（避免超出武器1个系列的限制）
-                    # 若被追加系列本就是武器所带，直接等幂
-                    append_weapon_skills[sk] = 1
+                    # 系列技能追加检查：武器保持用户当前配置（不替换为被追加系列）。
+                    # 之前把武器系列替换为被追加系列来凑件数，导致报告的追加等级依赖
+                    # "武器改带该系列"的假设；用户实际追加后武器仍带原系列，被追加系列
+                    # 必须完全由防具提供，从而基线搜索无解、追加必定失败。
                     # 系列技能搜索使用 series_cached_ctx（保护 NO_DECO_SK 防具），
                     # 避免支配剪枝把带该系列技能的防具剪掉而误判无解。
                     res = dfs_search(charm_pool, test_fixed, combo_skills, min_rem_armor,
                                      max_results=1, quiet=True, timeout_s=series_timeout, cached_ctx=series_cached_ctx,
-                                     min_rem_weapon=min_rem_weapon, user_weapon_skills=append_weapon_skills)
+                                     min_rem_weapon=min_rem_weapon, user_weapon_skills=user_weapon_skills)
                     if res:
                         best = lv
                         break

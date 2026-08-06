@@ -3244,8 +3244,20 @@ function renderExtraSkills() {
     html += '<button class="btn btn-sm ' + (disabled?'':'btn-danger') + '" onclick="toggleDisabledSkill(\'' + esc(it.skill) + '\')">' + (disabled?'启用':'禁用') + '</button>';
     html += '<div class="es-levels">';
     if (expandedSkill && expandedSkill.context === 'extra' && expandedSkill.skill === it.skill) {
-      const maxPick = it._type === 'upgrade' ? it.max_lv : it.cap;
-      for (let i = 1; i <= maxPick; i++) {
+      // 只允许选择实际可达的等级，避免选到理论上限(cap)以上导致追加后无解
+      const isSeries = SERIES_NAMES.includes(it.skill);
+      const isCombo = COMBO_SKILLS.includes(it.skill);
+      const maxLv = Math.max(Number(it.max_lv) || 0, 0);
+      let lvOptions = [];
+      if (isSeries) {
+        lvOptions = [2, 4].filter(l => l <= maxLv);
+      } else if (isCombo) {
+        lvOptions = [3].filter(l => l <= maxLv);
+      } else {
+        const maxPick = Math.max(maxLv, 1);
+        for (let i = 1; i <= maxPick; i++) lvOptions.push(i);
+      }
+      for (const i of lvOptions) {
         const act = appendSkills[it.skill] === i;
         html += '<button class="lv-btn ' + (act?'active':'') + '" onclick="setAppendSkill(\'' + esc(it.skill) + '\',' + i + ')">' + i + '</button>';
       }

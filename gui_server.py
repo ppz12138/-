@@ -12,6 +12,7 @@ import time
 import threading
 import urllib.parse
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import ThreadingHTTPServer
 
 import fast_search_v3 as fs
 from calc_v8_final import (
@@ -204,16 +205,18 @@ def _plan_result_to_dict(best, plan_cfg, t_used, attempts, verified, sch_t, requ
     sk = {k: v for k, v in best['skills'].items() if v > 0}
     for k, v in sk.items():
         if k in fs.NO_DECO_SK:
-            # 需求等级：优先使用用户选择的需求等级，其次使用武器洗练等级，最后使用实际找到的等级
+            cap = fs.SKILL_CAPS.get(k, 1)
+            # 需求等级：优先使用用户选择的需求等级，否则使用上限（最大等级）
             if requirement_skills and k in requirement_skills:
                 user_lv = requirement_skills[k]
             else:
-                user_lv = weapon_sk.get(k, v)
+                user_lv = cap
             need_p = max(1, user_lv)
-            wprov = 1 if k in weapon_sk else 0
+            wprov = 1 if (weapon_sk and k in weapon_sk) else 0
             actual_p = series_actual.get(k, 0) + wprov
+            display_level = min(actual_p, cap)
             series_check.append({
-                'skill': k, 'level': actual_p, 'need_pieces': need_p,
+                'skill': k, 'level': display_level, 'need_pieces': need_p,
                 'weapon_provided': wprov, 'armor_pieces': series_actual.get(k, 0),
                 'actual_pieces': actual_p, 'ok': actual_p >= need_p
             })
@@ -501,6 +504,17 @@ class SearchHandler(BaseHTTPRequestHandler):
         dis_skills = set(params.get('disabled_skills', []))
         fixed_skills = {k: int(v) for k, v in fixed_skills.items() if int(v) > 0}
         combo_skills = {k: int(v) for k, v in combo_skills.items() if int(v) > 0}
+        # 武器技能状态（与查询方案一致），用于构建追加查询的武器实际技能：
+        # 若用户未在武器配置区选择系列/组合技能（或已禁用为 __disabled__），
+        # 前端会把它们置空传入，此处 weapon_series/weapon_combo 为空 => 武器不含技能 =>
+        # 追加查询与查询方案保持同一假设，避免"查询无解但追加误报有空间"的矛盾。
+        weapon_series = params.get('weapon_series_skill', '')
+        weapon_combo = params.get('weapon_combo_skill', '')
+        user_weapon_skills = {}
+        if weapon_series and weapon_series in fs.NO_DECO_SK:
+            user_weapon_skills[weapon_series] = 1
+        if weapon_combo and weapon_combo in fs.NO_DECO_SK:
+            user_weapon_skills[weapon_combo] = 1
 
         orig_wslots = self._apply_weapon_slots(params)
         t0 = time.time()
@@ -521,7 +535,7 @@ class SearchHandler(BaseHTTPRequestHandler):
                 for chunk in fs.query_extra_stream(
                     fixed_skills, combo_skills, min_rem_armor, fs.charm_pool,
                     mode=mode, fav_skills=fav_skills, dis_skills=dis_skills,
-                    min_rem_weapon=min_rem_weapon
+                    min_rem_weapon=min_rem_weapon, user_weapon_skills=user_weapon_skills
                 ):
                     _write_chunk(chunk)
             except Exception as e:
@@ -602,17 +616,18 @@ class SearchHandler(BaseHTTPRequestHandler):
                 return
         fs.WSLOTS = orig_wslots
         t_used = time.time() - t0
-
-        # 若自动匹配到武器技能，加入武器实际技能列表
-        # 注意：武器洗练技能只提供1级
-        if auto_matched_series:
-            weapon_actual_skills[auto_matched_series] = 1
-        if auto_matched_group:
-            weapon_actual_skills[auto_matched_group] = 1
-
         results = []
+        # auto 分支实际搜索时武器提供了自动匹配出的系列/组合件数（各1件），
+        # 但这些信息不在 weapon_actual_skills 里。必须把它们并入"展示用武器技能"，
+        # 否则 _plan_result_to_dict 的 series_check 会漏算武器件数，
+        # 导致已达标(武器补齐)的系列在方案卡里被误标为"未激活"。
+        display_weapon_skills = dict(weapon_actual_skills)
+        if auto_matched_series:
+            display_weapon_skills[auto_matched_series] = 1
+        if auto_matched_group:
+            display_weapon_skills[auto_matched_group] = 1
         for r in raw_results[:max_results]:
-            fake_cfg = ('自定义搜索', weapon_actual_skills, {})
+            fake_cfg = ('自定义搜索', display_weapon_skills, {})
             plan_result = _plan_result_to_dict(r, fake_cfg, t_used, 1, len(raw_results), t_used, requirement_skills=requirement_skills)
             results.append(plan_result)
 
@@ -678,6 +693,7 @@ class SearchHandler(BaseHTTPRequestHandler):
                     base_ele += ele_map.get(weapon_type, 0)
 
         affix_type_map = {'attack': '攻击', 'critical': '会心', 'sharpness': '锋利度', 'element': '属性'}
+        affix_skill_map = {'攻击': {}, '会心': {}, '锋利度': {}, '属性': {}}
         affix_counts = {}
         for af in affixes:
             af_type = affix_type_map.get(af.get('type', ''), '')
@@ -704,180 +720,6 @@ class SearchHandler(BaseHTTPRequestHandler):
         # 合并所有技能
         all_skills = dict(fixed_skills)
         all_skills.update(combo_skills)
-
-        orig_wslots = self._apply_weapon_slots(params)
-        orig = (fs.W_ATK, fs.W_CRT, fs.W_ELE, fs.PERM_ATK)
-        t0 = time.time()
-
-        baseline_dmg = 0
-        baseline_wcr = 0
-        final_dmg = 0
-        final_wcr = 0
-        skill_damages = {}
-        baseline_detail = {}
-        final_detail = {}
-
-        try:
-            with _lock:
-                fs.W_ATK = max(base_atk, 1)
-                fs.W_CRT = max(base_crt, -100)
-                fs.W_ELE = max(base_ele, 0)
-                fs.PERM_ATK = perm_atk
-                fs._calc_damage_cached.cache_clear()
-
-                baseline_dmg, baseline_detail = fs.calc_damage_detail(fixed_skills)
-                baseline_wcr = fs.calc_weighted_crit(fixed_skills)
-                final_dmg, final_detail = fs.calc_damage_detail(all_skills)
-                final_wcr = fs.calc_weighted_crit(all_skills)
-
-                for sk, lv in all_skills.items():
-                    if lv <= 0:
-                        continue
-                    reduced = dict(all_skills)
-                    del reduced[sk]
-                    reduced_dmg, _ = fs.calc_damage_detail(reduced)
-                    delta = final_dmg - reduced_dmg
-                    skill_damages[sk] = {
-                        'level': lv,
-                        'cap': fs.SKILL_CAPS.get(sk, lv),
-                        'standalone_dmg': round(delta, 1),
-                    }
-        except Exception as e:
-            fs.WSLOTS = orig_wslots
-            fs.W_ATK, fs.W_CRT, fs.W_ELE, fs.PERM_ATK = orig
-            fs._calc_damage_cached.cache_clear()
-            self._send_json({'ok': False, 'error': f'伤害计算出错: {e}'}, 500)
-            return
-        finally:
-            fs.WSLOTS = orig_wslots
-            fs.W_ATK, fs.W_CRT, fs.W_ELE, fs.PERM_ATK = orig
-            try:
-                fs._calc_damage_cached.cache_clear()
-            except Exception:
-                pass
-
-        t_used = time.time() - t0
-
-        # 构建详细伤害计算过程
-        detail_lines = []
-        detail_lines.append("═══ 伤害计算详情 ═══")
-        detail_lines.append("")
-        detail_lines.append(f"【基线】仅固定技能:")
-        detail_lines.append(f"  期望伤害: {baseline_dmg:.1f}")
-        detail_lines.append(f"  加权会心: {baseline_wcr:.1f}%")
-        detail_lines.append("")
-        detail_lines.append(f"【最终方案】全部技能:")
-        detail_lines.append(f"  期望伤害: {final_dmg:.1f}")
-        detail_lines.append(f"  加权会心: {final_wcr:.1f}%")
-        dmg_increase = final_dmg - baseline_dmg
-        pct = (final_dmg / max(baseline_dmg, 1) - 1) * 100
-        detail_lines.append(f"  伤害提升: {dmg_increase:+.1f} ({pct:+.1f}%)")
-        detail_lines.append("")
-        detail_lines.append("【各技能独立贡献】(移除该技能后的伤害降低值)")
-        detail_lines.append("-" * 50)
-        sorted_skills = sorted(skill_damages.items(), key=lambda x: -x[1]['standalone_dmg'])
-        for sk, info in sorted_skills:
-            delta = info['standalone_dmg']
-            sign = '+' if delta >= 0 else ''
-            cap = info['cap']
-            detail_lines.append(f"  {sk:<12s} Lv{info['level']:>2d}/{cap:<2d} → 独立贡献 {sign}{delta:.1f}")
-        detail_lines.append("")
-        detail_lines.append("【技能构成总览】")
-        for sk, lv in sorted(all_skills.items()):
-            if lv > 0:
-                cap = fs.SKILL_CAPS.get(sk, 99)
-                tag = "满级" if lv >= cap else "未满级"
-                detail_lines.append(f"  {sk}: Lv{lv}/{cap} ({tag})")
-
-        self._send_json({
-            'ok': True,
-            'baseline_dmg': round(baseline_dmg, 1),
-            'baseline_wcr': round(baseline_wcr, 1),
-            'final_dmg': round(final_dmg, 1),
-            'final_wcr': round(final_wcr, 1),
-            'dmg_increase': round(dmg_increase, 1),
-            'dmg_increase_pct': round(pct, 1),
-            'skill_damages': skill_damages,
-            'detail_text': '\n'.join(detail_lines),
-            'baseline_detail': baseline_detail,
-            'final_detail': final_detail,
-            'time': round(t_used, 2),
-        })
-
-
-    def _handle_weapon_diy(self, params):
-        fixed_skills = params.get('fixed_skills', {})
-        combo_skills = params.get('combo_skills', {})
-        weapon_params = params.get('weapon', {})
-
-        w_atk = int(weapon_params.get('base_attack', fs.W_ATK))
-        w_crt = int(weapon_params.get('crit', fs.W_CRT))
-        w_ele = int(weapon_params.get('element', fs.W_ELE))
-        perm_atk = int(weapon_params.get('perm_atk', fs.PERM_ATK))
-
-        weapon_type = weapon_params.get('weapon_type', '大剑')
-        augmentation = weapon_params.get('augmentation', 'none')
-        affixes = weapon_params.get('affixes', [])
-
-        base_atk = w_atk
-        base_crt = w_crt
-        base_ele = w_ele
-        base_sharp = 100
-
-        if augmentation != 'none':
-            if weapon_type in ('笛子', '铳枪'):
-                if augmentation == 'attack':
-                    base_atk += 3
-                elif augmentation == 'critical':
-                    base_crt += 2
-                elif augmentation == 'element':
-                    base_ele += 8
-            else:
-                if augmentation == 'attack':
-                    base_atk += 10
-                    base_crt -= 15
-                elif augmentation == 'critical':
-                    base_crt += 10
-                    base_atk -= 10
-                    base_sharp -= 10
-                    base_ele = 0
-                elif augmentation == 'element':
-                    base_crt -= 5
-                    ele_map = {'大剑':5,'太刀':5,'片手':4,'双刀':3,'大锤':4,'长枪':5,'斩斧':4,'盾斧':5,'虫棍':4,'弓':3}
-                    base_ele += ele_map.get(weapon_type, 0)
-
-        affix_type_map = {'attack': '攻击', 'critical': '会心', 'sharpness': '锋利度', 'element': '属性'}
-        affix_skill_map = {'攻击': {}, '会心': {}, '锋利度': {}, '属性': {}}
-        affix_counts = {}
-        for af in affixes:
-            af_type = affix_type_map.get(af.get('type', ''), '')
-            af_level = int(af.get('level', 1))
-            if not af_type:
-                continue
-            key = af_type + '_' + str(af_level)
-            if affix_counts.get(key, 0) >= 2:
-                continue
-            affix_counts[key] = affix_counts.get(key, 0) + 1
-            if af_type == '攻击':
-                vals = {1: 5, 2: 6, 3: 9, 4: 12}
-                base_atk += vals.get(af_level, 0)
-            elif af_type == '会心':
-                vals = {1: 5, 2: 6, 3: 8, 4: 10}
-                base_crt += vals.get(af_level, 0)
-            elif af_type == '锋利度':
-                vals = {1: 30, 2: 50}
-                base_sharp += vals.get(af_level, 0)
-            elif af_type == '属性':
-                vals = {1: 30, 2: 50, 3: 80}
-                base_ele += vals.get(af_level, 0)
-
-        weapon_affixes = params.get('weapon_affixes', {})
-        fixed_skills = {k: int(v) for k, v in fixed_skills.items() if int(v) > 0}
-        combo_skills = {k: int(v) for k, v in combo_skills.items() if int(v) > 0}
-        weapon_affixes = {k: int(v) for k, v in weapon_affixes.items() if int(v) > 0}
-        all_skills = dict(fixed_skills)
-        all_skills.update(combo_skills)
-        all_skills.update(weapon_affixes)
 
         orig = (fs.W_ATK, fs.W_CRT, fs.W_ELE, fs.PERM_ATK)
         try:
@@ -943,7 +785,7 @@ def main():
             port = int(sys.argv[1])
         except ValueError:
             pass
-    server = HTTPServer(('127.0.0.1', port), SearchHandler)
+    server = ThreadingHTTPServer(('127.0.0.1', port), SearchHandler)
     print(f'MHWilds 配装搜索 GUI 已启动: http://localhost:{port}')
     print(f'按 Ctrl+C 停止服务器')
     try:

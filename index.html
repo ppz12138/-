@@ -1,4 +1,4 @@
-<!-- VERSION: 2026-08-04-v4 -->
+<!-- VERSION: 2026-08-04-v7 -->
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -1333,9 +1333,8 @@ function renderWeaponSkillBoxes() {
     let sHtml = '<option value="">-- 留空 · 自动匹配最优 --</option>';
     sHtml += '<option value="__disabled__">-- 禁用（无技能） --</option>';
     SERIES_NAMES.forEach(s => {
-      const cap = SKILL_CAPS[s] || 1;
       const sel = selectedSeriesSkill === s ? ' selected' : '';
-      sHtml += '<option value="' + esc(s) + '"' + sel + '>' + esc(s) + ' (上限 ' + cap + ')</option>';
+      sHtml += '<option value="' + esc(s) + '"' + sel + '>' + esc(s) + '</option>';
     });
     seriesSel.innerHTML = sHtml;
   }
@@ -1344,9 +1343,8 @@ function renderWeaponSkillBoxes() {
     let cHtml = '<option value="">-- 留空 · 自动匹配最优 --</option>';
     cHtml += '<option value="__disabled__">-- 禁用（无技能） --</option>';
     COMBO_SKILLS.forEach(s => {
-      const cap = SKILL_CAPS[s] || 1;
       const sel = selectedComboSkill === s ? ' selected' : '';
-      cHtml += '<option value="' + esc(s) + '"' + sel + '>' + esc(s) + ' (上限 ' + cap + ')</option>';
+      cHtml += '<option value="' + esc(s) + '"' + sel + '>' + esc(s) + '</option>';
     });
     comboSel.innerHTML = cHtml;
   }
@@ -1633,6 +1631,15 @@ function removeSkill(skill) {
 function clearSelectedSkills() {
   selectedSkills = {};
   expandedSkill = null;
+  // 同时清空预留孔位（防具孔/武器孔），并重置对应下拉选择框
+  armorReserve = {1: 0, 2: 0, 3: 0};
+  weaponReserve = {1: 0, 2: 0, 3: 0};
+  for (const lv of [1, 2, 3]) {
+    const aSel = document.getElementById('res-armor-lv' + lv);
+    if (aSel) aSel.value = '0';
+    const wSel = document.getElementById('res-weapon-lv' + lv);
+    if (wSel) wSel.value = '0';
+  }
   saveState();
   renderSelectedSkills();
   renderSkillSelection();
@@ -1780,7 +1787,7 @@ function renderResultCard(r, idx) {
     for (const s of r.series_check) {
       const cap = SKILL_CAPS[s.skill] || 1;
       seriesComboSet.add(s.skill);
-      const needPieces = s.need_pieces || Math.max(1, cap);
+      const needPieces = s.need_pieces;
       const actualPieces = s.actual_pieces || 0;
       const displayLevel = Math.min(s.level || 0, cap);
       seriesComboInfo[s.skill] = {
@@ -1799,8 +1806,9 @@ function renderResultCard(r, idx) {
   // 将武器技能也纳入方案技能区展示
   if (r.weapon_skill) {
     for (const [sk, lv] of Object.entries(r.weapon_skill)) {
-      if (!(sk in allSkills)) {
-        const cap = SKILL_CAPS[sk] || 1;
+      const cap = SKILL_CAPS[sk] || 1;
+      const existing = allSkills[sk];
+      if (!existing || lv > existing.level) {
         allSkills[sk] = { level: Math.min(lv || 0, cap), cap: cap };
       }
     }
@@ -2957,6 +2965,8 @@ async function runExtraQuery() {
     combo[selectedComboSkill] = lv;
   }
   // 加入自动匹配的武器技能
+  let autoSeriesSkill = '';
+  let autoGroupSkill = '';
   if (window._lastAutoWeapon && !hasDisabledSeries && !hasDisabledCombo) {
     if (window._lastAutoWeapon.series_skill && !combo[window._lastAutoWeapon.series_skill]) {
       combo[window._lastAutoWeapon.series_skill] = window._lastAutoWeapon.series_level || 1;
@@ -2964,6 +2974,9 @@ async function runExtraQuery() {
     if (window._lastAutoWeapon.group_skill && !combo[window._lastAutoWeapon.group_skill]) {
       combo[window._lastAutoWeapon.group_skill] = window._lastAutoWeapon.group_level || 1;
     }
+    // 记录自动匹配的武器技能，用于让后端把武器视为提供 1 件（与查询方案的 auto 假设一致）
+    autoSeriesSkill = window._lastAutoWeapon.series_skill || '';
+    autoGroupSkill = window._lastAutoWeapon.group_skill || '';
   }
   const params = {
     fixed_skills: fixed, combo_skills: combo,
@@ -2971,7 +2984,13 @@ async function runExtraQuery() {
     min_rem_armor: getReserveSlots().armorTotal, min_rem_weapon: getReserveSlots().weaponTotal,
     mode: extraMode,
     favorite_skills: [...favSkills].filter(s => !disabledSkills.has(s)),
-    disabled_skills: [...disabledSkills]
+    disabled_skills: [...disabledSkills],
+    // 传入武器系列/组合技能状态，使追加查询与查询方案使用相同的武器技能假设，
+    // 避免"查询无解但追加误报有空间"的不一致。
+    // auto 模式下把自动匹配出的武器系列/组合技能也传入，使后端按"武器提供 1 件"处理，
+    // 与查询方案(auto)一致，避免"查询有解但追加无解"。
+    weapon_series_skill: selectedSeriesSkill || autoSeriesSkill,
+    weapon_combo_skill: selectedComboSkill || autoGroupSkill
   };
   const btn = document.getElementById('extra-btn');
   btn.disabled = true;
@@ -3017,7 +3036,8 @@ async function runExtraQuery() {
             extraQueryResult = {
               baseline_dmg: data.baseline_dmg, baseline_wcr: data.baseline_wcr,
               slot_info: data.slot_info, slot_max: data.slot_max,
-              upgrade_skills: [], extra_skills: []
+              upgrade_skills: [], extra_skills: [],
+              no_solution: !!data.no_solution
             };
           } else if (data.type === 'progress') {
             const pct = data.total > 0 ? (data.done / data.total * 100) : 0;
@@ -3054,7 +3074,11 @@ async function runExtraQuery() {
       return;
     }
     extraQueryResult = finalResult;
-    statusEl.textContent = '完成 · 共 ' + ((finalResult.upgrade_skills && finalResult.upgrade_skills.length) + (finalResult.extra_skills && finalResult.extra_skills.length)) + ' 项';
+    if (finalResult.no_solution) {
+      statusEl.textContent = '完成 · 基线无解，无追加空间';
+    } else {
+      statusEl.textContent = '完成 · 共 ' + ((finalResult.upgrade_skills && finalResult.upgrade_skills.length) + (finalResult.extra_skills && finalResult.extra_skills.length)) + ' 项';
+    }
     progBar.style.display = 'none';
     switchTab('extra');
     document.getElementById('extra-area').style.display = 'block';
@@ -3079,6 +3103,16 @@ function setExtraMode(mode) {
 function renderExtraSection() {
   if (!extraQueryResult) return;
   const r = extraQueryResult;
+  // 基线配装无解时：明确提示无解，不显示基线/孔位/可追加项，避免"原地追加"误导
+  if (r.no_solution) {
+    document.getElementById('baseline-box').innerHTML =
+      '<div class="bi" style="color:var(--danger);">❌ 当前技能组结合武器/预留孔无法构成有效配装（无解），因此没有可追加或升级的技能空间。</div>';
+    const listEl = document.getElementById('extra-skills-list');
+    if (listEl) listEl.innerHTML = '<div class="result-empty" style="color:var(--danger);">无解：请调整所选技能或预留孔后再查询。</div>';
+    const appBar = document.getElementById('append-bar');
+    if (appBar) appBar.style.display = 'none';
+    return;
+  }
   const si = r.slot_info || {};
   const sm = r.slot_max || {};
   document.getElementById('baseline-box').innerHTML =
@@ -3148,9 +3182,15 @@ function renderExtraSkills() {
     items = items.filter(it => !disabledSkills.has(it.skill));
   } else {
     // 普通模式：只保留真实返回的可提升/可追加候选，避免全部理论候选混杂造成"找不到追加节点"
+    // 同时过滤掉追加等级为 0 的项（实际无法追加任何等级，如系列技能在该配装下无空余防具），
+    // 避免显示"可追加 Lv0"这种自相矛盾的提示。
     items = items.filter(it => {
       const delta = Number(it.delta || 0);
-      return it._type === 'upgrade' || it._type === 'extra' || delta > 0;
+      if (it._type === 'upgrade') return true;
+      if (it._type === 'extra') {
+        return (Number(it.max_lv) || 0) > 0 || (appendSkills[it.skill] > 0);
+      }
+      return delta > 0;
     });
   }
 

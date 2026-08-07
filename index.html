@@ -601,6 +601,70 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
   box-shadow: 0 -4px 14px rgba(0,0,0,0.2);
 }
 
+.slot-append-panel {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+.slot-append-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.slot-append-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.slot-append-row:last-child { margin-bottom: 0; }
+.slot-append-side {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  min-width: 52px;
+}
+.slot-append-cur {
+  font-size: 12px;
+  color: var(--muted);
+  margin-right: 4px;
+}
+.slot-append-lv {
+  font-size: 12px;
+  color: var(--muted);
+  margin-left: 6px;
+}
+.slot-append-btns {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.slot-append-btns .lv-btn {
+  min-width: 28px;
+  height: 26px;
+  padding: 0 6px;
+  font-size: 12px;
+}
+.slot-append-btns .lv-btn.slot-off {
+  opacity: 0.22;
+  cursor: not-allowed;
+  border-style: dashed;
+}
+.slot-append-btns .lv-btn.slot-cur {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(124,156,255,0.12);
+}
+.slot-append-btns .lv-btn.slot-new {
+  border-color: var(--accent2);
+  color: var(--accent2);
+  background: rgba(74,222,128,0.1);
+}
+
 /* Modal */
 .modal-overlay {
   display: none;
@@ -1228,6 +1292,27 @@ function updateReserveSlots() {
     armorReserve[lv] = aVal;
     weaponReserve[lv] = wVal;
   }
+  if (extraQueryResult) renderExtraSkills();
+}
+
+function clearReserveSlot(type, lv) {
+  // 必须先重置下拉框再同步状态，否则 updateReserveSlots 会从下拉框读回旧值
+  const sel = document.getElementById('res-' + type + '-lv' + lv);
+  if (sel) sel.value = '0';
+  if (type === 'armor') armorReserve[lv] = 0;
+  else weaponReserve[lv] = 0;
+  updateReserveSlots();
+  renderSelectedSkills();
+}
+
+function buildReserveFixed() {
+  // 预留孔位（下拉框与孔位追加面板共用同一状态）统一转成分侧孔位技能
+  const out = {};
+  for (const lv of [1, 2, 3]) {
+    if (armorReserve[lv] > 0) out['防具Lv' + lv + '插槽'] = armorReserve[lv];
+    if (weaponReserve[lv] > 0) out['武器Lv' + lv + '插槽'] = weaponReserve[lv];
+  }
+  return out;
 }
 
 function getSeriesEffectName(baseName) {
@@ -1577,6 +1662,11 @@ function renderSelectedSkills() {
   document.getElementById('selected-count').textContent = keys.length + ' 个';
   let html = '';
   keys.forEach(s => {
+    if (/^(Lv|防具Lv|武器Lv)\d插槽$/.test(s)) {
+      html += '<span class="chip chip-selected" title="保留 ' + selectedSkills[s] + ' 个' + s + '">' + esc(s) + ' ×' + selectedSkills[s] +
+        ' <span class="chip-x" onclick="event.stopPropagation();removeSkill(\'' + esc(s) + '\')">✕</span></span>';
+      return;
+    }
     const cap = SKILL_CAPS[s] || 1;
     const lv = selectedSkills[s];
     const isSeries = SERIES_NAMES.includes(s);
@@ -1601,10 +1691,10 @@ function renderSelectedSkills() {
     const aVal = armorReserve[lv] || 0;
     const wVal = weaponReserve[lv] || 0;
     if (aVal > 0) {
-      html += '<span class="chip chip-selected" title="防具孔 Lv' + lv + ' 预留 ' + aVal + ' 个">防具孔Lv' + lv + ' ×' + aVal + ' <span class="chip-x" onclick="event.stopPropagation();armorReserve[' + lv + ']=0;updateReserveSlots();renderSelectedSkills();">✕</span></span>';
+      html += '<span class="chip chip-selected" title="防具孔 Lv' + lv + ' 预留 ' + aVal + ' 个">防具孔Lv' + lv + ' ×' + aVal + ' <span class="chip-x" onclick="event.stopPropagation();clearReserveSlot(\'armor\',' + lv + ')">✕</span></span>';
     }
     if (wVal > 0) {
-      html += '<span class="chip chip-selected" title="武器孔 Lv' + lv + ' 预留 ' + wVal + ' 个">武器孔Lv' + lv + ' ×' + wVal + ' <span class="chip-x" onclick="event.stopPropagation();weaponReserve[' + lv + ']=0;updateReserveSlots();renderSelectedSkills();">✕</span></span>';
+      html += '<span class="chip chip-selected" title="武器孔 Lv' + lv + ' 预留 ' + wVal + ' 个">武器孔Lv' + lv + ' ×' + wVal + ' <span class="chip-x" onclick="event.stopPropagation();clearReserveSlot(\'weapon\',' + lv + ')">✕</span></span>';
     }
   }
   if (html === '') {
@@ -1666,11 +1756,12 @@ async function runSearch() {
   }
   const autoWeapon = !hasDisabledSeries && !hasDisabledCombo;
   const maxResults = parseInt(document.getElementById('max-results').value) || 5;
-  const reserve = getReserveSlots();
+  const reserveFixed = buildReserveFixed();
+  Object.assign(fixed, reserveFixed);
   const params = {
     fixed_skills: fixed, combo_skills: combo,
     weapon_slots: weaponSlotLevels.slice(),
-    max_results: maxResults, min_rem_armor: reserve.armorTotal, min_rem_weapon: reserve.weaponTotal,
+    max_results: maxResults, min_rem_armor: 0, min_rem_weapon: 0,
     auto_weapon_skill: autoWeapon,
     disabled_weapon_skills: [...disabledWeaponSkills],
     weapon_series_skill: selectedSeriesSkill || '',
@@ -2978,10 +3069,11 @@ async function runExtraQuery() {
     autoSeriesSkill = window._lastAutoWeapon.series_skill || '';
     autoGroupSkill = window._lastAutoWeapon.group_skill || '';
   }
+  Object.assign(fixed, buildReserveFixed());
   const params = {
     fixed_skills: fixed, combo_skills: combo,
     weapon_slots: weaponSlotLevels.slice(),
-    min_rem_armor: getReserveSlots().armorTotal, min_rem_weapon: getReserveSlots().weaponTotal,
+    min_rem_armor: 0, min_rem_weapon: 0,
     mode: extraMode,
     favorite_skills: [...favSkills].filter(s => !disabledSkills.has(s)),
     disabled_skills: [...disabledSkills],
@@ -3113,15 +3205,83 @@ function renderExtraSection() {
     if (appBar) appBar.style.display = 'none';
     return;
   }
-  const si = r.slot_info || {};
-  const sm = r.slot_max || {};
+  const siA = r.slot_info_armor || r.slot_info || {};
+  const siW = r.slot_info_weapon || {};
   document.getElementById('baseline-box').innerHTML =
     '<div class="bi"><span class="k">基线伤害:</span> <span class="v">' + (r.baseline_dmg || 0) + '</span></div>' +
     '<div class="bi"><span class="k">基线会心:</span> <span class="v">' + (r.baseline_wcr || 0) + '%</span></div>' +
-    '<div class="bi"><span class="k">防具孔:</span> <span class="v">Lv1 ' + (si.Lv1||0) + '/6 · Lv2 ' + (si.Lv2||0) + '/6 · Lv3 ' + (si.Lv3||0) + '/6</span></div>' +
-    '<div class="bi"><span class="k">武器孔:</span> <span class="v">Lv1 ' + (sm.Lv1||0) + '/6 · Lv2 ' + (sm.Lv2||0) + '/6 · Lv3 ' + (sm.Lv3||0) + '/6</span></div>';
+    '<div class="bi"><span class="k">防具孔:</span> <span class="v">Lv1 ' + (siA.Lv1||0) + ' · Lv2 ' + (siA.Lv2||0) + ' · Lv3 ' + (siA.Lv3||0) + '</span></div>' +
+    '<div class="bi"><span class="k">武器孔:</span> <span class="v">Lv1 ' + (siW.Lv1||0) + ' · Lv2 ' + (siW.Lv2||0) + ' · Lv3 ' + (siW.Lv3||0) + '</span></div>';
   renderExtraSkills();
   renderAppendBar();
+}
+
+function renderSlotAppendPanel() {
+  if (!extraQueryResult) return '';
+  const sm = extraQueryResult.slot_max_actual || {};
+  const siA = extraQueryResult.slot_info_armor || {};
+  const siW = extraQueryResult.slot_info_weapon || {};
+  const maxOf = (side, lv) => {
+    const s = sm[side];
+    if (s && s['Lv' + lv] != null) return Math.max(Number(s['Lv' + lv]) || 0, 0);
+    if (sm['Lv' + lv] != null) return Math.max(Number(sm['Lv' + lv]) || 0, 0);
+    const sm2 = extraQueryResult.slot_max || {};
+    if (sm2['Lv' + lv] != null) return Math.max(Number(sm2['Lv' + lv]) || 0, 0);
+    return 0;
+  };
+  const curOf = (side, lv) => {
+    const b = side === 'armor' ? siA : siW;
+    return Math.max(Number(b['Lv' + lv]) || 0, 0);
+  };
+  const sides = [['armor', '防具孔'], ['weapon', '武器孔']];
+  let html = '<div class="slot-append-panel">';
+  html += '<div class="slot-append-title">孔位追加 <span style="font-weight:400;color:var(--muted);font-size:12px;">蓝色=当前/已选范围，绿色=可追加，点击选择要保留的数量（再点一次取消），与预留孔位区同步</span></div>';
+  for (const [side, label] of sides) {
+    html += '<div class="slot-append-row"><span class="slot-append-side">' + label + '</span>';
+    for (const lv of [1, 2, 3]) {
+      const max = Math.min(maxOf(side, lv), 6);
+      const cur = curOf(side, lv);
+      const sel = (side === 'armor' ? armorReserve[lv] : weaponReserve[lv]) || 0;
+      const btnCount = 6;
+      const blueUpTo = (sel > 0) ? Math.max(sel, cur) : cur;
+      html += '<span class="slot-append-lv">Lv' + lv + '</span><div class="slot-append-btns">';
+      for (let i = 1; i <= btnCount; i++) {
+        if (i > max) {
+          html += '<button class="lv-btn slot-off" disabled title="上限' + max + '">' + i + '</button>';
+        } else {
+          let cls = (i <= blueUpTo) ? 'lv-btn slot-cur' : 'lv-btn slot-new';
+          if (sel > 0 && i === sel) cls = 'lv-btn active';
+          html += '<button class="' + cls + '"' +
+            (i === max ? ' title="上限' + max + '"' : '') +
+            (i === cur && sel === 0 ? ' title="当前' + cur + '"' : '') +
+            ' onclick="setReserveSlot(\'' + side + '\',' + lv + ',' + i + ')">' + i + '</button>';
+        }
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function setReserveSlot(side, lv, val) {
+  const sm = (extraQueryResult && extraQueryResult.slot_max_actual) || {};
+  let max = 0;
+  const s = sm[side];
+  if (s && s['Lv' + lv] != null) max = Math.max(Number(s['Lv' + lv]) || 0, 0);
+  else if (sm['Lv' + lv] != null) max = Math.max(Number(sm['Lv' + lv]) || 0, 0);
+  else if (extraQueryResult && extraQueryResult.slot_max) max = Math.max(Number(extraQueryResult.slot_max['Lv' + lv]) || 0, 0);
+  max = Math.min(max, 6);
+  const cur = (side === 'armor' ? armorReserve[lv] : weaponReserve[lv]) || 0;
+  const newVal = (val === cur) ? 0 : Math.max(0, Math.min(val, max));
+  const sel = document.getElementById('res-' + side + '-lv' + lv);
+  if (sel) sel.value = String(newVal);
+  if (side === 'armor') armorReserve[lv] = newVal;
+  else weaponReserve[lv] = newVal;
+  updateReserveSlots();
+  renderSelectedSkills();
+  renderExtraSkills();
 }
 
 function renderExtraSkills() {
@@ -3186,7 +3346,7 @@ function renderExtraSkills() {
     // 避免显示"可追加 Lv0"这种自相矛盾的提示。
     items = items.filter(it => {
       const delta = Number(it.delta || 0);
-      if (it._type === 'upgrade') return true;
+      if (it._type === 'upgrade') return (Number(it.max_lv) || 0) > (Number(it.current_lv) || 0);
       if (it._type === 'extra') {
         return (Number(it.max_lv) || 0) > 0 || (appendSkills[it.skill] > 0);
       }
@@ -3205,11 +3365,12 @@ function renderExtraSkills() {
   });
 
   const el = document.getElementById('extra-skills-list');
+  let html = renderSlotAppendPanel();
   if (items.length === 0) {
-    el.innerHTML = '<div class="result-empty">该模式下无可用技能</div>';
+    html += '<div class="result-empty">该模式下无可用技能</div>';
+    el.innerHTML = html;
     return;
   }
-  let html = '';
   items.forEach(it => {
     const appended = appendSkills[it.skill] > 0;
     const disabled = disabledSkills.has(it.skill);
@@ -3314,7 +3475,8 @@ function clearAppendSkills() {
 
 function appendAndSearch() {
   const keys = Object.keys(appendSkills).filter(k => appendSkills[k] > 0);
-  if (keys.length === 0) { alert('请先选择要追加的技能'); return; }
+  const hasReserve = [1, 2, 3].some(lv => (armorReserve[lv] || 0) > 0 || (weaponReserve[lv] || 0) > 0);
+  if (keys.length === 0 && !hasReserve) { alert('请先选择要追加的技能或孔位'); return; }
   for (const k of keys) {
     selectedSkills[k] = Math.max(selectedSkills[k] || 0, appendSkills[k]);
   }

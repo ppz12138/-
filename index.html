@@ -1437,40 +1437,38 @@ function renderWeaponSkillBoxes() {
   const seriesSelected = document.getElementById('series-skill-selected');
   if (seriesSelected) {
     if (selectedSeriesSkill === '__disabled__') {
-      seriesSelected.innerHTML = '<span class="chip chip-disabled">禁用</span>' +
+      seriesSelected.innerHTML = '<span class="chip chip-disabled">🚫 禁用</span>' +
+        '<span class="weapon-skill-empty">武器不带系列技能</span>' +
         '<button class="weapon-skill-clear" onclick="clearSeriesSkill()">✕ 清除</button>';
     } else if (selectedSeriesSkill) {
-      const lv = selectedSeriesLevel || 2;
-      seriesSelected.innerHTML = '<span class="chip chip-selected">' +
-        esc(selectedSeriesSkill) + ' Lv' + lv + '</span>' +
+      seriesSelected.innerHTML = '<span class="chip chip-selected">🔒 ' + esc(selectedSeriesSkill) + '（固定）</span>' +
+        '<span class="weapon-skill-empty">预筛选武器：只匹配带此技能的武器，提供1件</span>' +
         '<button class="weapon-skill-clear" onclick="clearSeriesSkill()">✕ 清除</button>';
     } else if (window._lastAutoWeapon && window._lastAutoWeapon.series_skill) {
-      const lv = window._lastAutoWeapon.series_level || 2;
-      seriesSelected.innerHTML = '<span class="chip chip-selected">' +
-        esc(window._lastAutoWeapon.series_skill) + ' Lv' + lv + ' <span style="font-size:11px;color:var(--muted);">(自动匹配)</span></span>' +
+      seriesSelected.innerHTML = '<span class="chip chip-selected">🤖 ' + esc(window._lastAutoWeapon.series_skill) + '（自动匹配）</span>' +
+        '<span class="weapon-skill-empty">武器提供1件，配装按需追加</span>' +
         '<button class="weapon-skill-clear" onclick="clearSeriesSkill()">✕ 清除</button>';
     } else {
-      seriesSelected.innerHTML = '<span class="weapon-skill-empty">留空 · 搜索时自动匹配最优</span>';
+      seriesSelected.innerHTML = '<span class="weapon-skill-empty">留空 · 自动匹配最优</span>';
     }
   }
 
   const comboSelected = document.getElementById('combo-skill-selected');
   if (comboSelected) {
     if (selectedComboSkill === '__disabled__') {
-      comboSelected.innerHTML = '<span class="chip chip-disabled">禁用</span>' +
+      comboSelected.innerHTML = '<span class="chip chip-disabled">🚫 禁用</span>' +
+        '<span class="weapon-skill-empty">武器不带组合技能</span>' +
         '<button class="weapon-skill-clear" onclick="clearComboSkill()">✕ 清除</button>';
     } else if (selectedComboSkill) {
-      const lv = selectedComboLevel || 3;
-      comboSelected.innerHTML = '<span class="chip chip-selected">' +
-        esc(selectedComboSkill) + ' Lv' + lv + '</span>' +
+      comboSelected.innerHTML = '<span class="chip chip-selected">🔒 ' + esc(selectedComboSkill) + '（固定）</span>' +
+        '<span class="weapon-skill-empty">预筛选武器：只匹配带此技能的武器，提供1件</span>' +
         '<button class="weapon-skill-clear" onclick="clearComboSkill()">✕ 清除</button>';
     } else if (window._lastAutoWeapon && window._lastAutoWeapon.group_skill) {
-      const lv = window._lastAutoWeapon.group_level || 3;
-      comboSelected.innerHTML = '<span class="chip chip-selected">' +
-        esc(window._lastAutoWeapon.group_skill) + ' Lv' + lv + ' <span style="font-size:11px;color:var(--muted);">(自动匹配)</span></span>' +
+      comboSelected.innerHTML = '<span class="chip chip-selected">🤖 ' + esc(window._lastAutoWeapon.group_skill) + '（自动匹配）</span>' +
+        '<span class="weapon-skill-empty">武器提供1件，配装按需追加</span>' +
         '<button class="weapon-skill-clear" onclick="clearComboSkill()">✕ 清除</button>';
     } else {
-      comboSelected.innerHTML = '<span class="weapon-skill-empty">留空 · 搜索时自动匹配最优</span>';
+      comboSelected.innerHTML = '<span class="weapon-skill-empty">留空 · 自动匹配最优</span>';
     }
   }
 }
@@ -1746,14 +1744,8 @@ async function runSearch() {
   }
   const hasDisabledSeries = selectedSeriesSkill === '__disabled__';
   const hasDisabledCombo = selectedComboSkill === '__disabled__';
-  if (selectedSeriesSkill && !hasDisabledSeries) {
-    const lv = selectedSeriesLevel || SKILL_CAPS[selectedSeriesSkill] || 1;
-    combo[selectedSeriesSkill] = lv;
-  }
-  if (selectedComboSkill && !hasDisabledCombo) {
-    const lv = selectedComboLevel || SKILL_CAPS[selectedComboSkill] || 1;
-    combo[selectedComboSkill] = lv;
-  }
+  // 固定武器技能 ≠ 技能需求：武器只是该技能的来源之一（提供1件），
+  // 固定技能=预筛选武器（只带该技能的武器进入匹配池），不把该技能作为配装需求。
   const autoWeapon = !hasDisabledSeries && !hasDisabledCombo;
   const maxResults = parseInt(document.getElementById('max-results').value) || 5;
   const reserveFixed = buildReserveFixed();
@@ -1784,13 +1776,16 @@ async function runSearch() {
     if (res.auto_weapon) {
       const parts = [];
       if (res.auto_weapon.series_skill) {
-        parts.push(res.auto_weapon.series_skill + ' Lv' + res.auto_weapon.series_level);
+        // 区分固定/自动匹配：固定=预筛选武器，非技能需求
+        const tag = (selectedSeriesSkill && selectedSeriesSkill !== '__disabled__') ? '🔒固定' : '🤖自动匹配';
+        parts.push(res.auto_weapon.series_skill + '（' + tag + '）');
       }
       if (res.auto_weapon.group_skill) {
-        parts.push(res.auto_weapon.group_skill + ' Lv' + res.auto_weapon.group_level);
+        const tag = (selectedComboSkill && selectedComboSkill !== '__disabled__') ? '🔒固定' : '🤖自动匹配';
+        parts.push(res.auto_weapon.group_skill + '（' + tag + '）');
       }
       if (parts.length > 0) {
-        autoInfo = ' · 自动匹配武器: <b>' + parts.join(' + ') + '</b>';
+        autoInfo = ' · 武器: <b>' + parts.join(' + ') + '</b>';
       }
     }
     document.getElementById('search-status').innerHTML = '找到 <b>' + res.count + '</b> 个方案 (' + res.total_time + 's)' + autoInfo;
@@ -3047,24 +3042,11 @@ async function runExtraQuery() {
   }
   const hasDisabledSeries = selectedSeriesSkill === '__disabled__';
   const hasDisabledCombo = selectedComboSkill === '__disabled__';
-  if (selectedSeriesSkill && !hasDisabledSeries) {
-    const lv = selectedSeriesLevel || SKILL_CAPS[selectedSeriesSkill] || 1;
-    combo[selectedSeriesSkill] = lv;
-  }
-  if (selectedComboSkill && !hasDisabledCombo) {
-    const lv = selectedComboLevel || SKILL_CAPS[selectedComboSkill] || 1;
-    combo[selectedComboSkill] = lv;
-  }
-  // 加入自动匹配的武器技能
+  // 武器区选择的系列/组合技能不加入技能组：武器只是该技能的来源之一（提供1件），
+  // 追加查询应检查该技能能否通过防具进一步追加。
   let autoSeriesSkill = '';
   let autoGroupSkill = '';
   if (window._lastAutoWeapon && !hasDisabledSeries && !hasDisabledCombo) {
-    if (window._lastAutoWeapon.series_skill && !combo[window._lastAutoWeapon.series_skill]) {
-      combo[window._lastAutoWeapon.series_skill] = window._lastAutoWeapon.series_level || 1;
-    }
-    if (window._lastAutoWeapon.group_skill && !combo[window._lastAutoWeapon.group_skill]) {
-      combo[window._lastAutoWeapon.group_skill] = window._lastAutoWeapon.group_level || 1;
-    }
     // 记录自动匹配的武器技能，用于让后端把武器视为提供 1 件（与查询方案的 auto 假设一致）
     autoSeriesSkill = window._lastAutoWeapon.series_skill || '';
     autoGroupSkill = window._lastAutoWeapon.group_skill || '';
@@ -3134,18 +3116,24 @@ async function runExtraQuery() {
           } else if (data.type === 'progress') {
             const pct = data.total > 0 ? (data.done / data.total * 100) : 0;
             progFill.style.width = pct.toFixed(1) + '%';
-            statusEl.innerHTML = '<span class="loading"></span> ' + data.done + '/' + data.total + ' · ' +
-              esc(data.skill) + ' Lv' + data.lv + '/' + data.cap +
-              (data.delta >= 0 ? ' (+' : ' (') + data.delta + ')';
-            const item = {
-              skill: data.skill, max_lv: data.lv, cap: data.cap,
-              damage: 0, delta: data.delta, wcr: data.wcr
-            };
-            if (data.tag === 'upgrade') {
-              item.current_lv = data.cur_lv;
-              extraQueryResult.upgrade_skills.push(item);
+            if (data.tag === 'slot') {
+              // 孔位二分化进度：只显示孔位名和最大可保留数，不加入技能列表
+              statusEl.innerHTML = '<span class="loading"></span> ' + data.done + '/' + data.total +
+                ' · \uD83D\uDD29 ' + esc(data.skill) + ' 最大' + data.lv;
             } else {
-              extraQueryResult.extra_skills.push(item);
+              statusEl.innerHTML = '<span class="loading"></span> ' + data.done + '/' + data.total + ' · ' +
+                esc(data.skill) + ' Lv' + data.lv + '/' + data.cap +
+                (data.delta >= 0 ? ' (+' : ' (') + data.delta + ')';
+              const item = {
+                skill: data.skill, max_lv: data.lv, cap: data.cap,
+                damage: 0, delta: data.delta, wcr: data.wcr
+              };
+              if (data.tag === 'upgrade') {
+                item.current_lv = data.cur_lv;
+                extraQueryResult.upgrade_skills.push(item);
+              } else {
+                extraQueryResult.extra_skills.push(item);
+              }
             }
           } else if (data.type === 'done') {
             finalResult = data.result;

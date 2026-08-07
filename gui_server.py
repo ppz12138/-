@@ -523,11 +523,16 @@ class SearchHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-Type', 'application/x-ndjson; charset=utf-8')
         self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        self.send_header('Transfer-Encoding', 'chunked')  # 关键：启用分块传输，实现真正的流式响应
         self.send_header('X-Accel-Buffering', 'no')  # nginx 不缓冲
         self.end_headers()
 
         def _write_chunk(obj):
-            self.wfile.write((json.dumps(obj, ensure_ascii=False) + '\n').encode('utf-8'))
+            chunk = (json.dumps(obj, ensure_ascii=False) + '\n').encode('utf-8')
+            # HTTP chunked transfer encoding: size\r\n data \r\n
+            self.wfile.write(f'{len(chunk):x}\r\n'.encode('ascii'))
+            self.wfile.write(chunk)
+            self.wfile.write(b'\r\n')
             self.wfile.flush()
 
         with _lock:
@@ -545,8 +550,13 @@ class SearchHandler(BaseHTTPRequestHandler):
                     _write_chunk({'type': 'error', 'error': f'查询出错: {e}'})
                 except Exception:
                     pass
-                return
             finally:
+                # 发送结束块（size 0）
+                try:
+                    self.wfile.write(b'0\r\n\r\n')
+                    self.wfile.flush()
+                except Exception:
+                    pass
                 fs.WSLOTS = orig_wslots
                 fs._FEASIBILITY_ONLY = False
 
@@ -577,18 +587,11 @@ class SearchHandler(BaseHTTPRequestHandler):
             weapon_actual_skills[weapon_combo] = 1
 
         # 需求技能（用户在技能选择区选择的）
-        # 包含 combo_skills 和系列/组合武器的需求等级
+        # 固定武器技能≠技能需求：武器只是该技能的来源之一（提供1件），
+        # 固定=预筛选武器（只带该技能的武器进入匹配池），不作为配装硬性需求，
+        # 因此武器系列/组合技能【不】加入 requirement_skills 与 search_combo。
         requirement_skills = dict(combo_skills)
-        if weapon_series and weapon_series in fs.NO_DECO_SK and weapon_series_level > 0:
-            requirement_skills[weapon_series] = weapon_series_level
-        if weapon_combo and weapon_combo in fs.NO_DECO_SK and weapon_combo_level > 0:
-            requirement_skills[weapon_combo] = weapon_combo_level
-
         search_combo = dict(combo_skills)
-        if weapon_series and weapon_series in fs.NO_DECO_SK and weapon_series_level > 0:
-            search_combo[weapon_series] = weapon_series_level
-        if weapon_combo and weapon_combo in fs.NO_DECO_SK and weapon_combo_level > 0:
-            search_combo[weapon_combo] = weapon_combo_level
 
         orig_wslots = self._apply_weapon_slots(params)
         t0 = time.time()
@@ -596,8 +599,10 @@ class SearchHandler(BaseHTTPRequestHandler):
         auto_matched_group = None   # skill name or None
         with _lock:
             try:
-                has_user_weapon = bool(weapon_series or weapon_combo)
-                if auto_weapon and not has_user_weapon:
+                # auto 模式（含固定技能=预筛选武器）：dfs_search_auto_weapon 内部
+                # 按固定/留空拆分武器池——固定技能只组合带该技能的武器，
+                # 留空才枚举全部需求相关组合，固定两个时直接搜索（最少组合，最快）。
+                if auto_weapon:
                     raw_results, auto_matched_series, auto_matched_group = fs.dfs_search_auto_weapon(
                         fs.charm_pool, fixed_skills, search_combo, min_rem_armor,
                         max_results=max_results, timeout_s=timeout_s, quiet=False,
@@ -605,6 +610,7 @@ class SearchHandler(BaseHTTPRequestHandler):
                         user_weapon_skills=weapon_actual_skills
                     )
                 else:
+                    # 禁用模式：武器不带任何洗练技能
                     raw_results = fs.dfs_search(
                         fs.charm_pool, fixed_skills, search_combo, min_rem_armor,
                         max_results=max_results, timeout_s=timeout_s, quiet=False,
@@ -618,16 +624,17 @@ class SearchHandler(BaseHTTPRequestHandler):
         t_used = time.time() - t0
         results = []
         # auto 分支实际搜索时武器提供了自动匹配出的系列/组合件数（各1件），
-        # 但这些信息不在 weapon_actual_skills 里。必须把它们并入"展示用武器技能"，
+        # 但这些信息不在 weapon_actual_skills 里。每个方案独立选择武器（平权），
+        # 因此用方案自身的 _auto_weapon_* 标记构造展示用武器技能，
         # 否则 _plan_result_to_dict 的 series_check 会漏算武器件数，
         # 导致已达标(武器补齐)的系列在方案卡里被误标为"未激活"。
-        display_weapon_skills = dict(weapon_actual_skills)
-        if auto_matched_series:
-            display_weapon_skills[auto_matched_series] = 1
-        if auto_matched_group:
-            display_weapon_skills[auto_matched_group] = 1
         for r in raw_results[:max_results]:
-            fake_cfg = ('自定义搜索', display_weapon_skills, {})
+            r_weapon_skills = dict(weapon_actual_skills)
+            if r.get('_auto_weapon_series'):
+                r_weapon_skills[r['_auto_weapon_series']] = 1
+            if r.get('_auto_weapon_group'):
+                r_weapon_skills[r['_auto_weapon_group']] = 1
+            fake_cfg = ('自定义搜索', r_weapon_skills, {})
             plan_result = _plan_result_to_dict(r, fake_cfg, t_used, 1, len(raw_results), t_used, requirement_skills=requirement_skills)
             results.append(plan_result)
 
